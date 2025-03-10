@@ -176,13 +176,7 @@ st.plotly_chart(fig, use_container_width=True)
 # Segunda linha - Distribuição por faixa percentual
 st.header("Distribuição dos Municípios por Faixa Percentual")
 
-# Crie uma coluna com largura específica para o gráfico
-col1, col2, col3 = st.columns([1, 10, 1])  # Proporção de 1:10:1 
-
-with col2:  # Use apenas a coluna do meio (mais larga)
-    st.plotly_chart(fig_ind, use_container_width=True)
-
-# Definir paleta de cores para as categorias
+# Definir paleta de cores para as categorias (se ainda não estiver definido no código)
 paleta_categorias = {
     'Educação Infantil': '#3498db',
     'Ensino Fundamental': '#2ecc71',
@@ -192,6 +186,9 @@ paleta_categorias = {
 
 # Filtrar dados de distribuição
 df_dist_filtered = df_dist_long[df_dist_long['Indicador'].isin(indicador_selecionado)]
+
+# Criar colunas para controlar a largura
+col1, col2, col3 = st.columns([1, 10, 1])  # Proporção de 1:10:1
 
 # Para cada indicador selecionado, criar um gráfico separado
 for indicador in indicador_selecionado:
@@ -222,13 +219,15 @@ for indicador in indicador_selecionado:
         yaxis_title='Faixa Percentual',
         xaxis_title='Número de Municípios',
         height=400,
+        width=900,  # Definir largura explícita
         margin=dict(l=20, r=20, t=50, b=20),
         yaxis={'categoryorder': 'array', 
                'categoryarray': df_distribuicao['Faixas Percentuais'].tolist()[::-1]}  # Inverter ordem
     )
     
-    # Exibir o gráfico
-    st.plotly_chart(fig_ind, use_container_width=True)
+    # Exibir o gráfico na coluna do meio
+    with col2:
+        st.plotly_chart(fig_ind, use_container_width=True)
 
 # Heatmap
 st.subheader("Heatmap de Distribuição")
