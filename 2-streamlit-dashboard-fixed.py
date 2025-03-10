@@ -18,7 +18,7 @@ st.set_page_config(
 # Função para carregar os dados
 @st.cache_data
 def load_data():
-    file_path = r"C:\Users\User\Desktop\Apresentação.xlsx"
+    file_path = r"C:\Users\User\Desktop\Repositorio\Apresentação.xlsx"
 
     # Carregar dados de indicadores - adicionando decimal=',' para lidar com o formato brasileiro
     df_indicadores = pd.read_excel(file_path, sheet_name="Indicadores", decimal=',')
