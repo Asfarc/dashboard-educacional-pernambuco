@@ -179,32 +179,42 @@ st.header("Distribuição dos Municípios por Faixa Percentual")
 # Filtrar dados de distribuição
 df_dist_filtered = df_dist_long[df_dist_long['Indicador'].isin(indicador_selecionado)]
 
-# Calcular o total de municípios por faixa para cada indicador
-totais_por_faixa = df_dist_filtered.groupby(['Indicador', 'Faixas Percentuais'])['Quantidade de Municípios'].sum().reset_index()
-
-# Criar gráfico de barras horizontais
-fig_dist = px.bar(
-    totais_por_faixa,
-    y='Faixas Percentuais',  # Trocando x e y para fazer barras horizontais
-    x='Quantidade de Municípios',
-    color='Indicador',
-    barmode='group',  # Agrupar barras por indicador
-    title='Distribuição dos Municípios por Faixa Percentual',
-    labels={'Quantidade de Municípios': 'Número de Municípios'},
-    height=600,
-    orientation='h'  # Orientação horizontal
-)
-
-# Ajustar layout
-fig_dist.update_layout(
-    yaxis_title='Faixa Percentual',
-    xaxis_title='Número de Municípios',
-    legend_title='Indicador',
-    yaxis={'categoryorder': 'array', 
-           'categoryarray': df_distribuicao['Faixas Percentuais'].tolist()[::-1]}  # Inverter a ordem para melhor visualização
-)
-
-st.plotly_chart(fig_dist, use_container_width=True)
+# Para cada indicador selecionado, criar um gráfico separado
+for indicador in indicador_selecionado:
+    # Filtrar dados para este indicador específico
+    df_indicador = df_dist_filtered[df_dist_filtered['Indicador'] == indicador]
+    
+    # Determinar a cor com base na categoria do indicador
+    categoria_do_indicador = df_indicadores[df_indicadores['Indicadores'] == indicador]['Categoria'].iloc[0]
+    cor_do_indicador = paleta_categorias.get(categoria_do_indicador, '#3498db')  # cor padrão se não encontrar
+    
+    # Criar gráfico de barras horizontais para este indicador
+    fig_ind = go.Figure()
+    
+    # Adicionar barras horizontais
+    fig_ind.add_trace(go.Bar(
+        y=df_indicador['Faixas Percentuais'],
+        x=df_indicador['Quantidade de Municípios'],
+        orientation='h',
+        marker_color=cor_do_indicador,
+        text=df_indicador['Quantidade de Municípios'],  # Mostrar valor em cada barra
+        textposition='outside',  # Texto fora da barra
+        name=indicador
+    ))
+    
+    # Configurar layout
+    fig_ind.update_layout(
+        title=f'Distribuição dos Municípios por Faixa - Indicador {indicador}',
+        yaxis_title='Faixa Percentual',
+        xaxis_title='Número de Municípios',
+        height=400,
+        margin=dict(l=20, r=20, t=50, b=20),
+        yaxis={'categoryorder': 'array', 
+               'categoryarray': df_distribuicao['Faixas Percentuais'].tolist()[::-1]}  # Inverter ordem
+    )
+    
+    # Exibir o gráfico
+    st.plotly_chart(fig_ind, use_container_width=True)
 
 # Heatmap
 st.subheader("Heatmap de Distribuição")
