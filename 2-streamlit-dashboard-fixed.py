@@ -342,58 +342,7 @@ st.dataframe(stats_por_categoria, use_container_width=True)
 # SEÇÃO 9: GRÁFICO DE RADAR POR CATEGORIA
 ###############################################################
 
-st.subheader("Radar de Desempenho por Categoria")
-
-# Preparar dados para o radar - Resultados
-radar_data = pd.DataFrame()
-radar_data['Categoria'] = df_indicadores['Categoria'].unique()
-radar_data['Resultado 2023 (média)'] = [
-    df_indicadores[df_indicadores['Categoria'] == cat]['Resultado 2023 (média)'].mean()
-    for cat in radar_data['Categoria']]
-
-# Preparar dados para o radar - Metas
-radar_meta = pd.DataFrame()
-radar_meta['Categoria'] = df_indicadores['Categoria'].unique()
-radar_meta['Meta PEE-PE'] = [
-    df_indicadores[df_indicadores['Categoria'] == cat]['Meta PEE-PE'].mean()
-    for cat in radar_meta['Categoria']]
-
-# Criar gráfico de radar
-fig_radar = go.Figure()
-
-# Adicionar área para resultados
-fig_radar.add_trace(go.Scatterpolar(
-    r=radar_data['Resultado 2023 (média)'],
-    theta=radar_data['Categoria'],
-    fill='toself',
-    name='Resultado 2023',
-    line_color='royalblue'
-))
-
-# Adicionar área para metas
-fig_radar.add_trace(go.Scatterpolar(
-    r=radar_meta['Meta PEE-PE'],
-    theta=radar_meta['Categoria'],
-    fill='toself',
-    name='Meta PEE-PE',
-    line_color='firebrick',
-    opacity=0.6
-))
-
-# Configurar layout do radar
-fig_radar.update_layout(
-    polar=dict(
-        radialaxis=dict(
-            visible=True,
-            range=[0, 100]  # Escala de 0 a 100%
-        )
-    ),
-    showlegend=True,
-    height=500
-)
-
-# Exibir o gráfico de radar
-st.plotly_chart(fig_radar, use_container_width=True)
+# A seção 9 (Gráfico de Radar por Categoria) foi removida conforme solicitado
 
 
 ###############################################################
