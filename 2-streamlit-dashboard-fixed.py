@@ -176,6 +176,12 @@ st.plotly_chart(fig, use_container_width=True)
 # Segunda linha - Distribuição por faixa percentual
 st.header("Distribuição dos Municípios por Faixa Percentual")
 
+# Crie uma coluna com largura específica para o gráfico
+col1, col2, col3 = st.columns([1, 10, 1])  # Proporção de 1:10:1 
+
+with col2:  # Use apenas a coluna do meio (mais larga)
+    st.plotly_chart(fig_ind, use_container_width=True)
+
 # Definir paleta de cores para as categorias
 paleta_categorias = {
     'Educação Infantil': '#3498db',
