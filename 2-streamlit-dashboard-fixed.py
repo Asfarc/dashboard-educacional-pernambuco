@@ -176,6 +176,14 @@ st.plotly_chart(fig, use_container_width=True)
 # Segunda linha - Distribuição por faixa percentual
 st.header("Distribuição dos Municípios por Faixa Percentual")
 
+# Definir paleta de cores para as categorias
+paleta_categorias = {
+    'Educação Infantil': '#3498db',
+    'Ensino Fundamental': '#2ecc71',
+    'Tempo Integral': '#e74c3c',
+    'Formação Docente': '#9b59b6'
+}
+
 # Filtrar dados de distribuição
 df_dist_filtered = df_dist_long[df_dist_long['Indicador'].isin(indicador_selecionado)]
 
