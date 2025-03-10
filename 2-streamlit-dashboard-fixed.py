@@ -94,7 +94,7 @@ st.sidebar.header("Filtros")
 # Filtro por categoria
 categorias = sorted(df_indicadores['Categoria'].unique())
 categoria_selecionada = st.sidebar.multiselect(
-    "Selecione a categoria:",
+    "Selecione a categoria1:",
     options=categorias,
     default=categorias
 )
