@@ -94,7 +94,7 @@ st.sidebar.header("Filtros")
 # Filtro por categoria
 categorias = sorted(df_indicadores['Categoria'].unique())
 categoria_selecionada = st.sidebar.multiselect(
-    "Selecione a categoria1:",
+    "Selecione a categoria:",
     options=categorias,
     default=categorias
 )
@@ -179,24 +179,29 @@ st.header("Distribuição dos Municípios por Faixa Percentual")
 # Filtrar dados de distribuição
 df_dist_filtered = df_dist_long[df_dist_long['Indicador'].isin(indicador_selecionado)]
 
-# Gráfico de distribuição
+# Calcular o total de municípios por faixa para cada indicador
+totais_por_faixa = df_dist_filtered.groupby(['Indicador', 'Faixas Percentuais'])['Quantidade de Municípios'].sum().reset_index()
+
+# Criar gráfico de barras horizontais
 fig_dist = px.bar(
-    df_dist_filtered,
-    x='Faixas Percentuais',
-    y='Quantidade de Municípios',
+    totais_por_faixa,
+    y='Faixas Percentuais',  # Trocando x e y para fazer barras horizontais
+    x='Quantidade de Municípios',
     color='Indicador',
-    barmode='group',
+    barmode='group',  # Agrupar barras por indicador
     title='Distribuição dos Municípios por Faixa Percentual',
     labels={'Quantidade de Municípios': 'Número de Municípios'},
-    height=600
+    height=600,
+    orientation='h'  # Orientação horizontal
 )
 
 # Ajustar layout
 fig_dist.update_layout(
-    xaxis_title='Faixa Percentual',
-    yaxis_title='Número de Municípios',
+    yaxis_title='Faixa Percentual',
+    xaxis_title='Número de Municípios',
     legend_title='Indicador',
-    xaxis={'categoryorder': 'array', 'categoryarray': df_distribuicao['Faixas Percentuais']}
+    yaxis={'categoryorder': 'array', 
+           'categoryarray': df_distribuicao['Faixas Percentuais'].tolist()[::-1]}  # Inverter a ordem para melhor visualização
 )
 
 st.plotly_chart(fig_dist, use_container_width=True)
