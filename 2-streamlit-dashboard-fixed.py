@@ -5,6 +5,9 @@ import numpy as np
 import os
 from pathlib import Path
 
+# -------------------------------
+# Configuração Inicial da Página
+# -------------------------------
 st.set_page_config(
     page_title="Dashboard PNE",
     page_icon="📊",
@@ -12,22 +15,33 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Funções auxiliares
+# -------------------------------
+# Funções Auxiliares
+# -------------------------------
+
 def formatar_numero(numero):
-    """Formata números grandes com separador de milhar"""
+    """
+    Formata números grandes adicionando separadores de milhar.
+    Se o número for NaN ou '-', retorna '-'.
+    """
     if pd.isna(numero) or numero == "-":
         return "-"
     return f"{int(numero):,}".replace(",", ".")
 
 def carregar_dados():
-    """Carrega os dados das planilhas em formato Parquet"""
+    """
+    Carrega os dados das planilhas no formato Parquet.
+    - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
+    - Converte colunas que começam com 'Número de' para tipo numérico.
+    Em caso de erro, exibe uma mensagem e interrompe a execução.
+    """
     try:
         # Carregar os três arquivos Parquet
         escolas_df = pd.read_parquet("escolas.parquet")
         estado_df = pd.read_parquet("estado.parquet")
         municipio_df = pd.read_parquet("municipio.parquet")
         
-        # Converter colunas numéricas para o tipo correto, se necessário
+        # Converter colunas numéricas para o tipo correto
         for df in [escolas_df, estado_df, municipio_df]:
             for col in df.columns:
                 if col.startswith("Número de"):
@@ -39,9 +53,17 @@ def carregar_dados():
         st.error(f"Erro ao carregar os dados: {e}")
         st.info("Verifique se os arquivos Parquet estão disponíveis no repositório.")
         st.stop()
+        
+# ======================================
+# CONFIGURAÇÃO DOS DADOS EDUCACIONAIS
+# ======================================
 
 def criar_mapeamento_colunas():
-    """Cria um dicionário hierárquico de mapeamento entre etapas de ensino e nomes de colunas"""
+    """
+    Cria um dicionário que mapeia as etapas de ensino para os nomes das colunas.
+    Esse mapeamento inclui a coluna principal, subetapas e séries, facilitando a seleção
+    dos dados conforme os filtros do usuário.
+    """
     mapeamento = {
         "Educação Infantil": {
             "coluna_principal": "Número de Matrículas da Educação Infantil",
@@ -133,7 +155,9 @@ def criar_mapeamento_colunas():
     
     return mapeamento
 
-# Carregar dados e criar mapeamento
+# -------------------------------
+# Carregamento de Dados e Mapeamento
+# -------------------------------
 try:
     escolas_df, estado_df, municipio_df = carregar_dados()
     mapeamento_colunas = criar_mapeamento_colunas()
@@ -141,16 +165,19 @@ except Exception as e:
     st.error(f"Erro ao carregar os dados: {e}")
     st.stop()
 
-# Sidebar para filtros
+# ======================================
+# CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
+# ======================================
+
 st.sidebar.title("Filtros")
 
-# Filtro de Tipo de Visualização (Escola, Estado ou Município)
+# Seleção do nível de agregação
 tipo_visualizacao = st.sidebar.radio(
     "Nível de Agregação:",
     ["Escola", "Município", "Estado"]
 )
 
-# Selecionando o DataFrame baseado na visualização
+# Seleção do DataFrame conforme o nível escolhido
 if tipo_visualizacao == "Escola":
     df = escolas_df
 elif tipo_visualizacao == "Município":
@@ -158,11 +185,11 @@ elif tipo_visualizacao == "Município":
 else:
     df = estado_df
 
-# Filtro de Ano
+# Filtro do Ano
 anos_disponiveis = sorted(df["Ano do Censo"].unique())
 ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
 
-# Filtro de Dependência Administrativa
+# Filtro da Dependência Administrativa
 dependencias_disponiveis = sorted(df["Dependência Administrativa"].unique())
 dependencia_selecionada = st.sidebar.multiselect(
     "Dependência Administrativa:",
@@ -170,21 +197,21 @@ dependencia_selecionada = st.sidebar.multiselect(
     default=dependencias_disponiveis
 )
 
-# Filtro para Etapa de Ensino
+# Filtro da Etapa de Ensino
 etapas_disponiveis = list(mapeamento_colunas.keys())
 etapa_selecionada = st.sidebar.selectbox(
     "Etapa de Ensino:",
     etapas_disponiveis
 )
 
-# Filtro para Subetapa (depende da Etapa selecionada)
+# Filtro da Subetapa (varia de acordo com a etapa selecionada)
 subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
 subetapa_selecionada = st.sidebar.selectbox(
     "Subetapa:",
     ["Todas"] + subetapas_disponiveis
 )
 
-# Filtro para Série (depende da Subetapa selecionada, se for aplicável)
+# Filtro para a Série, se aplicável à subetapa selecionada
 series_disponiveis = []
 if subetapa_selecionada != "Todas" and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]:
     series_disponiveis = list(mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada].keys())
@@ -195,13 +222,15 @@ if subetapa_selecionada != "Todas" and subetapa_selecionada in mapeamento_coluna
 else:
     serie_selecionada = "Todas"
 
-# Aplicar filtros básicos
+# -------------------------------
+# Aplicação dos Filtros nos Dados
+# -------------------------------
 df_filtrado = df[df["Ano do Censo"] == ano_selecionado]
 
 if dependencia_selecionada:
     df_filtrado = df_filtrado[df_filtrado["Dependência Administrativa"].isin(dependencia_selecionada)]
 
-# Determinar a coluna de dados a ser usada com base nos filtros selecionados
+# Determinar a coluna de dados com base na etapa, subetapa e série selecionadas
 if subetapa_selecionada == "Todas":
     coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
 elif serie_selecionada == "Todas" or subetapa_selecionada not in mapeamento_colunas[etapa_selecionada]["series"]:
@@ -212,11 +241,13 @@ else:
     else:
         coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
 
-# Título principal
-st.title(f"Dashboard de Matrículas - Inep")
+# -------------------------------
+# Cabeçalho e Informações Iniciais do Dashboard
+# -------------------------------
+st.title("Dashboard de Matrículas - Inep")
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
-# Mostrar informações sobre o filtro selecionado
+# Exibição dos filtros selecionados
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
 if subetapa_selecionada != "Todas":
     filtro_texto += f" | **Subetapa:** {subetapa_selecionada}"
@@ -224,24 +255,25 @@ if subetapa_selecionada != "Todas":
         filtro_texto += f" | **Série:** {serie_selecionada}"
 st.markdown(filtro_texto)
 
-# Verificar se a coluna existe no DataFrame
+# Verifica se a coluna de dados existe; se não, usa a coluna principal
 if coluna_dados not in df_filtrado.columns:
     st.warning(f"A coluna {coluna_dados} não está disponível nos dados.")
-    # Ao invés de parar a execução, vamos tentar usar a coluna principal da etapa
     coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
     if coluna_dados not in df_filtrado.columns:
-        st.error(f"Não foi possível encontrar dados para a etapa selecionada.")
+        st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
 
-# Layout principal com 3 colunas para KPIs
+# -------------------------------
+# Seção de Indicadores (KPIs)
+# -------------------------------
 col1, col2, col3 = st.columns(3)
 
-# KPI 1: Total de Matrículas na Etapa/Subetapa/Série selecionada
+# KPI 1: Total de Matrículas na etapa/subetapa/série selecionada
 total_matriculas = df_filtrado[coluna_dados].sum()
 with col1:
     st.metric("Total de Matrículas", formatar_numero(total_matriculas))
 
-# KPI 2: Média de Matrículas por Escola (para nível Escola) ou por Dependência Administrativa (outros níveis)
+# KPI 2: Média de Matrículas
 with col2:
     if tipo_visualizacao == "Escola":
         if len(df_filtrado) > 0:
@@ -257,7 +289,7 @@ with col2:
         else:
             st.metric("Média de Matrículas", "-")
 
-# KPI 3: Dependendo da visualização, mostrar diferentes métricas
+# KPI 3: Indicador adicional conforme a visualização
 with col3:
     if tipo_visualizacao == "Escola":
         total_escolas = len(df_filtrado)
@@ -266,28 +298,28 @@ with col3:
         total_municipios = len(df_filtrado)
         st.metric("Total de Municípios", formatar_numero(total_municipios))
     else:
-        # Para Estado, podemos mostrar outro indicador
         st.metric("Máximo de Matrículas", formatar_numero(df_filtrado[coluna_dados].max()))
 
-# Gráficos
+# -------------------------------
+# Seção de Gráficos
+# -------------------------------
 st.markdown("## Análise Gráfica")
 
-# Gráfico 1: Distribuição por Dependência Administrativa
+# Gráfico 1: Distribuição de Matrículas por Dependência Administrativa (Gráfico de Pizza)
 fig1 = px.pie(
     df_filtrado, 
     names="Dependência Administrativa", 
     values=coluna_dados,
-    title=f"Distribuição de Matrículas por Dependência Administrativa",
+    title="Distribuição de Matrículas por Dependência Administrativa",
     color_discrete_sequence=px.colors.qualitative.Set3
 )
 st.plotly_chart(fig1, use_container_width=True)
 
-# Gráfico 2: Dependendo da visualização
+# Gráfico 2: Varia conforme o nível de visualização
 if tipo_visualizacao == "Estado":
-    # Para visualização estadual, mostrar comparação entre diferentes anos
+    # Para visualização estadual, comparar matrículas entre diferentes anos
     anos_df = df[df["Dependência Administrativa"].isin(dependencia_selecionada)]
     dados_anos = []
-    
     for ano in anos_disponiveis:
         ano_data = anos_df[anos_df["Ano do Censo"] == ano]
         if not ano_data.empty and coluna_dados in ano_data.columns:
@@ -295,7 +327,6 @@ if tipo_visualizacao == "Estado":
                 "Ano": ano,
                 "Matrículas": ano_data[coluna_dados].sum()
             })
-    
     if dados_anos:
         anos_chart_df = pd.DataFrame(dados_anos)
         fig2 = px.line(
@@ -308,7 +339,7 @@ if tipo_visualizacao == "Estado":
         st.plotly_chart(fig2, use_container_width=True)
     
 elif tipo_visualizacao == "Município":
-    # Para visualização municipal, mostrar top 10 municípios
+    # Para visualização municipal, mostrar os 10 municípios com maior número de matrículas
     top_municipios = df_filtrado.nlargest(10, coluna_dados)
     if not top_municipios.empty:
         fig2 = px.bar(
@@ -320,11 +351,10 @@ elif tipo_visualizacao == "Município":
         )
         st.plotly_chart(fig2, use_container_width=True)
         
-else:  # Escola
-    # Para visualização por escola, mostrar top 10 escolas
+else:  # Visualização por Escola
     top_escolas = df_filtrado.nlargest(10, coluna_dados)
     if not top_escolas.empty:
-        # Criar nomes mais curtos para as escolas no gráfico
+        # Gerar nomes curtos para facilitar a visualização no gráfico
         top_escolas["Nome Curto"] = top_escolas["Nome da Escola"].apply(
             lambda x: x[:30] + "..." if len(x) > 30 else x
         )
@@ -338,9 +368,12 @@ else:  # Escola
         fig2.update_xaxes(tickangle=45)
         st.plotly_chart(fig2, use_container_width=True)
 
-# Tabela de dados
+# -------------------------------
+# Seção de Tabela de Dados Detalhados
+# -------------------------------
 st.markdown("## Dados Detalhados")
 
+# Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
 if tipo_visualizacao == "Escola":
     colunas_tabela = ["Nome da Escola", "Dependência Administrativa", "Nome do Município"]
 elif tipo_visualizacao == "Município":
@@ -348,29 +381,27 @@ elif tipo_visualizacao == "Município":
 else:  # Estado
     colunas_tabela = ["UF", "Dependência Administrativa"]
 
-# Adicionar a coluna de dados selecionada
+# Adiciona a coluna de dados selecionada ao final
 colunas_tabela.append(coluna_dados)
 
-# Verificar se todas as colunas existem
+# Verifica se todas as colunas estão presentes no DataFrame filtrado
 colunas_existentes = [col for col in colunas_tabela if col in df_filtrado.columns]
 if set(colunas_existentes) != set(colunas_tabela):
     st.warning(f"Algumas colunas não estão disponíveis para exibição na tabela: {set(colunas_tabela) - set(colunas_existentes)}")
-    # Remover colunas inexistentes da lista
     colunas_tabela = colunas_existentes
 
-# Garantir que a coluna de dados seja numérica para ordenação correta
+# Converter a coluna de dados para numérico para ordenação correta
 df_filtrado_tabela = df_filtrado.copy()
 if coluna_dados in df_filtrado_tabela.columns:
-    # Converter para numérico, tratando valores não numéricos como NaN
     df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
-    
-    # Exibir a tabela com as colunas existentes
     tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
 else:
-    # Se a coluna não existir, exibir sem ordenação
     tabela_dados = df_filtrado_tabela[colunas_existentes]
+
 st.dataframe(tabela_dados, use_container_width=True)
 
-# Rodapé com informações adicionais
+# -------------------------------
+# Rodapé do Dashboard
+# -------------------------------
 st.markdown("---")
 st.markdown("**Nota:** Os dados são provenientes do Censo Escolar. Os traços (-) indicam ausência de dados.")
