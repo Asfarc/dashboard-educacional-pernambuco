@@ -20,46 +20,25 @@ def formatar_numero(numero):
     return f"{int(numero):,}".replace(",", ".")
 
 def carregar_dados():
-    """Carrega os dados das planilhas do Excel"""
-    # Caminho para o arquivo Excel - ajustado para ser mais flexível
+    """Carrega os dados das planilhas em formato Parquet"""
     try:
-        # Tenta primeiro carregar de um arquivo com caminho absoluto (para testes locais)
-        caminho_arquivo = "consolidado_final_atualizado.xlsx"
+        # Carregar os três arquivos Parquet
+        escolas_df = pd.read_parquet("escolas.parquet")
+        estado_df = pd.read_parquet("estado.parquet")
+        municipio_df = pd.read_parquet("municipio.parquet")
         
-        # Carregar as três planilhas
-        escolas_df = pd.read_excel(caminho_arquivo, sheet_name="Escolas")
-        estado_df = pd.read_excel(caminho_arquivo, sheet_name="Estado")
-        municipio_df = pd.read_excel(caminho_arquivo, sheet_name="Município")
-        
-        # Substituir traços (-) por NaN para facilitar operações numéricas
-        escolas_df = escolas_df.replace("-", np.nan)
-        estado_df = estado_df.replace("-", np.nan)
-        municipio_df = municipio_df.replace("-", np.nan)
+        # Converter colunas numéricas para o tipo correto, se necessário
+        for df in [escolas_df, estado_df, municipio_df]:
+            for col in df.columns:
+                if col.startswith("Número de"):
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
         
         return escolas_df, estado_df, municipio_df
     
     except Exception as e:
-        st.error(f"Erro ao carregar o arquivo: {e}")
-        st.info("Verifique se o arquivo 'consolidado_final_atualizado.xlsx' está disponível no repositório.")
-        # Você também pode incluir uma opção para upload do arquivo:
-        uploaded_file = st.file_uploader("Ou faça upload do arquivo Excel:", type=["xlsx"])
-        if uploaded_file is not None:
-            try:
-                escolas_df = pd.read_excel(uploaded_file, sheet_name="Escolas")
-                estado_df = pd.read_excel(uploaded_file, sheet_name="Estado")
-                municipio_df = pd.read_excel(uploaded_file, sheet_name="Município")
-                
-                # Substituir traços (-) por NaN para facilitar operações numéricas
-                escolas_df = escolas_df.replace("-", np.nan)
-                estado_df = estado_df.replace("-", np.nan)
-                municipio_df = municipio_df.replace("-", np.nan)
-                
-                return escolas_df, estado_df, municipio_df
-            except Exception as inner_e:
-                st.error(f"Erro ao processar o arquivo carregado: {inner_e}")
-                st.stop()
-        else:
-            st.stop()
+        st.error(f"Erro ao carregar os dados: {e}")
+        st.info("Verifique se os arquivos Parquet estão disponíveis no repositório.")
+        st.stop()
 
 def criar_mapeamento_colunas():
     """Cria um dicionário hierárquico de mapeamento entre etapas de ensino e nomes de colunas"""
