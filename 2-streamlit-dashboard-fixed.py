@@ -1,375 +1,397 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import numpy as np
+import os
+from pathlib import Path
 
-###############################################################
-# SEÇÃO 1: CONFIGURAÇÃO INICIAL E FUNÇÕES DE CARREGAMENTO
-###############################################################
-
-# Configuração da página
 st.set_page_config(
-    page_title="Dashboard Indicadores Educacionais - Pernambuco",
-    layout="wide",                  # Layout amplo da página
-    initial_sidebar_state="expanded"  # Sidebar inicialmente expandida
+    page_title="Dashboard PNE",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Função para carregar e processar os dados
-@st.cache_data  # Esta anotação armazena em cache os dados para melhor performance
-def load_data():
-    # Caminho do arquivo que contém os dados
-    file_path = "Apresentação.xlsx"
+# Funções auxiliares
+def formatar_numero(numero):
+    """Formata números grandes com separador de milhar"""
+    if pd.isna(numero) or numero == "-":
+        return "-"
+    return f"{int(numero):,}".replace(",", ".")
 
-    # Carregar planilha de indicadores (com configuração para formato decimal brasileiro)
-    df_indicadores = pd.read_excel(file_path, sheet_name="Indicadores", decimal=',')
+def carregar_dados():
+    """Carrega os dados das planilhas do Excel"""
+    # Caminho para o arquivo Excel - ajustado para ser mais flexível
+    try:
+        # Tenta primeiro carregar de um arquivo com caminho absoluto (para testes locais)
+        caminho_arquivo = "consolidado_final_atualizado.xlsx"
+        
+        # Carregar as três planilhas
+        escolas_df = pd.read_excel(caminho_arquivo, sheet_name="Escolas")
+        estado_df = pd.read_excel(caminho_arquivo, sheet_name="Estado")
+        municipio_df = pd.read_excel(caminho_arquivo, sheet_name="Município")
+        
+        # Substituir traços (-) por NaN para facilitar operações numéricas
+        escolas_df = escolas_df.replace("-", np.nan)
+        estado_df = estado_df.replace("-", np.nan)
+        municipio_df = municipio_df.replace("-", np.nan)
+        
+        return escolas_df, estado_df, municipio_df
+    
+    except Exception as e:
+        st.error(f"Erro ao carregar o arquivo: {e}")
+        st.info("Verifique se o arquivo 'consolidado_final_atualizado.xlsx' está disponível no repositório.")
+        # Você também pode incluir uma opção para upload do arquivo:
+        uploaded_file = st.file_uploader("Ou faça upload do arquivo Excel:", type=["xlsx"])
+        if uploaded_file is not None:
+            try:
+                escolas_df = pd.read_excel(uploaded_file, sheet_name="Escolas")
+                estado_df = pd.read_excel(uploaded_file, sheet_name="Estado")
+                municipio_df = pd.read_excel(uploaded_file, sheet_name="Município")
+                
+                # Substituir traços (-) por NaN para facilitar operações numéricas
+                escolas_df = escolas_df.replace("-", np.nan)
+                estado_df = estado_df.replace("-", np.nan)
+                municipio_df = municipio_df.replace("-", np.nan)
+                
+                return escolas_df, estado_df, municipio_df
+            except Exception as inner_e:
+                st.error(f"Erro ao processar o arquivo carregado: {inner_e}")
+                st.stop()
+        else:
+            st.stop()
 
-    # Carregar planilha de distribuição
-    df_distribuicao = pd.read_excel(file_path, sheet_name="Distribuição", decimal=',')
-
-    # Mapeamento de indicadores para suas respectivas categorias
-    categorias = {
-        '1A': 'Educação Infantil',
-        '1B': 'Educação Infantil',
-        '2A': 'Ensino Fundamental',
-        '6A': 'Tempo Integral',
-        '6B': 'Tempo Integral',
-        '15A': 'Formação Docente',
-        '15B': 'Formação Docente',
-        '15C': 'Formação Docente'
+def criar_mapeamento_colunas():
+    """Cria um dicionário hierárquico de mapeamento entre etapas de ensino e nomes de colunas"""
+    mapeamento = {
+        "Educação Infantil": {
+            "coluna_principal": "Número de Matrículas da Educação Infantil",
+            "subetapas": {
+                "Creche": "Número de Matrículas da Educação Infantil - Creche",
+                "Pré-Escola": "Número de Matrículas da Educação Infantil - Pré-Escola"
+            },
+            "series": {}
+        },
+        "Ensino Fundamental": {
+            "coluna_principal": "Número de Matrículas do Ensino Fundamental",
+            "subetapas": {
+                "Anos Iniciais": "Número de Matrículas do Ensino Fundamental - Anos Iniciais",
+                "Anos Finais": "Número de Matrículas do Ensino Fundamental - Anos Finais"
+            },
+            "series": {
+                "Anos Iniciais": {
+                    "1º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 1º Ano",
+                    "2º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 2º Ano",
+                    "3º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 3º Ano",
+                    "4º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 4º Ano",
+                    "5º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 5º Ano"
+                },
+                "Anos Finais": {
+                    "6º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 6º Ano",
+                    "7º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 7º Ano",
+                    "8º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 8º Ano",
+                    "9º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 9º Ano"
+                }
+            }
+        },
+        "Ensino Médio": {
+            "coluna_principal": "Número de Matrículas do Ensino Médio",
+            "subetapas": {
+                "Propedêutico": "Número de Matrículas do Ensino Médio - Propedêutico",
+                "Curso Técnico Integrado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional",
+                "Normal/Magistério": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério"
+            },
+            "series": {
+                "Propedêutico": {
+                    "1ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 1º ano/1ª Série",
+                    "2ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 2º ano/2ª Série",
+                    "3ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 3º ano/3ª Série",
+                    "4ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 4º ano/4ª Série",
+                    "Não Seriado": "Número de Matrículas do Ensino Médio - Propedêutico - Não Seriado"
+                },
+                "Curso Técnico Integrado": {
+                    "1ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 1º ano/1ª Série",
+                    "2ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 2º ano/2ª Série",
+                    "3ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 3º ano/3ª Série",
+                    "4ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 4º ano/4ª Série",
+                    "Não Seriado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - Não Seriado"
+                },
+                "Normal/Magistério": {
+                    "1ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 1º ano/1ª Série",
+                    "2ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 2º ano/2ª Série",
+                    "3ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 3º ano/3ª Série",
+                    "4ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 4º ano/4ª Série"
+                }
+            }
+        },
+        "EJA": {
+            "coluna_principal": "Número de Matrículas da Educação de Jovens e Adultos (EJA)",
+            "subetapas": {
+                "Ensino Fundamental": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental",
+                "Ensino Médio": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Médio"
+            },
+            "series": {
+                "Ensino Fundamental": {
+                    "Anos Iniciais": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Iniciais",
+                    "Anos Finais": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Finais"
+                }
+            }
+        },
+        "Educação Profissional": {
+            "coluna_principal": "Número de Matrículas da Educação Profissional",
+            "subetapas": {
+                "Técnica": "Número de Matrículas da Educação Profissional Técnica",
+                "Curso FIC": "Número de Matrículas da Educação Profissional - Curso FIC Concomitante"
+            },
+            "series": {
+                "Técnica": {
+                    "Concomitante": "Número de Matrículas da Educação Profissional Técnica - Curso Técnico Concomitante",
+                    "Subsequente": "Número de Matrículas da Educação Profissional Técnica - Curso Técnico Subsequente"
+                }
+            }
+        }
     }
+    
+    return mapeamento
 
-    # Adicionar coluna de categorias baseada no mapeamento acima
-    df_indicadores['Categoria'] = df_indicadores['Indicadores'].map(categorias)
+# Carregar dados e criar mapeamento
+try:
+    escolas_df, estado_df, municipio_df = carregar_dados()
+    mapeamento_colunas = criar_mapeamento_colunas()
+except Exception as e:
+    st.error(f"Erro ao carregar os dados: {e}")
+    st.stop()
 
-    # Converter percentuais para escala 0-100 se estiverem em escala 0-1
-    if df_indicadores['Resultado 2023 (média)'].max() <= 1:
-        df_indicadores['Meta PEE-PE'] = df_indicadores['Meta PEE-PE'] * 100
-        df_indicadores['Resultado 2023 (média)'] = df_indicadores['Resultado 2023 (média)'] * 100
+# Sidebar para filtros
+st.sidebar.title("Filtros")
 
-    # Calcular nível de cumprimento para cada indicador
-    df_indicadores['Nível de Cumprimento'] = df_indicadores.apply(
-        lambda row: classificar_cumprimento(row), axis=1
+# Filtro de Tipo de Visualização (Escola, Estado ou Município)
+tipo_visualizacao = st.sidebar.radio(
+    "Nível de Agregação:",
+    ["Escola", "Município", "Estado"]
+)
+
+# Selecionando o DataFrame baseado na visualização
+if tipo_visualizacao == "Escola":
+    df = escolas_df
+elif tipo_visualizacao == "Município":
+    df = municipio_df
+else:
+    df = estado_df
+
+# Filtro de Ano
+anos_disponiveis = sorted(df["Ano do Censo"].unique())
+ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
+
+# Filtro de Dependência Administrativa
+dependencias_disponiveis = sorted(df["Dependência Administrativa"].unique())
+dependencia_selecionada = st.sidebar.multiselect(
+    "Dependência Administrativa:",
+    dependencias_disponiveis,
+    default=dependencias_disponiveis
+)
+
+# Filtro para Etapa de Ensino
+etapas_disponiveis = list(mapeamento_colunas.keys())
+etapa_selecionada = st.sidebar.selectbox(
+    "Etapa de Ensino:",
+    etapas_disponiveis
+)
+
+# Filtro para Subetapa (depende da Etapa selecionada)
+subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
+subetapa_selecionada = st.sidebar.selectbox(
+    "Subetapa:",
+    ["Todas"] + subetapas_disponiveis
+)
+
+# Filtro para Série (depende da Subetapa selecionada, se for aplicável)
+series_disponiveis = []
+if subetapa_selecionada != "Todas" and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]:
+    series_disponiveis = list(mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada].keys())
+    serie_selecionada = st.sidebar.selectbox(
+        "Série:",
+        ["Todas"] + series_disponiveis
     )
+else:
+    serie_selecionada = "Todas"
 
-    # Transformar dados de distribuição para formato longo (melhor para visualização)
-    df_dist_long = pd.melt(
-        df_distribuicao,
-        id_vars=['Faixas Percentuais'],
-        var_name='Indicador',
-        value_name='Quantidade de Municípios'
-    )
+# Aplicar filtros básicos
+df_filtrado = df[df["Ano do Censo"] == ano_selecionado]
 
-    return df_indicadores, df_distribuicao, df_dist_long
+if dependencia_selecionada:
+    df_filtrado = df_filtrado[df_filtrado["Dependência Administrativa"].isin(dependencia_selecionada)]
 
-
-# Função para classificar o nível de cumprimento das metas
-def classificar_cumprimento(row):
-    resultado = row['Resultado 2023 (média)']
-    meta = row['Meta PEE-PE']
-    # Calcular percentual de cumprimento em relação à meta
-    percentual = (resultado / meta) * 100 if meta > 0 else 0
-
-    # Classificar com base no percentual calculado
-    if percentual >= 90:
-        return 'Alto (≥90%)'
-    elif percentual >= 70:
-        return 'Médio (70-89%)'
-    elif percentual >= 50:
-        return 'Baixo (50-69%)'
+# Determinar a coluna de dados a ser usada com base nos filtros selecionados
+if subetapa_selecionada == "Todas":
+    coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
+elif serie_selecionada == "Todas" or subetapa_selecionada not in mapeamento_colunas[etapa_selecionada]["series"]:
+    coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
+else:
+    if serie_selecionada in mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada]:
+        coluna_dados = mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada][serie_selecionada]
     else:
-        return 'Crítico (<50%)'
+        coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
 
+# Título principal
+st.title(f"Dashboard de Matrículas - PNE")
+st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
-###############################################################
-# SEÇÃO 2: CARREGAMENTO DE DADOS E TÍTULO PRINCIPAL
-###############################################################
+# Mostrar informações sobre o filtro selecionado
+filtro_texto = f"**Etapa:** {etapa_selecionada}"
+if subetapa_selecionada != "Todas":
+    filtro_texto += f" | **Subetapa:** {subetapa_selecionada}"
+    if serie_selecionada != "Todas" and serie_selecionada in series_disponiveis:
+        filtro_texto += f" | **Série:** {serie_selecionada}"
+st.markdown(filtro_texto)
 
-# Carregar dados usando a função definida anteriormente
-df_indicadores, df_distribuicao, df_dist_long = load_data()
+# Verificar se a coluna existe no DataFrame
+if coluna_dados not in df_filtrado.columns:
+    st.warning(f"A coluna {coluna_dados} não está disponível nos dados.")
+    # Ao invés de parar a execução, vamos tentar usar a coluna principal da etapa
+    coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
+    if coluna_dados not in df_filtrado.columns:
+        st.error(f"Não foi possível encontrar dados para a etapa selecionada.")
+        st.stop()
 
-# Título principal do dashboard
-st.title("🎓 Dashboard de Indicadores Educacionais - Pernambuco")
-st.markdown("""
-Esta dashboard interativa permite explorar os indicadores educacionais de Pernambuco,
-incluindo as metas do PEE-PE, resultados de 2023 e a distribuição dos municípios por faixa percentual.
-""")
+# Layout principal com 3 colunas para KPIs
+col1, col2, col3 = st.columns(3)
 
-
-###############################################################
-# SEÇÃO 3: CONFIGURAÇÃO DE FILTROS NA BARRA LATERAL
-###############################################################
-
-# Cabeçalho da barra lateral
-st.sidebar.header("Filtros")
-
-# Filtro por categoria
-categorias = sorted(df_indicadores['Categoria'].unique())
-categoria_selecionada = st.sidebar.multiselect(
-    "Selecione a categoria:",
-    options=categorias,
-    default=categorias  # Todas as categorias selecionadas por padrão
-)
-
-# Filtro por indicador (baseado nas categorias selecionadas)
-indicadores_disponiveis = sorted(
-    df_indicadores[df_indicadores['Categoria'].isin(categoria_selecionada)]['Indicadores'].unique())
-indicador_selecionado = st.sidebar.multiselect(
-    "Selecione o indicador:",
-    options=indicadores_disponiveis,
-    default=indicadores_disponiveis  # Todos os indicadores selecionados por padrão
-)
-
-# Aplicar filtros aos dados
-df_filtrado = df_indicadores[
-    df_indicadores['Categoria'].isin(categoria_selecionada) &
-    df_indicadores['Indicadores'].isin(indicador_selecionado)
-]
-
-
-###############################################################
-# SEÇÃO 4: MÉTRICAS RESUMIDAS
-###############################################################
-
-st.header("Visão Geral dos Indicadores")
-
-# Criar 4 colunas para exibir métricas resumidas
-col1, col2, col3, col4 = st.columns(4)
-
+# KPI 1: Total de Matrículas na Etapa/Subetapa/Série selecionada
+total_matriculas = df_filtrado[coluna_dados].sum()
 with col1:
-    # Métrica 1: Média dos resultados de 2023
-    media_total = df_filtrado['Resultado 2023 (média)'].mean()
-    st.metric("Média de Resultados", f"{media_total:.1f}%")
+    st.metric("Total de Matrículas", formatar_numero(total_matriculas))
 
+# KPI 2: Média de Matrículas por Escola (para nível Escola) ou por Dependência Administrativa (outros níveis)
 with col2:
-    # Métrica 2: Média das metas estabelecidas
-    media_metas = df_filtrado['Meta PEE-PE'].mean()
-    st.metric("Média das Metas", f"{media_metas:.1f}%")
+    if tipo_visualizacao == "Escola":
+        if len(df_filtrado) > 0:
+            media_por_escola = df_filtrado[coluna_dados].mean()
+            st.metric("Média de Matrículas por Escola", formatar_numero(media_por_escola))
+        else:
+            st.metric("Média de Matrículas por Escola", "-")
+    else:
+        media_por_dependencia = df_filtrado.groupby("Dependência Administrativa")[coluna_dados].mean()
+        if not media_por_dependencia.empty:
+            media_geral = media_por_dependencia.mean()
+            st.metric("Média de Matrículas", formatar_numero(media_geral))
+        else:
+            st.metric("Média de Matrículas", "-")
 
+# KPI 3: Dependendo da visualização, mostrar diferentes métricas
 with col3:
-    # Métrica 3: Diferença média entre meta e resultado (gap)
-    gap_medio = (df_filtrado['Meta PEE-PE'] - df_filtrado['Resultado 2023 (média)']).mean()
-    st.metric("Gap Médio", f"{gap_medio:.1f}%")
+    if tipo_visualizacao == "Escola":
+        total_escolas = len(df_filtrado)
+        st.metric("Total de Escolas", formatar_numero(total_escolas))
+    elif tipo_visualizacao == "Município":
+        total_municipios = len(df_filtrado)
+        st.metric("Total de Municípios", formatar_numero(total_municipios))
+    else:
+        # Para Estado, podemos mostrar outro indicador
+        st.metric("Máximo de Matrículas", formatar_numero(df_filtrado[coluna_dados].max()))
 
-with col4:
-    # Métrica 4: Percentual médio de cumprimento das metas
-    perc_cumprimento = (df_filtrado['Resultado 2023 (média)'] / df_filtrado['Meta PEE-PE'] * 100).mean()
-    st.metric("% Médio de Cumprimento", f"{perc_cumprimento:.1f}%")
+# Gráficos
+st.markdown("## Análise Gráfica")
 
-
-###############################################################
-# SEÇÃO 5: GRÁFICO PRINCIPAL - COMPARATIVO RESULTADO VS META
-###############################################################
-
-st.subheader("Comparativo: Resultado vs. Meta")
-
-# Criar figura para o gráfico
-fig = go.Figure()
-
-# Adicionar barras para os resultados de 2023
-fig.add_trace(go.Bar(
-    x=df_filtrado['Indicadores'],
-    y=df_filtrado['Resultado 2023 (média)'],
-    name='Resultado 2023',
-    marker_color='royalblue',  # Cor das barras
-    text=df_filtrado['Resultado 2023 (média)'].apply(lambda x: f"{x:.1f}%"),  # Texto nas barras
-    textposition='auto'  # Posicionamento automático do texto
-))
-
-# Adicionar linhas para as metas
-fig.add_trace(go.Scatter(
-    x=df_filtrado['Indicadores'],
-    y=df_filtrado['Meta PEE-PE'],
-    name='Meta PEE-PE',
-    mode='lines+markers',  # Exibir como linha com marcadores
-    line=dict(color='firebrick', width=3, dash='dash'),  # Estilo da linha
-    marker=dict(size=10)  # Tamanho dos marcadores
-))
-
-# Configurar layout do gráfico
-fig.update_layout(
-    title='Comparativo entre Resultados 2023 e Metas do PEE-PE',
-    xaxis_title='Indicador',
-    yaxis_title='Percentual (%)',
-    yaxis=dict(range=[0, 105]),  # Intervalo do eixo Y
-    barmode='group',
-    height=500
+# Gráfico 1: Distribuição por Dependência Administrativa
+fig1 = px.pie(
+    df_filtrado, 
+    names="Dependência Administrativa", 
+    values=coluna_dados,
+    title=f"Distribuição de Matrículas por Dependência Administrativa",
+    color_discrete_sequence=px.colors.qualitative.Set3
 )
+st.plotly_chart(fig1, use_container_width=True)
 
-# Exibir o gráfico
-st.plotly_chart(fig, use_container_width=True)
-
-
-###############################################################
-# SEÇÃO 6: DISTRIBUIÇÃO POR FAIXA PERCENTUAL
-###############################################################
-
-st.header("Distribuição dos Municípios por Faixa Percentual")
-
-# Definir paleta de cores para as categorias
-paleta_categorias = {
-    'Educação Infantil': '#3498db',
-    'Ensino Fundamental': '#2ecc71',
-    'Tempo Integral': '#e74c3c',
-    'Formação Docente': '#9b59b6'
-}
-
-# Filtrar dados de distribuição conforme indicadores selecionados
-df_dist_filtered = df_dist_long[df_dist_long['Indicador'].isin(indicador_selecionado)]
-
-# Criar colunas para controlar a largura (proporção 1:10:1)
-col1, col2, col3 = st.columns([1, 10, 1])
-
-# Para cada indicador selecionado, criar um gráfico separado
-for indicador in indicador_selecionado:
-    # Filtrar dados para este indicador específico
-    df_indicador = df_dist_filtered[df_dist_filtered['Indicador'] == indicador]
+# Gráfico 2: Dependendo da visualização
+if tipo_visualizacao == "Estado":
+    # Para visualização estadual, mostrar comparação entre diferentes anos
+    anos_df = df[df["Dependência Administrativa"].isin(dependencia_selecionada)]
+    dados_anos = []
     
-    # Determinar a cor com base na categoria do indicador
-    categoria_do_indicador = df_indicadores[df_indicadores['Indicadores'] == indicador]['Categoria'].iloc[0]
-    cor_do_indicador = paleta_categorias.get(categoria_do_indicador, '#3498db')  # cor padrão se não encontrar
+    for ano in anos_disponiveis:
+        ano_data = anos_df[anos_df["Ano do Censo"] == ano]
+        if not ano_data.empty and coluna_dados in ano_data.columns:
+            dados_anos.append({
+                "Ano": ano,
+                "Matrículas": ano_data[coluna_dados].sum()
+            })
     
-    # Criar gráfico de barras horizontais para este indicador
-    fig_ind = go.Figure()
+    if dados_anos:
+        anos_chart_df = pd.DataFrame(dados_anos)
+        fig2 = px.line(
+            anos_chart_df, 
+            x="Ano", 
+            y="Matrículas", 
+            title="Evolução de Matrículas ao Longo dos Anos",
+            markers=True
+        )
+        st.plotly_chart(fig2, use_container_width=True)
     
-    # Adicionar barras horizontais
-    fig_ind.add_trace(go.Bar(
-        y=df_indicador['Faixas Percentuais'],
-        x=df_indicador['Quantidade de Municípios'],
-        orientation='h',  # Orientação horizontal
-        marker_color=cor_do_indicador,
-        text=df_indicador['Quantidade de Municípios'],  # Mostrar valor em cada barra
-        textposition='outside',  # Texto fora da barra
-        name=indicador
-    ))
+elif tipo_visualizacao == "Município":
+    # Para visualização municipal, mostrar top 10 municípios
+    top_municipios = df_filtrado.nlargest(10, coluna_dados)
+    if not top_municipios.empty:
+        fig2 = px.bar(
+            top_municipios, 
+            x="Nome do Município", 
+            y=coluna_dados,
+            title="Top 10 Municípios por Número de Matrículas",
+            color_discrete_sequence=px.colors.qualitative.Set2
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+        
+else:  # Escola
+    # Para visualização por escola, mostrar top 10 escolas
+    top_escolas = df_filtrado.nlargest(10, coluna_dados)
+    if not top_escolas.empty:
+        # Criar nomes mais curtos para as escolas no gráfico
+        top_escolas["Nome Curto"] = top_escolas["Nome da Escola"].apply(
+            lambda x: x[:30] + "..." if len(x) > 30 else x
+        )
+        fig2 = px.bar(
+            top_escolas, 
+            x="Nome Curto", 
+            y=coluna_dados,
+            title="Top 10 Escolas por Número de Matrículas",
+            color_discrete_sequence=px.colors.qualitative.Set1
+        )
+        fig2.update_xaxes(tickangle=45)
+        st.plotly_chart(fig2, use_container_width=True)
+
+# Tabela de dados
+st.markdown("## Dados Detalhados")
+
+if tipo_visualizacao == "Escola":
+    colunas_tabela = ["Nome da Escola", "Dependência Administrativa", "Nome do Município"]
+elif tipo_visualizacao == "Município":
+    colunas_tabela = ["Nome do Município", "Dependência Administrativa"]
+else:  # Estado
+    colunas_tabela = ["UF", "Dependência Administrativa"]
+
+# Adicionar a coluna de dados selecionada
+colunas_tabela.append(coluna_dados)
+
+# Verificar se todas as colunas existem
+colunas_existentes = [col for col in colunas_tabela if col in df_filtrado.columns]
+if set(colunas_existentes) != set(colunas_tabela):
+    st.warning(f"Algumas colunas não estão disponíveis para exibição na tabela: {set(colunas_tabela) - set(colunas_existentes)}")
+    # Remover colunas inexistentes da lista
+    colunas_tabela = colunas_existentes
+
+# Garantir que a coluna de dados seja numérica para ordenação correta
+df_filtrado_tabela = df_filtrado.copy()
+if coluna_dados in df_filtrado_tabela.columns:
+    # Converter para numérico, tratando valores não numéricos como NaN
+    df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
     
-    # Configurar layout
-    fig_ind.update_layout(
-        title=f'Distribuição dos Municípios por Faixa - Indicador {indicador}',
-        yaxis_title='Faixa Percentual',
-        xaxis_title='Número de Municípios',
-        height=400,
-        width=900,  # Largura explícita
-        margin=dict(l=20, r=20, t=50, b=20),
-        yaxis={'categoryorder': 'array', 
-               'categoryarray': df_distribuicao['Faixas Percentuais'].tolist()[::-1]}  # Inverter ordem
-    )
-    
-    # Exibir o gráfico na coluna do meio
-    with col2:
-        st.plotly_chart(fig_ind, use_container_width=True)
+    # Exibir a tabela com as colunas existentes
+    tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
+else:
+    # Se a coluna não existir, exibir sem ordenação
+    tabela_dados = df_filtrado_tabela[colunas_existentes]
+st.dataframe(tabela_dados, use_container_width=True)
 
-
-###############################################################
-# SEÇÃO 7: HEATMAP DE DISTRIBUIÇÃO
-###############################################################
-
-st.subheader("Heatmap de Distribuição")
-
-# Preparar dados para o heatmap (transformar em matriz)
-pivot_data = df_dist_filtered.pivot(
-    index='Indicador',
-    columns='Faixas Percentuais',
-    values='Quantidade de Municípios'
-).fillna(0)  # Preencher valores ausentes com 0
-
-# Criar heatmap
-fig_heatmap = px.imshow(
-    pivot_data,
-    labels=dict(x="Faixa Percentual", y="Indicador", color="Número de Municípios"),
-    x=pivot_data.columns,
-    y=pivot_data.index,
-    color_continuous_scale="Viridis",  # Escala de cores
-    aspect="auto",
-    text_auto=True  # Mostrar valores nas células
-)
-
-# Ajustar layout
-fig_heatmap.update_layout(
-    height=400,
-    xaxis={'side': 'bottom'}
-)
-
-# Exibir o heatmap
-st.plotly_chart(fig_heatmap, use_container_width=True)
-
-
-###############################################################
-# SEÇÃO 8: ANÁLISE POR CATEGORIA
-###############################################################
-
-st.header("Análise por Categoria")
-
-# Criar DataFrame para estatísticas por categoria
-stats_por_categoria = pd.DataFrame()
-stats_por_categoria['Categoria'] = df_indicadores['Categoria'].unique()
-
-# Calcular as estatísticas para cada categoria
-for categoria in stats_por_categoria['Categoria']:
-    # Filtrar dados para esta categoria
-    df_cat = df_indicadores[df_indicadores['Categoria'] == categoria]
-
-    # Média dos resultados
-    media_resultado = df_cat['Resultado 2023 (média)'].mean()
-
-    # Média das metas
-    media_meta = df_cat['Meta PEE-PE'].mean()
-
-    # Gap médio
-    gap_medio = media_meta - media_resultado
-
-    # Percentual de cumprimento
-    percentual_cumprimento = (media_resultado / media_meta * 100) if media_meta > 0 else 0
-
-    # Adicionar estatísticas ao dataframe
-    stats_por_categoria.loc[
-        stats_por_categoria['Categoria'] == categoria, 'Média dos Resultados'] = f"{media_resultado:.1f}%"
-    stats_por_categoria.loc[
-        stats_por_categoria['Categoria'] == categoria, 'Média das Metas'] = f"{media_meta:.1f}%"
-    stats_por_categoria.loc[
-        stats_por_categoria['Categoria'] == categoria, 'Gap Médio'] = f"{gap_medio:.1f}%"
-    stats_por_categoria.loc[
-        stats_por_categoria['Categoria'] == categoria, '% de Cumprimento'] = f"{percentual_cumprimento:.1f}%"
-
-# Exibir tabela de estatísticas
-st.dataframe(stats_por_categoria, use_container_width=True)
-
-
-###############################################################
-# SEÇÃO 9: GRÁFICO DE RADAR POR CATEGORIA
-###############################################################
-
-# A seção 9 (Gráfico de Radar por Categoria) foi removida conforme solicitado
-
-
-###############################################################
-# SEÇÃO 10: EXPORTAÇÃO E DOWNLOAD
-###############################################################
-
-# Informações sobre exportação para o Canva
-st.header("Exportar Visualizações para o Canva")
-
-st.info("""
-Para usar essas visualizações no Canva:
-1. Capture os gráficos usando o botão de download em cada visualização (três pontos no canto superior direito)
-2. Salve as imagens com boa resolução
-3. Importe-as no Canva para criar sua apresentação final
-""")
-
-# Opção para download dos dados processados
-st.subheader("Download dos Dados Processados")
-csv_processed = df_indicadores.to_csv(index=False).encode('utf-8')
-st.download_button(
-    "📥 Download dos dados processados (CSV)",
-    csv_processed,
-    "indicadores_processados.csv",
-    "text/csv",
-    key='download-csv'
-)
-
-# Rodapé
+# Rodapé com informações adicionais
 st.markdown("---")
-st.markdown("Dashboard desenvolvida para análise dos indicadores educacionais de Pernambuco")
+st.markdown("**Nota:** Os dados são provenientes do Censo Escolar. Os traços (-) indicam ausência de dados.")
