@@ -213,7 +213,7 @@ else:
         coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
 
 # Título principal
-st.title(f"Dashboard de Matrículas - PNE")
+st.title(f"Dashboard de Matrículas - Inep")
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
 # Mostrar informações sobre o filtro selecionado
