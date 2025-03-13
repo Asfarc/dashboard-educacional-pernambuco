@@ -64,6 +64,9 @@ def criar_mapeamento_colunas():
     Esse mapeamento inclui a coluna principal, subetapas e séries, facilitando a seleção
     dos dados conforme os filtros do usuário.
     """
+    # Cria um dicionário de correspondência insensível a maiúsculas/minúsculas
+    colunas_map = {col.lower().strip(): col for col in dataframe.columns}
+    
     mapeamento = {
         "Educação Infantil": {
             "coluna_principal": "Número de Matrículas da Educação Infantil",
@@ -100,7 +103,7 @@ def criar_mapeamento_colunas():
             "subetapas": {
                 "Propedêutico": "Número de Matrículas do Ensino Médio - Propedêutico",
                 "Curso Técnico Integrado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional",
-                "Normal/Magistério": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério"
+                "Normal/Magistério": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério"
             },
             "series": {
                 "Propedêutico": {
@@ -118,10 +121,10 @@ def criar_mapeamento_colunas():
                     "Não Seriado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - Não Seriado"
                 },
                 "Normal/Magistério": {
-                    "1ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 1º ano/1ª Série",
-                    "2ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 2º ano/2ª Série",
-                    "3ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 3º ano/3ª Série",
-                    "4ª Série": "Número de Matrículas do Ensino Médio -  Modalidade Normal/Magistério - 4º ano/4ª Série"
+                    "1ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 1º ano/1ª Série",
+                    "2ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 2º ano/2ª Série",
+                    "3ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 3º ano/3ª Série",
+                    "4ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 4º ano/4ª Série"
                 }
             }
         },
@@ -186,13 +189,13 @@ else:
     df = estado_df
 
 # Filtro do Ano
-anos_disponiveis = sorted(df["Ano do Censo"].unique())
+anos_disponiveis = sorted(df["ANO"].unique())
 ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
 
-# Filtro da Dependência Administrativa
-dependencias_disponiveis = sorted(df["Dependência Administrativa"].unique())
+# Filtro da DEPENDENCIA ADMINISTRATIVA
+dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
 dependencia_selecionada = st.sidebar.multiselect(
-    "Dependência Administrativa:",
+    "DEPENDENCIA ADMINISTRATIVA:",
     dependencias_disponiveis,
     default=dependencias_disponiveis
 )
@@ -225,10 +228,10 @@ else:
 # -------------------------------
 # Aplicação dos Filtros nos Dados
 # -------------------------------
-df_filtrado = df[df["Ano do Censo"] == ano_selecionado]
+df_filtrado = df[df["ANO"] == ano_selecionado]
 
 if dependencia_selecionada:
-    df_filtrado = df_filtrado[df_filtrado["Dependência Administrativa"].isin(dependencia_selecionada)]
+    df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
 
 # Determinar a coluna de dados com base na etapa, subetapa e série selecionadas
 if subetapa_selecionada == "Todas":
@@ -282,7 +285,7 @@ with col2:
         else:
             st.metric("Média de Matrículas por Escola", "-")
     else:
-        media_por_dependencia = df_filtrado.groupby("Dependência Administrativa")[coluna_dados].mean()
+        media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
         if not media_por_dependencia.empty:
             media_geral = media_por_dependencia.mean()
             st.metric("Média de Matrículas", formatar_numero(media_geral))
@@ -305,12 +308,12 @@ with col3:
 # -------------------------------
 st.markdown("## Análise Gráfica")
 
-# Gráfico 1: Distribuição de Matrículas por Dependência Administrativa (Gráfico de Pizza)
+# Gráfico 1: Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA (Gráfico de Pizza)
 fig1 = px.pie(
     df_filtrado, 
-    names="Dependência Administrativa", 
+    names="DEPENDENCIA ADMINISTRATIVA", 
     values=coluna_dados,
-    title="Distribuição de Matrículas por Dependência Administrativa",
+    title="Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA",
     color_discrete_sequence=px.colors.qualitative.Set3
 )
 st.plotly_chart(fig1, use_container_width=True)
@@ -318,10 +321,10 @@ st.plotly_chart(fig1, use_container_width=True)
 # Gráfico 2: Varia conforme o nível de visualização
 if tipo_visualizacao == "Estado":
     # Para visualização estadual, comparar matrículas entre diferentes anos
-    anos_df = df[df["Dependência Administrativa"].isin(dependencia_selecionada)]
+    anos_df = df[df["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
     dados_anos = []
     for ano in anos_disponiveis:
-        ano_data = anos_df[anos_df["Ano do Censo"] == ano]
+        ano_data = anos_df[anos_df["ANO"] == ano]
         if not ano_data.empty and coluna_dados in ano_data.columns:
             dados_anos.append({
                 "Ano": ano,
@@ -344,7 +347,7 @@ elif tipo_visualizacao == "Município":
     if not top_municipios.empty:
         fig2 = px.bar(
             top_municipios, 
-            x="Nome do Município", 
+            x="NOME DO MUNICIPIO", 
             y=coluna_dados,
             title="Top 10 Municípios por Número de Matrículas",
             color_discrete_sequence=px.colors.qualitative.Set2
@@ -355,7 +358,7 @@ else:  # Visualização por Escola
     top_escolas = df_filtrado.nlargest(10, coluna_dados)
     if not top_escolas.empty:
         # Gerar nomes curtos para facilitar a visualização no gráfico
-        top_escolas["Nome Curto"] = top_escolas["Nome da Escola"].apply(
+        top_escolas["Nome Curto"] = top_escolas["NOME DA ESCOLA"].apply(
             lambda x: x[:30] + "..." if len(x) > 30 else x
         )
         fig2 = px.bar(
@@ -375,11 +378,11 @@ st.markdown("## Dados Detalhados")
 
 # Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
 if tipo_visualizacao == "Escola":
-    colunas_tabela = ["Nome da Escola", "Dependência Administrativa", "Nome do Município"]
+    colunas_tabela = ["NOME DA ESCOLA", "DEPENDENCIA ADMINISTRATIVA", "NOME DO MUNICIPIO"]
 elif tipo_visualizacao == "Município":
-    colunas_tabela = ["Nome do Município", "Dependência Administrativa"]
+    colunas_tabela = ["NOME DO MUNICIPIO", "DEPENDENCIA ADMINISTRATIVA"]
 else:  # Estado
-    colunas_tabela = ["UF", "Dependência Administrativa"]
+    colunas_tabela = ["NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 
 # Adiciona a coluna de dados selecionada ao final
 colunas_tabela.append(coluna_dados)
