@@ -53,19 +53,6 @@ def carregar_dados():
         st.error(f"Erro ao carregar os dados: {e}")
         st.info("Verifique se os arquivos Parquet estão disponíveis no repositório.")
         st.stop()
-        
-# -------------------------------
-# Carregamento de Dados
-# -------------------------------
-try:
-    escolas_df, estado_df, municipio_df = carregar_dados()
-except Exception as e:
-    st.error(f"Erro ao carregar os dados: {e}")
-    st.stop()
-
-# ======================================
-# CONFIGURAÇÃO DOS DADOS EDUCACIONAIS
-# ======================================
 
 def criar_mapeamento_colunas(df):
     """
@@ -79,96 +66,119 @@ def criar_mapeamento_colunas(df):
     # Cria um dicionário de correspondência insensível a maiúsculas/minúsculas
     colunas_map = {col.lower().strip(): col for col in df.columns}
     
+    # Função auxiliar para verificar e obter o nome correto da coluna
+    def obter_coluna_real(nome_padrao):
+        # Verifica se a coluna existe exatamente como foi especificada
+        if nome_padrao in df.columns:
+            return nome_padrao
+            
+        # Verifica se existe uma versão case-insensitive da coluna
+        nome_normalizado = nome_padrao.lower().strip()
+        if nome_normalizado in colunas_map:
+            return colunas_map[nome_normalizado]
+            
+        # Se não encontrar, retorna o nome original
+        return nome_padrao
+    
     mapeamento = {
         "Educação Infantil": {
-            "coluna_principal": "Número de Matrículas da Educação Infantil",
+            "coluna_principal": obter_coluna_real("Número de Matrículas da Educação Infantil"),
             "subetapas": {
-                "Creche": "Número de Matrículas da Educação Infantil - Creche",
-                "Pré-Escola": "Número de Matrículas da Educação Infantil - Pré-Escola"
+                "Creche": obter_coluna_real("Número de Matrículas da Educação Infantil - Creche"),
+                "Pré-Escola": obter_coluna_real("Número de Matrículas da Educação Infantil - Pré-Escola")
             },
             "series": {}
         },
         "Ensino Fundamental": {
-            "coluna_principal": "Número de Matrículas do Ensino Fundamental",
+            "coluna_principal": obter_coluna_real("Número de Matrículas do Ensino Fundamental"),
             "subetapas": {
-                "Anos Iniciais": "Número de Matrículas do Ensino Fundamental - Anos Iniciais",
-                "Anos Finais": "Número de Matrículas do Ensino Fundamental - Anos Finais"
+                "Anos Iniciais": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Iniciais"),
+                "Anos Finais": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Finais")
             },
             "series": {
                 "Anos Iniciais": {
-                    "1º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 1º Ano",
-                    "2º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 2º Ano",
-                    "3º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 3º Ano",
-                    "4º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 4º Ano",
-                    "5º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 5º Ano"
+                    "1º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Iniciais - 1º Ano"),
+                    "2º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Iniciais - 2º Ano"),
+                    "3º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Iniciais - 3º Ano"),
+                    "4º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Iniciais - 4º Ano"),
+                    "5º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Iniciais - 5º Ano")
                 },
                 "Anos Finais": {
-                    "6º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 6º Ano",
-                    "7º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 7º Ano",
-                    "8º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 8º Ano",
-                    "9º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 9º Ano"
+                    "6º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Finais - 6º Ano"),
+                    "7º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Finais - 7º Ano"),
+                    "8º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Finais - 8º Ano"),
+                    "9º Ano": obter_coluna_real("Número de Matrículas do Ensino Fundamental - Anos Finais - 9º Ano")
                 }
             }
         },
         "Ensino Médio": {
-            "coluna_principal": "Número de Matrículas do Ensino Médio",
+            "coluna_principal": obter_coluna_real("Número de Matrículas do Ensino Médio"),
             "subetapas": {
-                "Propedêutico": "Número de Matrículas do Ensino Médio - Propedêutico",
-                "Curso Técnico Integrado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional",
-                "Normal/Magistério": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério"
+                "Propedêutico": obter_coluna_real("Número de Matrículas do Ensino Médio - Propedêutico"),
+                "Curso Técnico Integrado": obter_coluna_real("Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional"),
+                "Normal/Magistério": obter_coluna_real("Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério")
             },
             "series": {
                 "Propedêutico": {
-                    "1ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 1º ano/1ª Série",
-                    "2ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 2º ano/2ª Série",
-                    "3ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 3º ano/3ª Série",
-                    "4ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 4º ano/4ª Série",
-                    "Não Seriado": "Número de Matrículas do Ensino Médio - Propedêutico - Não Seriado"
+                    "1ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Propedêutico - 1º ano/1ª Série"),
+                    "2ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Propedêutico - 2º ano/2ª Série"),
+                    "3ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Propedêutico - 3º ano/3ª Série"),
+                    "4ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Propedêutico - 4º ano/4ª Série"),
+                    "Não Seriado": obter_coluna_real("Número de Matrículas do Ensino Médio - Propedêutico - Não Seriado")
                 },
                 "Curso Técnico Integrado": {
-                    "1ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 1º ano/1ª Série",
-                    "2ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 2º ano/2ª Série",
-                    "3ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 3º ano/3ª Série",
-                    "4ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 4º ano/4ª Série",
-                    "Não Seriado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - Não Seriado"
+                    "1ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 1º ano/1ª Série"),
+                    "2ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 2º ano/2ª Série"),
+                    "3ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 3º ano/3ª Série"),
+                    "4ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 4º ano/4ª Série"),
+                    "Não Seriado": obter_coluna_real("Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - Não Seriado")
                 },
                 "Normal/Magistério": {
-                    "1ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 1º ano/1ª Série",
-                    "2ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 2º ano/2ª Série",
-                    "3ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 3º ano/3ª Série",
-                    "4ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 4º ano/4ª Série"
+                    "1ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 1º ano/1ª Série"),
+                    "2ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 2º ano/2ª Série"),
+                    "3ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 3º ano/3ª Série"),
+                    "4ª Série": obter_coluna_real("Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 4º ano/4ª Série")
                 }
             }
         },
         "EJA": {
-            "coluna_principal": "Número de Matrículas da Educação de Jovens e Adultos (EJA)",
+            "coluna_principal": obter_coluna_real("Número de Matrículas da Educação de Jovens e Adultos (EJA)"),
             "subetapas": {
-                "Ensino Fundamental": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental",
-                "Ensino Médio": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Médio"
+                "Ensino Fundamental": obter_coluna_real("Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental"),
+                "Ensino Médio": obter_coluna_real("Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Médio")
             },
             "series": {
                 "Ensino Fundamental": {
-                    "Anos Iniciais": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Iniciais",
-                    "Anos Finais": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Finais"
+                    "Anos Iniciais": obter_coluna_real("Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Iniciais"),
+                    "Anos Finais": obter_coluna_real("Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Finais")
                 }
             }
         },
         "Educação Profissional": {
-            "coluna_principal": "Número de Matrículas da Educação Profissional",
+            "coluna_principal": obter_coluna_real("Número de Matrículas da Educação Profissional"),
             "subetapas": {
-                "Técnica": "Número de Matrículas da Educação Profissional Técnica",
-                "Curso FIC": "Número de Matrículas da Educação Profissional - Curso FIC Concomitante"
+                "Técnica": obter_coluna_real("Número de Matrículas da Educação Profissional Técnica"),
+                "Curso FIC": obter_coluna_real("Número de Matrículas da Educação Profissional - Curso FIC Concomitante")
             },
             "series": {
                 "Técnica": {
-                    "Concomitante": "Número de Matrículas da Educação Profissional Técnica - Curso Técnico Concomitante",
-                    "Subsequente": "Número de Matrículas da Educação Profissional Técnica - Curso Técnico Subsequente"
+                    "Concomitante": obter_coluna_real("Número de Matrículas da Educação Profissional Técnica - Curso Técnico Concomitante"),
+                    "Subsequente": obter_coluna_real("Número de Matrículas da Educação Profissional Técnica - Curso Técnico Subsequente")
                 }
             }
         }
     }
     
     return mapeamento
+
+# -------------------------------
+# Carregamento de Dados
+# -------------------------------
+try:
+    escolas_df, estado_df, municipio_df = carregar_dados()
+except Exception as e:
+    st.error(f"Erro ao carregar os dados: {e}")
+    st.stop()
 
 # Primeira seleção do DataFrame
 tipo_visualizacao = "Estado"  # Valor padrão
@@ -198,16 +208,26 @@ else:
     df = estado_df
 
 # Filtro do Ano
-anos_disponiveis = sorted(df["ANO"].unique())
-ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
+if "ANO" in df.columns:
+    anos_disponiveis = sorted(df["ANO"].unique())
+    ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
+    df_filtrado = df[df["ANO"] == ano_selecionado]
+else:
+    st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
+    st.stop()
 
 # Filtro da DEPENDENCIA ADMINISTRATIVA
-dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
-dependencia_selecionada = st.sidebar.multiselect(
-    "DEPENDENCIA ADMINISTRATIVA:",
-    dependencias_disponiveis,
-    default=dependencias_disponiveis
-)
+if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
+    dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
+    dependencia_selecionada = st.sidebar.multiselect(
+        "DEPENDENCIA ADMINISTRATIVA:",
+        dependencias_disponiveis,
+        default=dependencias_disponiveis
+    )
+    if dependencia_selecionada:
+        df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
+else:
+    st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
 # Filtro da Etapa de Ensino
 etapas_disponiveis = list(mapeamento_colunas.keys())
@@ -216,16 +236,26 @@ etapa_selecionada = st.sidebar.selectbox(
     etapas_disponiveis
 )
 
+# Verificação se a etapa está no mapeamento
+if etapa_selecionada not in mapeamento_colunas:
+    st.error(f"A etapa '{etapa_selecionada}' não foi encontrada no mapeamento de colunas.")
+    st.stop()
+
 # Filtro da Subetapa (varia de acordo com a etapa selecionada)
-subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
-subetapa_selecionada = st.sidebar.selectbox(
-    "Subetapa:",
-    ["Todas"] + subetapas_disponiveis
-)
+if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[etapa_selecionada]["subetapas"]:
+    subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
+    subetapa_selecionada = st.sidebar.selectbox(
+        "Subetapa:",
+        ["Todas"] + subetapas_disponiveis
+    )
+else:
+    subetapa_selecionada = "Todas"
 
 # Filtro para a Série, se aplicável à subetapa selecionada
 series_disponiveis = []
-if subetapa_selecionada != "Todas" and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]:
+if (subetapa_selecionada != "Todas" and 
+    "series" in mapeamento_colunas[etapa_selecionada] and 
+    subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]):
     series_disponiveis = list(mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada].keys())
     serie_selecionada = st.sidebar.selectbox(
         "Série:",
@@ -235,23 +265,26 @@ else:
     serie_selecionada = "Todas"
 
 # -------------------------------
-# Aplicação dos Filtros nos Dados
+# Determinação da Coluna de Dados
 # -------------------------------
-df_filtrado = df[df["ANO"] == ano_selecionado]
-
-if dependencia_selecionada:
-    df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
-
-# Determinar a coluna de dados com base na etapa, subetapa e série selecionadas
-if subetapa_selecionada == "Todas":
-    coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
-elif serie_selecionada == "Todas" or subetapa_selecionada not in mapeamento_colunas[etapa_selecionada]["series"]:
-    coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
-else:
-    if serie_selecionada in mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada]:
-        coluna_dados = mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada][serie_selecionada]
-    else:
+try:
+    if subetapa_selecionada == "Todas":
+        # Se nenhuma subetapa for selecionada, use a coluna principal da etapa
+        coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
+    elif serie_selecionada == "Todas" or "series" not in mapeamento_colunas[etapa_selecionada] or subetapa_selecionada not in mapeamento_colunas[etapa_selecionada].get("series", {}):
+        # Se nenhuma série for selecionada ou a subetapa não tiver séries, use a coluna da subetapa
         coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
+    else:
+        # Se uma série específica for selecionada, verifique se ela existe
+        if serie_selecionada in mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada]:
+            coluna_dados = mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada][serie_selecionada]
+        else:
+            # Caso contrário, use a coluna da subetapa
+            coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
+except KeyError as e:
+    st.error(f"Erro ao acessar as informações de mapeamento: {e}")
+    # Fallback para a coluna principal se houver erro
+    coluna_dados = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais do Dashboard
@@ -267,13 +300,22 @@ if subetapa_selecionada != "Todas":
         filtro_texto += f" | **Série:** {serie_selecionada}"
 st.markdown(filtro_texto)
 
-# Verifica se a coluna de dados existe; se não, usa a coluna principal
+# Verifica se a coluna de dados existe; se não, tenta encontrar uma coluna similar
 if coluna_dados not in df_filtrado.columns:
-    st.warning(f"A coluna {coluna_dados} não está disponível nos dados.")
-    coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
-    if coluna_dados not in df_filtrado.columns:
-        st.error("Não foi possível encontrar dados para a etapa selecionada.")
-        st.stop()
+    # Tenta verificar se há uma versão case-insensitive da coluna
+    coluna_normalizada = coluna_dados.lower().strip()
+    colunas_normalizadas = {col.lower().strip(): col for col in df_filtrado.columns}
+    
+    if coluna_normalizada in colunas_normalizadas:
+        coluna_dados_original = coluna_dados
+        coluna_dados = colunas_normalizadas[coluna_normalizada]
+        st.info(f"Usando coluna '{coluna_dados}' em vez de '{coluna_dados_original}'")
+    else:
+        st.warning(f"A coluna {coluna_dados} não está disponível nos dados.")
+        coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
+        if coluna_dados not in df_filtrado.columns:
+            st.error("Não foi possível encontrar dados para a etapa selecionada.")
+            st.stop()
 
 # -------------------------------
 # Seção de Indicadores (KPIs)
@@ -318,67 +360,102 @@ with col3:
 st.markdown("## Análise Gráfica")
 
 # Gráfico 1: Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA (Gráfico de Pizza)
-fig1 = px.pie(
-    df_filtrado, 
-    names="DEPENDENCIA ADMINISTRATIVA", 
-    values=coluna_dados,
-    title="Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA",
-    color_discrete_sequence=px.colors.qualitative.Set3
-)
-st.plotly_chart(fig1, use_container_width=True)
+if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+    fig1 = px.pie(
+        df_filtrado, 
+        names="DEPENDENCIA ADMINISTRATIVA", 
+        values=coluna_dados,
+        title="Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA",
+        color_discrete_sequence=px.colors.qualitative.Set3
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+else:
+    st.warning("Não foi possível criar o gráfico de distribuição por DEPENDENCIA ADMINISTRATIVA")
 
 # Gráfico 2: Varia conforme o nível de visualização
 if tipo_visualizacao == "Estado":
     # Para visualização estadual, comparar matrículas entre diferentes anos
-    anos_df = df[df["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
-    dados_anos = []
-    for ano in anos_disponiveis:
-        ano_data = anos_df[anos_df["ANO"] == ano]
-        if not ano_data.empty and coluna_dados in ano_data.columns:
-            dados_anos.append({
-                "Ano": ano,
-                "Matrículas": ano_data[coluna_dados].sum()
-            })
-    if dados_anos:
-        anos_chart_df = pd.DataFrame(dados_anos)
-        fig2 = px.line(
-            anos_chart_df, 
-            x="Ano", 
-            y="Matrículas", 
-            title="Evolução de Matrículas ao Longo dos Anos",
-            markers=True
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+    try:
+        # Verificamos se temos dependencia_selecionada definida
+        if "DEPENDENCIA ADMINISTRATIVA" in df.columns and dependencia_selecionada:
+            anos_df = df[df["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
+        else:
+            anos_df = df
+            
+        dados_anos = []
+        for ano in anos_disponiveis:
+            ano_data = anos_df[anos_df["ANO"] == ano]
+            if not ano_data.empty and coluna_dados in ano_data.columns:
+                dados_anos.append({
+                    "Ano": ano,
+                    "Matrículas": ano_data[coluna_dados].sum()
+                })
+        if dados_anos:
+            anos_chart_df = pd.DataFrame(dados_anos)
+            fig2 = px.line(
+                anos_chart_df, 
+                x="Ano", 
+                y="Matrículas", 
+                title="Evolução de Matrículas ao Longo dos Anos",
+                markers=True
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("Não há dados suficientes para criar o gráfico de evolução ao longo dos anos.")
+    except Exception as e:
+        st.warning(f"Não foi possível criar o gráfico de evolução: {e}")
     
 elif tipo_visualizacao == "Município":
     # Para visualização municipal, mostrar os 10 municípios com maior número de matrículas
-    top_municipios = df_filtrado.nlargest(10, coluna_dados)
-    if not top_municipios.empty:
-        fig2 = px.bar(
-            top_municipios, 
-            x="NOME DO MUNICIPIO", 
-            y=coluna_dados,
-            title="Top 10 Municípios por Número de Matrículas",
-            color_discrete_sequence=px.colors.qualitative.Set2
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+    try:
+        if "NOME DO MUNICIPIO" in df_filtrado.columns:
+            # Remover NaN antes de usar nlargest
+            df_para_ranking = df_filtrado[[coluna_dados, "NOME DO MUNICIPIO"]].dropna()
+            top_municipios = df_para_ranking.nlargest(10, coluna_dados)
+            
+            if not top_municipios.empty:
+                fig2 = px.bar(
+                    top_municipios, 
+                    x="NOME DO MUNICIPIO", 
+                    y=coluna_dados,
+                    title="Top 10 Municípios por Número de Matrículas",
+                    color_discrete_sequence=px.colors.qualitative.Set2
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.info("Não há dados suficientes para criar o ranking de municípios.")
+        else:
+            st.warning("A coluna 'NOME DO MUNICIPIO' não está disponível para criar o ranking.")
+    except Exception as e:
+        st.warning(f"Não foi possível criar o gráfico de municípios: {e}")
         
 else:  # Visualização por Escola
-    top_escolas = df_filtrado.nlargest(10, coluna_dados)
-    if not top_escolas.empty:
-        # Gerar nomes curtos para facilitar a visualização no gráfico
-        top_escolas["Nome Curto"] = top_escolas["NOME DA ESCOLA"].apply(
-            lambda x: x[:30] + "..." if len(x) > 30 else x
-        )
-        fig2 = px.bar(
-            top_escolas, 
-            x="Nome Curto", 
-            y=coluna_dados,
-            title="Top 10 Escolas por Número de Matrículas",
-            color_discrete_sequence=px.colors.qualitative.Set1
-        )
-        fig2.update_xaxes(tickangle=45)
-        st.plotly_chart(fig2, use_container_width=True)
+    try:
+        if "NOME DA ESCOLA" in df_filtrado.columns:
+            # Remover NaN antes de usar nlargest
+            df_para_ranking = df_filtrado[[coluna_dados, "NOME DA ESCOLA"]].dropna()
+            top_escolas = df_para_ranking.nlargest(10, coluna_dados)
+            
+            if not top_escolas.empty:
+                # Gerar nomes curtos para facilitar a visualização no gráfico
+                top_escolas["Nome Curto"] = top_escolas["NOME DA ESCOLA"].apply(
+                    lambda x: x[:30] + "..." if len(x) > 30 else x
+                )
+                fig2 = px.bar(
+                    top_escolas, 
+                    x="Nome Curto", 
+                    y=coluna_dados,
+                    title="Top 10 Escolas por Número de Matrículas",
+                    color_discrete_sequence=px.colors.qualitative.Set1
+                )
+                fig2.update_xaxes(tickangle=45)
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.info("Não há dados suficientes para criar o ranking de escolas.")
+        else:
+            st.warning("A coluna 'NOME DA ESCOLA' não está disponível para criar o ranking.")
+    except Exception as e:
+        st.warning(f"Não foi possível criar o gráfico de escolas: {e}")
 
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
