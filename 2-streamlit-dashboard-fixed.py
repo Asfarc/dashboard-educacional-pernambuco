@@ -484,10 +484,15 @@ df_filtrado_tabela = df_filtrado.copy()
 if coluna_dados in df_filtrado_tabela.columns:
     df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
     tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
+    
+    # Formatar a coluna numérica para exibição com separadores de milhar
+    tabela_exibicao = tabela_dados.copy()
+    tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(lambda x: formatar_numero(x) if pd.notnull(x) else "-")
+    
+    st.dataframe(tabela_exibicao, use_container_width=True)
 else:
     tabela_dados = df_filtrado_tabela[colunas_existentes]
-
-st.dataframe(tabela_dados, use_container_width=True)
+    st.dataframe(tabela_dados, use_container_width=True)
 
 # -------------------------------
 # Rodapé do Dashboard
