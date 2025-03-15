@@ -54,18 +54,30 @@ def carregar_dados():
         st.info("Verifique se os arquivos Parquet estão disponíveis no repositório.")
         st.stop()
         
+# -------------------------------
+# Carregamento de Dados
+# -------------------------------
+try:
+    escolas_df, estado_df, municipio_df = carregar_dados()
+except Exception as e:
+    st.error(f"Erro ao carregar os dados: {e}")
+    st.stop()
+
 # ======================================
 # CONFIGURAÇÃO DOS DADOS EDUCACIONAIS
 # ======================================
 
-def criar_mapeamento_colunas():
+def criar_mapeamento_colunas(df):
     """
     Cria um dicionário que mapeia as etapas de ensino para os nomes das colunas.
     Esse mapeamento inclui a coluna principal, subetapas e séries, facilitando a seleção
     dos dados conforme os filtros do usuário.
+    
+    Parâmetros:
+    df (DataFrame): DataFrame a ser usado como referência para verificar colunas existentes
     """
     # Cria um dicionário de correspondência insensível a maiúsculas/minúsculas
-    colunas_map = {col.lower().strip(): col for col in dataframe.columns}
+    colunas_map = {col.lower().strip(): col for col in df.columns}
     
     mapeamento = {
         "Educação Infantil": {
@@ -158,15 +170,12 @@ def criar_mapeamento_colunas():
     
     return mapeamento
 
-# -------------------------------
-# Carregamento de Dados e Mapeamento
-# -------------------------------
-try:
-    escolas_df, estado_df, municipio_df = carregar_dados()
-    mapeamento_colunas = criar_mapeamento_colunas()
-except Exception as e:
-    st.error(f"Erro ao carregar os dados: {e}")
-    st.stop()
+# Primeira seleção do DataFrame
+tipo_visualizacao = "Estado"  # Valor padrão
+df = estado_df  # DataFrame padrão para iniciar
+
+# Agora crie o mapeamento de colunas usando o DataFrame inicial
+mapeamento_colunas = criar_mapeamento_colunas(df)
 
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
