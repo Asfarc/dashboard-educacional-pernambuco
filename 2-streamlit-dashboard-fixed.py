@@ -445,41 +445,7 @@ st.info(f"Total de {len(tabela_dados)} registros encontrados.")
 tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
 
 with tab1:
-    # Adicionar filtros de busca
-    col1, col2 = st.columns(2)
-    
-    # Filtros para texto (nomes de localidades)
-    filtro_texto = None
-    colunas_localidade = [col for col in ["NOME DA UF", "NOME DO MUNICIPIO", "NOME DA ESCOLA"] if col in tabela_exibicao.columns]
-    if colunas_localidade:
-        with col1:
-            coluna_texto_selecionada = st.selectbox("Filtrar por localidade:", ["Nenhum"] + colunas_localidade)
-            if coluna_texto_selecionada != "Nenhum":
-                filtro_texto = st.text_input(f"Filtrar {coluna_texto_selecionada}:", "")
-    
-    # Filtros para códigos (numéricos)
-    filtro_codigo = None
-    colunas_codigo = [col for col in ["CODIGO DA UF", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA"] if col in tabela_exibicao.columns]
-    if colunas_codigo:
-        with col2:
-            coluna_codigo_selecionada = st.selectbox("Filtrar por código:", ["Nenhum"] + colunas_codigo)
-            if coluna_codigo_selecionada != "Nenhum":
-                filtro_codigo = st.text_input(f"Filtrar {coluna_codigo_selecionada}:", "")
-    
-    # Aplicar filtros
-    tabela_filtrada = tabela_exibicao.copy()
-    
-    if filtro_texto and coluna_texto_selecionada != "Nenhum":
-        tabela_filtrada = tabela_filtrada[
-            tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False, na=False)
-        ]
-    
-    if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
-        tabela_filtrada = tabela_filtrada[
-            tabela_filtrada[coluna_codigo_selecionada].astype(str).str.contains(filtro_codigo, na=False)
-        ]
-    
-    # Opções de paginação
+    # Opções de paginação primeiro (para saber quantos registros mostrar)
     st.write("### Configurações de exibição")
     col1, col2 = st.columns(2)
     
@@ -496,7 +462,53 @@ with tab1:
                 step=10
             )
         else:
-            registros_por_pagina = len(tabela_filtrada)
+            registros_por_pagina = len(tabela_exibicao)
+    
+    # Adicionar filtros de busca mais próximos da tabela e com largura reduzida
+    st.write("### Filtros da tabela")
+    
+    # Usar colunas com largura reduzida (20% da largura original, ou seja, 10% da tela cada)
+    col1, col2, col3, col4 = st.columns([1, 9, 1, 9])
+    
+    # Filtros para texto (nomes de localidades)
+    filtro_texto = None
+    colunas_localidade = [col for col in ["NOME DA UF", "NOME DO MUNICIPIO", "NOME DA ESCOLA"] if col in tabela_exibicao.columns]
+    if colunas_localidade:
+        with col1:
+            st.write("**Localidade:**")
+        with col2:
+            coluna_texto_selecionada = st.selectbox("", ["Nenhum"] + colunas_localidade, label_visibility="collapsed")
+            if coluna_texto_selecionada != "Nenhum":
+                filtro_texto = st.text_input("", placeholder=f"Filtrar {coluna_texto_selecionada}...", label_visibility="collapsed")
+    
+    # Filtros para códigos (numéricos)
+    filtro_codigo = None
+    colunas_codigo = [col for col in ["CODIGO DA UF", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA"] if col in tabela_exibicao.columns]
+    if colunas_codigo:
+        with col3:
+            st.write("**Código:**")
+        with col4:
+            coluna_codigo_selecionada = st.selectbox(" ", ["Nenhum"] + colunas_codigo, label_visibility="collapsed")
+            if coluna_codigo_selecionada != "Nenhum":
+                filtro_codigo = st.text_input(" ", placeholder=f"Filtrar {coluna_codigo_selecionada}...", label_visibility="collapsed")
+    
+    # Aplicar filtros
+    tabela_filtrada = tabela_exibicao.copy()
+    
+    # Filtros em tempo real conforme o usuário digita
+    if filtro_texto and coluna_texto_selecionada != "Nenhum":
+        # Para nomes, filtra a partir de 3 caracteres
+        if len(filtro_texto) >= 3:
+            tabela_filtrada = tabela_filtrada[
+                tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False, na=False)
+            ]
+    
+    if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
+        # Para códigos, filtra a partir do primeiro caractere
+        if len(filtro_codigo) >= 1:
+            tabela_filtrada = tabela_filtrada[
+                tabela_filtrada[coluna_codigo_selecionada].astype(str).str.contains(filtro_codigo, na=False)
+            ]
     
     # Cálculo de paginação
     total_paginas = max(1, (len(tabela_filtrada) - 1) // registros_por_pagina + 1)
@@ -519,15 +531,66 @@ with tab1:
     else:
         # Exibir todos os registros
         tabela_para_exibir = tabela_filtrada
+
+    # Calcular a soma para a última linha de totais
+    totais = {}
+    if coluna_dados in tabela_para_exibir.columns:
+        # Converter para numérico para cálculos corretos
+        valores_numericos = pd.to_numeric(tabela_dados[coluna_dados].loc[tabela_para_exibir.index], errors='coerce')
+        totais[coluna_dados] = formatar_numero(valores_numericos.sum())
     
-    # Exibir a tabela
-    st.dataframe(tabela_para_exibir, use_container_width=True)
+    if '% do Total' in tabela_para_exibir.columns:
+        totais['% do Total'] = "100.00%"
+    
+    # Adicionar linha de totais
+    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
+    
+    # Preencher as outras colunas com strings vazias
+    for col in tabela_para_exibir.columns:
+        if col not in totais:
+            linha_totais[col] = ""
+    
+    # Ordenar as colunas para corresponder à tabela principal
+    linha_totais = linha_totais[tabela_para_exibir.columns]
+    
+    # Combinar a tabela principal com a linha de totais
+    tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
+    
+    # Aplicar a centralização e outros estilos
+    def estilizar_tabela(df):
+        # Estilo para centralizar todas as células
+        return df.style \
+            .set_properties(**{'text-align': 'center'}) \
+            .set_table_styles([
+                {'selector': 'th', 'props': [('text-align', 'center')]},
+                {'selector': 'td', 'props': [('text-align', 'center')]},
+                # Destacar a linha de totais
+                {'selector': 'tr:last-child', 'props': [
+                    ('font-weight', 'bold'),
+                    ('background-color', '#f0f0f0')
+                ]}
+            ])
+    
+    # Exibir a tabela com altura ajustada para mostrar todos os registros sem rolagem
+    altura_tabela = min(len(tabela_com_totais) * 35 + 38, 600)  # 35px por linha + 38px para o cabeçalho, máximo de 600px
+    
+    # Exibir a tabela sem o índice (removendo a primeira coluna)
+    tabela_estilizada = estilizar_tabela(tabela_com_totais)
+    st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
+    
+    # Mostrar informação atualizada sobre total de registros e matrículas após filtros
+    st.markdown(f"""
+    <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold;">
+        Total após filtros: {len(tabela_para_exibir)} registros | {totais[coluna_dados]} matrículas
+    </div>
+    """, unsafe_allow_html=True)
     
     # Funções para exportar dados
     def converter_df_para_csv(df):
         return df.to_csv(index=False).encode('utf-8')
     
     def converter_df_para_excel(df):
+        import io
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Dados')
@@ -540,7 +603,7 @@ with tab1:
         # Download como CSV
         st.download_button(
             label="Download CSV",
-            data=converter_df_para_csv(tabela_dados),  # Usar a versão não formatada para preservar os números
+            data=converter_df_para_csv(tabela_dados.loc[tabela_para_exibir.index]),  # Apenas registros exibidos
             file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.csv',
             mime='text/csv',
         )
@@ -549,7 +612,7 @@ with tab1:
         # Download como Excel
         st.download_button(
             label="Download Excel",
-            data=converter_df_para_excel(tabela_dados),  # Usar a versão não formatada para preservar os números
+            data=converter_df_para_excel(tabela_dados.loc[tabela_para_exibir.index]),  # Apenas registros exibidos
             file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
@@ -573,7 +636,12 @@ with tab2:
                 ]
             })
             st.write("### Resumo Estatístico")
-            st.dataframe(resumo, use_container_width=True)
+            
+            # Estilizar a tabela de resumo
+            resumo_estilizado = resumo.style.set_properties(**{'text-align': 'center'}) \
+                .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
+            
+            st.dataframe(resumo_estilizado, use_container_width=True, hide_index=True)
         
         with col2:
             # Top 5 valores
@@ -608,7 +676,11 @@ with tab2:
                     lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
                 )
                 
-            st.dataframe(top5_exibir, use_container_width=True)
+            # Estilizar a tabela top5
+            top5_estilizado = top5_exibir.style.set_properties(**{'text-align': 'center'}) \
+                .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
+            
+            st.dataframe(top5_estilizado, use_container_width=True, hide_index=True)
 
 # -------------------------------
 # Rodapé do Dashboard
