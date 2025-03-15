@@ -4,6 +4,7 @@ import plotly.express as px
 import numpy as np
 import os
 from pathlib import Path
+import io
 
 # -------------------------------
 # Configuração Inicial da Página
@@ -371,7 +372,7 @@ if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
     st.plotly_chart(fig1, use_container_width=True)
 else:
     st.warning("Não foi possível criar o gráfico de distribuição por DEPENDENCIA ADMINISTRATIVA")
-    
+
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
 # -------------------------------
@@ -379,11 +380,11 @@ st.markdown("## Dados Detalhados")
 
 # Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
 if tipo_visualizacao == "Escola":
-    colunas_tabela = ["NOME DA ESCOLA", "DEPENDENCIA ADMINISTRATIVA", "NOME DO MUNICIPIO"]
+    colunas_tabela = ["CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 elif tipo_visualizacao == "Município":
-    colunas_tabela = ["NOME DO MUNICIPIO", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_tabela = ["CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 else:  # Estado
-    colunas_tabela = ["NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_tabela = ["CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 
 # Adiciona a coluna de dados selecionada ao final
 colunas_tabela.append(coluna_dados)
@@ -394,20 +395,220 @@ if set(colunas_existentes) != set(colunas_tabela):
     st.warning(f"Algumas colunas não estão disponíveis para exibição na tabela: {set(colunas_tabela) - set(colunas_existentes)}")
     colunas_tabela = colunas_existentes
 
+# Permitir que o usuário selecione colunas adicionais para exibir
+todas_colunas = [col for col in df_filtrado.columns if col not in colunas_tabela]
+if todas_colunas:
+    with st.expander("Selecionar colunas adicionais"):
+        colunas_adicionais = st.multiselect(
+            "Selecione colunas adicionais para exibir:",
+            todas_colunas
+        )
+        if colunas_adicionais:
+            colunas_tabela = colunas_tabela + colunas_adicionais
+
 # Converter a coluna de dados para numérico para ordenação correta
 df_filtrado_tabela = df_filtrado.copy()
 if coluna_dados in df_filtrado_tabela.columns:
+    # Converter para numérico para cálculos e ordenação
     df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
+    
+    # Adicionar coluna de percentual
+    total = df_filtrado_tabela[coluna_dados].sum()
+    if total > 0:
+        df_filtrado_tabela['% do Total'] = df_filtrado_tabela[coluna_dados].apply(
+            lambda x: (x/total)*100 if pd.notnull(x) else None
+        )
+        colunas_tabela.append('% do Total')
+    
+    # Ordenar a tabela pelos valores do coluna_dados em ordem decrescente
     tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
     
-    # Formatar a coluna numérica para exibição com separadores de milhar
+    # Criar versão formatada para exibição
     tabela_exibicao = tabela_dados.copy()
-    tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(lambda x: formatar_numero(x) if pd.notnull(x) else "-")
+    tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
+        lambda x: formatar_numero(x) if pd.notnull(x) else "-"
+    )
     
-    st.dataframe(tabela_exibicao, use_container_width=True)
+    # Formatar a coluna de percentual se existir
+    if '% do Total' in tabela_exibicao.columns:
+        tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
+            lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
+        )
 else:
     tabela_dados = df_filtrado_tabela[colunas_existentes]
-    st.dataframe(tabela_dados, use_container_width=True)
+    tabela_exibicao = tabela_dados.copy()
+
+# Adicionar informação sobre o total de registros
+st.info(f"Total de {len(tabela_dados)} registros encontrados.")
+
+# Criar abas para diferentes visualizações
+tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
+
+with tab1:
+    # Adicionar filtros de busca
+    col1, col2 = st.columns(2)
+    
+    # Filtros para texto (nomes de localidades)
+    filtro_texto = None
+    colunas_localidade = [col for col in ["NOME DA UF", "NOME DO MUNICIPIO", "NOME DA ESCOLA"] if col in tabela_exibicao.columns]
+    if colunas_localidade:
+        with col1:
+            coluna_texto_selecionada = st.selectbox("Filtrar por localidade:", ["Nenhum"] + colunas_localidade)
+            if coluna_texto_selecionada != "Nenhum":
+                filtro_texto = st.text_input(f"Filtrar {coluna_texto_selecionada}:", "")
+    
+    # Filtros para códigos (numéricos)
+    filtro_codigo = None
+    colunas_codigo = [col for col in ["CODIGO DA UF", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA"] if col in tabela_exibicao.columns]
+    if colunas_codigo:
+        with col2:
+            coluna_codigo_selecionada = st.selectbox("Filtrar por código:", ["Nenhum"] + colunas_codigo)
+            if coluna_codigo_selecionada != "Nenhum":
+                filtro_codigo = st.text_input(f"Filtrar {coluna_codigo_selecionada}:", "")
+    
+    # Aplicar filtros
+    tabela_filtrada = tabela_exibicao.copy()
+    
+    if filtro_texto and coluna_texto_selecionada != "Nenhum":
+        tabela_filtrada = tabela_filtrada[
+            tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False, na=False)
+        ]
+    
+    if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
+        tabela_filtrada = tabela_filtrada[
+            tabela_filtrada[coluna_codigo_selecionada].astype(str).str.contains(filtro_codigo, na=False)
+        ]
+    
+    # Opções de paginação
+    st.write("### Configurações de exibição")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
+    
+    with col2:
+        if not mostrar_todos:
+            registros_por_pagina = st.slider(
+                "Registros por página:", 
+                min_value=10, 
+                max_value=500, 
+                value=100, 
+                step=10
+            )
+        else:
+            registros_por_pagina = len(tabela_filtrada)
+    
+    # Cálculo de paginação
+    total_paginas = max(1, (len(tabela_filtrada) - 1) // registros_por_pagina + 1)
+    
+    if not mostrar_todos and total_paginas > 1:
+        pagina_atual = st.number_input(
+            "Página:", 
+            min_value=1, 
+            max_value=total_paginas, 
+            value=1
+        )
+        inicio = (pagina_atual - 1) * registros_por_pagina
+        fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
+        
+        # Informação da paginação
+        st.write(f"Exibindo registros {inicio+1} a {fim} de {len(tabela_filtrada)}")
+        
+        # Exibir apenas os registros da página atual
+        tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
+    else:
+        # Exibir todos os registros
+        tabela_para_exibir = tabela_filtrada
+    
+    # Exibir a tabela
+    st.dataframe(tabela_para_exibir, use_container_width=True)
+    
+    # Funções para exportar dados
+    def converter_df_para_csv(df):
+        return df.to_csv(index=False).encode('utf-8')
+    
+    def converter_df_para_excel(df):
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Dados')
+        return output.getvalue()
+    
+    # Botões para download
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Download como CSV
+        st.download_button(
+            label="Download CSV",
+            data=converter_df_para_csv(tabela_dados),  # Usar a versão não formatada para preservar os números
+            file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.csv',
+            mime='text/csv',
+        )
+    
+    with col2:
+        # Download como Excel
+        st.download_button(
+            label="Download Excel",
+            data=converter_df_para_excel(tabela_dados),  # Usar a versão não formatada para preservar os números
+            file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+with tab2:
+    # Apresentar um resumo estatístico dos dados
+    if coluna_dados in tabela_dados.columns:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Tabela de estatísticas
+            resumo = pd.DataFrame({
+                'Métrica': ['Total', 'Média', 'Mediana', 'Mínimo', 'Máximo', 'Desvio Padrão'],
+                'Valor': [
+                    formatar_numero(tabela_dados[coluna_dados].sum()),
+                    formatar_numero(tabela_dados[coluna_dados].mean()),
+                    formatar_numero(tabela_dados[coluna_dados].median()),
+                    formatar_numero(tabela_dados[coluna_dados].min()),
+                    formatar_numero(tabela_dados[coluna_dados].max()),
+                    formatar_numero(tabela_dados[coluna_dados].std())
+                ]
+            })
+            st.write("### Resumo Estatístico")
+            st.dataframe(resumo, use_container_width=True)
+        
+        with col2:
+            # Top 5 valores
+            st.write("### Top 5 Valores")
+            top5 = tabela_dados.nlargest(5, coluna_dados)
+            
+            # Selecionar colunas para exibição
+            colunas_exibir = []
+            if tipo_visualizacao == "Escola" and "NOME DA ESCOLA" in top5.columns:
+                colunas_exibir.append("NOME DA ESCOLA")
+            elif tipo_visualizacao == "Município" and "NOME DO MUNICIPIO" in top5.columns:
+                colunas_exibir.append("NOME DO MUNICIPIO")
+            elif "NOME DA UF" in top5.columns:
+                colunas_exibir.append("NOME DA UF")
+            
+            if "DEPENDENCIA ADMINISTRATIVA" in top5.columns:
+                colunas_exibir.append("DEPENDENCIA ADMINISTRATIVA")
+                
+            colunas_exibir.append(coluna_dados)
+            if '% do Total' in top5.columns:
+                colunas_exibir.append('% do Total')
+            
+            # Formatar valores para exibição
+            top5_exibir = top5[colunas_exibir].copy()
+            if coluna_dados in top5_exibir.columns:
+                top5_exibir[coluna_dados] = top5_exibir[coluna_dados].apply(
+                    lambda x: formatar_numero(x) if pd.notnull(x) else "-"
+                )
+            
+            if '% do Total' in top5_exibir.columns:
+                top5_exibir['% do Total'] = top5_exibir['% do Total'].apply(
+                    lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
+                )
+                
+            st.dataframe(top5_exibir, use_container_width=True)
 
 # -------------------------------
 # Rodapé do Dashboard
