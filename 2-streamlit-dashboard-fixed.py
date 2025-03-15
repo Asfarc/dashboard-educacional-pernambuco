@@ -395,17 +395,6 @@ if set(colunas_existentes) != set(colunas_tabela):
     st.warning(f"Algumas colunas não estão disponíveis para exibição na tabela: {set(colunas_tabela) - set(colunas_existentes)}")
     colunas_tabela = colunas_existentes
 
-# Permitir que o usuário selecione colunas adicionais para exibir
-todas_colunas = [col for col in df_filtrado.columns if col not in colunas_tabela]
-if todas_colunas:
-    with st.expander("Selecionar colunas adicionais"):
-        colunas_adicionais = st.multiselect(
-            "Selecione colunas adicionais para exibir:",
-            todas_colunas
-        )
-        if colunas_adicionais:
-            colunas_tabela = colunas_tabela + colunas_adicionais
-
 # Converter a coluna de dados para numérico para ordenação correta
 df_filtrado_tabela = df_filtrado.copy()
 if coluna_dados in df_filtrado_tabela.columns:
@@ -438,9 +427,6 @@ else:
     tabela_dados = df_filtrado_tabela[colunas_existentes]
     tabela_exibicao = tabela_dados.copy()
 
-# Adicionar informação sobre o total de registros
-st.info(f"Total de {len(tabela_dados)} registros encontrados.")
-
 # Criar abas para diferentes visualizações
 tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
 
@@ -467,8 +453,8 @@ with tab1:
     # Adicionar filtros de busca mais próximos da tabela e com largura reduzida
     st.write("### Filtros da tabela")
     
-    # Usar colunas com largura reduzida (20% da largura original, ou seja, 10% da tela cada)
-    col1, col2, col3, col4 = st.columns([1, 9, 1, 9])
+    # Usar colunas com largura reduzida
+    col1, col2, col3, col4, col5, col6 = st.columns([1, 9, 1, 9, 1, 9])
     
     # Filtros para texto (nomes de localidades)
     filtro_texto = None
@@ -479,7 +465,7 @@ with tab1:
         with col2:
             coluna_texto_selecionada = st.selectbox("", ["Nenhum"] + colunas_localidade, label_visibility="collapsed")
             if coluna_texto_selecionada != "Nenhum":
-                filtro_texto = st.text_input("", placeholder=f"Filtrar {coluna_texto_selecionada}...", label_visibility="collapsed")
+                filtro_texto = st.text_input("", placeholder=f"Filtrar {coluna_texto_selecionada}...", label_visibility="collapsed", key="filtro_texto")
     
     # Filtros para códigos (numéricos)
     filtro_codigo = None
@@ -490,21 +476,49 @@ with tab1:
         with col4:
             coluna_codigo_selecionada = st.selectbox(" ", ["Nenhum"] + colunas_codigo, label_visibility="collapsed")
             if coluna_codigo_selecionada != "Nenhum":
-                filtro_codigo = st.text_input(" ", placeholder=f"Filtrar {coluna_codigo_selecionada}...", label_visibility="collapsed")
+                filtro_codigo = st.text_input(" ", placeholder=f"Filtrar {coluna_codigo_selecionada}...", label_visibility="collapsed", key="filtro_codigo")
+    
+    # Colunas adicionais
+    with col5:
+        st.write("**Colunas:**")
+    with col6:
+        # Permitir que o usuário selecione colunas adicionais para exibir
+        todas_colunas = [col for col in df_filtrado.columns if col not in colunas_tabela]
+        if todas_colunas:
+            colunas_adicionais = st.multiselect(
+                "",
+                todas_colunas,
+                label_visibility="collapsed",
+                placeholder="Selecionar colunas adicionais..."
+            )
+            if colunas_adicionais:
+                colunas_tabela = colunas_tabela + colunas_adicionais
+                # Atualizar tabelas com as novas colunas
+                tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
+                tabela_exibicao = tabela_dados.copy()
+                tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
+                    lambda x: formatar_numero(x) if pd.notnull(x) else "-"
+                )
+                if '% do Total' in tabela_exibicao.columns:
+                    tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
+                        lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
+                    )
+        else:
+            st.write("Não há colunas adicionais disponíveis")
     
     # Aplicar filtros
     tabela_filtrada = tabela_exibicao.copy()
     
     # Filtros em tempo real conforme o usuário digita
     if filtro_texto and coluna_texto_selecionada != "Nenhum":
-        # Para nomes, filtra a partir de 3 caracteres
+        # Para nomes, filtra após 3 caracteres
         if len(filtro_texto) >= 3:
             tabela_filtrada = tabela_filtrada[
                 tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False, na=False)
             ]
     
     if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
-        # Para códigos, filtra a partir do primeiro caractere
+        # Para códigos, filtra após o primeiro caractere
         if len(filtro_codigo) >= 1:
             tabela_filtrada = tabela_filtrada[
                 tabela_filtrada[coluna_codigo_selecionada].astype(str).str.contains(filtro_codigo, na=False)
@@ -514,30 +528,26 @@ with tab1:
     total_paginas = max(1, (len(tabela_filtrada) - 1) // registros_por_pagina + 1)
     
     if not mostrar_todos and total_paginas > 1:
-        pagina_atual = st.number_input(
-            "Página:", 
-            min_value=1, 
-            max_value=total_paginas, 
-            value=1
-        )
-        inicio = (pagina_atual - 1) * registros_por_pagina
-        fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
+        inicio = 0
+        fim = registros_por_pagina
         
-        # Informação da paginação
-        st.write(f"Exibindo registros {inicio+1} a {fim} de {len(tabela_filtrada)}")
-        
-        # Exibir apenas os registros da página atual
-        tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
+        if total_paginas > 1:
+            # Exibir apenas os registros da página atual
+            inicio = 0
+            fim = registros_por_pagina
+            tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
     else:
         # Exibir todos os registros
         tabela_para_exibir = tabela_filtrada
 
     # Calcular a soma para a última linha de totais
     totais = {}
+    total_matriculas = 0
     if coluna_dados in tabela_para_exibir.columns:
         # Converter para numérico para cálculos corretos
         valores_numericos = pd.to_numeric(tabela_dados[coluna_dados].loc[tabela_para_exibir.index], errors='coerce')
-        totais[coluna_dados] = formatar_numero(valores_numericos.sum())
+        total_matriculas = valores_numericos.sum()
+        totais[coluna_dados] = formatar_numero(total_matriculas)
     
     if '% do Total' in tabela_para_exibir.columns:
         totais['% do Total'] = "100.00%"
@@ -555,6 +565,9 @@ with tab1:
     
     # Combinar a tabela principal com a linha de totais
     tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
+    
+    # Exibir informação atualizada sobre total de registros e matrículas no estilo da info azul original
+    st.info(f"Total de {len(tabela_para_exibir)} registros encontrados. Total de Matrículas: {formatar_numero(total_matriculas)}.")
     
     # Aplicar a centralização e outros estilos
     def estilizar_tabela(df):
@@ -578,12 +591,50 @@ with tab1:
     tabela_estilizada = estilizar_tabela(tabela_com_totais)
     st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
     
-    # Mostrar informação atualizada sobre total de registros e matrículas após filtros
-    st.markdown(f"""
-    <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold;">
-        Total após filtros: {len(tabela_para_exibir)} registros | {totais[coluna_dados]} matrículas
-    </div>
-    """, unsafe_allow_html=True)
+    # Paginação abaixo da tabela
+    if not mostrar_todos and total_paginas > 1:
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            st.write("**Página:**")
+        with col2:
+            pagina_atual = st.number_input(
+                "",
+                min_value=1,
+                max_value=total_paginas,
+                value=1,
+                key="pagina_atual",
+                label_visibility="collapsed"
+            )
+            inicio = (pagina_atual - 1) * registros_por_pagina
+            fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
+            # Atualizar a tabela com base na página selecionada
+            if pagina_atual > 1:
+                tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
+                
+                # Recalcular totais para a página atual
+                if coluna_dados in tabela_para_exibir.columns:
+                    valores_numericos = pd.to_numeric(tabela_dados[coluna_dados].loc[tabela_para_exibir.index], errors='coerce')
+                    total_matriculas = valores_numericos.sum()
+                    totais[coluna_dados] = formatar_numero(total_matriculas)
+                
+                # Atualizar linha de totais
+                linha_totais = pd.DataFrame([totais], index=['TOTAL'])
+                for col in tabela_para_exibir.columns:
+                    if col not in totais:
+                        linha_totais[col] = ""
+                linha_totais = linha_totais[tabela_para_exibir.columns]
+                
+                # Atualizar a tabela com a nova seleção
+                tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
+                tabela_estilizada = estilizar_tabela(tabela_com_totais)
+                
+                # Exibir a tabela atualizada
+                st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
+                
+                # Atualizar a informação de registros
+                st.info(f"Total de {len(tabela_para_exibir)} registros encontrados. Total de Matrículas: {formatar_numero(total_matriculas)}.")
+            
+            st.write(f"Exibindo página {pagina_atual} de {total_paginas}")
     
     # Funções para exportar dados
     def converter_df_para_csv(df):
