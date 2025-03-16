@@ -356,27 +356,47 @@ with col3:
         st.metric("Máximo de Matrículas", formatar_numero(df_filtrado[coluna_dados].max()))
 
 # -------------------------------
-# Seção de Gráficos
-# -------------------------------
-st.markdown("## Análise Gráfica")
-
-# Gráfico 1: Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA (Gráfico de Pizza)
-if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-    fig1 = px.pie(
-        df_filtrado, 
-        names="DEPENDENCIA ADMINISTRATIVA", 
-        values=coluna_dados,
-        title="Distribuição de Matrículas por DEPENDENCIA ADMINISTRATIVA",
-        color_discrete_sequence=px.colors.qualitative.Set3
-    )
-    st.plotly_chart(fig1, use_container_width=True)
-else:
-    st.warning("Não foi possível criar o gráfico de distribuição por DEPENDENCIA ADMINISTRATIVA")
-
-# -------------------------------
 # Seção de Tabela de Dados Detalhados
 # -------------------------------
 st.markdown("## Dados Detalhados")
+
+# Adicionar CSS personalizado para aumentar a espessura da barra de rolagem
+st.markdown("""
+<style>
+    /* Aumenta a espessura da barra de rolagem */
+    ::-webkit-scrollbar {
+        width: 14px;
+        height: 14px;
+    }
+    
+    /* Estilo do "track" (trilho) da barra de rolagem */
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 7px;
+    }
+    
+    /* Estilo do "thumb" (parte móvel) da barra de rolagem */
+    ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 7px;
+    }
+    
+    /* Ao passar o mouse */
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Estilização específica para a tabela de dados */
+    .stDataFrame {
+        overflow: auto;
+    }
+    
+    /* Ajuste para o canto da barra de rolagem */
+    ::-webkit-scrollbar-corner {
+        background: #f1f1f1;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
 # Adicionando ANO como primeira coluna sempre
