@@ -379,12 +379,15 @@ else:
 st.markdown("## Dados Detalhados")
 
 # Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
+# Adicionando ANO como primeira coluna sempre
+colunas_tabela = ["ANO"]
+
 if tipo_visualizacao == "Escola":
-    colunas_tabela = ["CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_tabela.extend(["CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
 elif tipo_visualizacao == "Município":
-    colunas_tabela = ["CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_tabela.extend(["CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
 else:  # Estado
-    colunas_tabela = ["CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_tabela.extend(["CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
 
 # Adiciona a coluna de dados selecionada ao final
 colunas_tabela.append(coluna_dados)
@@ -444,7 +447,7 @@ with tab1:
                 "Registros por página:", 
                 min_value=10, 
                 max_value=500, 
-                value=100, 
+                value=200,  # Valor padrão aumentado para 200
                 step=10
             )
         else:
@@ -453,8 +456,8 @@ with tab1:
     # Adicionar filtros de busca mais próximos da tabela e com largura reduzida
     st.write("### Filtros da tabela")
     
-    # Usar colunas com largura reduzida
-    col1, col2, col3, col4, col5, col6 = st.columns([1, 9, 1, 9, 1, 9])
+    # Usar colunas com largura reduzida (50% da largura original)
+    col1, col2, col3, col4, col5, col6 = st.columns([0.5, 4.5, 0.5, 4.5, 0.5, 4.5])  # Reduzido em 50%
     
     # Filtros para texto (nomes de localidades)
     filtro_texto = None
@@ -525,22 +528,32 @@ with tab1:
             ]
     
     # Cálculo de paginação
-    total_paginas = max(1, (len(tabela_filtrada) - 1) // registros_por_pagina + 1)
+    total_registros = len(tabela_filtrada)
+    total_paginas = max(1, (total_registros - 1) // registros_por_pagina + 1)
     
+    # Paginação - apenas permitir uma tabela por vez
     if not mostrar_todos and total_paginas > 1:
-        inicio = 0
-        fim = registros_por_pagina
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            st.write("**Página:**")
+        with col2:
+            pagina_atual = st.number_input(
+                "",
+                min_value=1,
+                max_value=total_paginas,
+                value=1,
+                key="pagina_atual",
+                label_visibility="collapsed"
+            )
         
-        if total_paginas > 1:
-            # Exibir apenas os registros da página atual
-            inicio = 0
-            fim = registros_por_pagina
-            tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
+        inicio = (pagina_atual - 1) * registros_por_pagina
+        fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
+        tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
     else:
         # Exibir todos os registros
         tabela_para_exibir = tabela_filtrada
-
-    # Calcular a soma para a última linha de totais
+    
+    # Calcular a soma para a linha de totais
     totais = {}
     total_matriculas = 0
     if coluna_dados in tabela_para_exibir.columns:
@@ -555,9 +568,11 @@ with tab1:
     # Adicionar linha de totais
     linha_totais = pd.DataFrame([totais], index=['TOTAL'])
     
-    # Preencher as outras colunas com strings vazias
+    # Preencher a primeira coluna da linha de totais com "TOTAL"
     for col in tabela_para_exibir.columns:
-        if col not in totais:
+        if col == colunas_tabela[0]:  # Primeira coluna (ANO)
+            linha_totais[col] = "TOTAL"
+        elif col not in totais:
             linha_totais[col] = ""
     
     # Ordenar as colunas para corresponder à tabela principal
@@ -566,75 +581,36 @@ with tab1:
     # Combinar a tabela principal com a linha de totais
     tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
     
-    # Exibir informação atualizada sobre total de registros e matrículas no estilo da info azul original
-    st.info(f"Total de {len(tabela_para_exibir)} registros encontrados. Total de Matrículas: {formatar_numero(total_matriculas)}.")
+    # Exibir informação atualizada sobre total de registros no estilo info azul
+    st.info(f"Exibindo {len(tabela_para_exibir)} de {total_registros} resultados.")
     
-    # Aplicar a centralização e outros estilos
+    # Aplicar a estilização melhorada para a tabela com destaque para a linha de totais
     def estilizar_tabela(df):
-        # Estilo para centralizar todas as células
+        # Estilo para centralizar todas as células e destacar a linha de totais
         return df.style \
             .set_properties(**{'text-align': 'center'}) \
             .set_table_styles([
                 {'selector': 'th', 'props': [('text-align', 'center')]},
                 {'selector': 'td', 'props': [('text-align', 'center')]},
-                # Destacar a linha de totais
+                # Destacar a linha de totais com estilo mais visível
                 {'selector': 'tr:last-child', 'props': [
                     ('font-weight', 'bold'),
-                    ('background-color', '#f0f0f0')
+                    ('background-color', '#e6f2ff'),  # Azul claro
+                    ('border-top', '2px solid #b3d9ff'),  # Linha superior mais visível
+                    ('color', '#0066cc')  # Texto em azul escuro
                 ]}
             ])
     
-    # Exibir a tabela com altura ajustada para mostrar todos os registros sem rolagem
-    altura_tabela = min(len(tabela_com_totais) * 35 + 38, 600)  # 35px por linha + 38px para o cabeçalho, máximo de 600px
+    # Exibir a tabela com altura ajustada para mostrar todos os registros sem rolagem excessiva
+    altura_tabela = min(len(tabela_com_totais) * 35 + 38, 800)  # 35px por linha + 38px para o cabeçalho, máximo aumentado
     
     # Exibir a tabela sem o índice (removendo a primeira coluna)
     tabela_estilizada = estilizar_tabela(tabela_com_totais)
     st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
     
-    # Paginação abaixo da tabela
+    # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
-        col1, col2 = st.columns([1, 5])
-        with col1:
-            st.write("**Página:**")
-        with col2:
-            pagina_atual = st.number_input(
-                "",
-                min_value=1,
-                max_value=total_paginas,
-                value=1,
-                key="pagina_atual",
-                label_visibility="collapsed"
-            )
-            inicio = (pagina_atual - 1) * registros_por_pagina
-            fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
-            # Atualizar a tabela com base na página selecionada
-            if pagina_atual > 1:
-                tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
-                
-                # Recalcular totais para a página atual
-                if coluna_dados in tabela_para_exibir.columns:
-                    valores_numericos = pd.to_numeric(tabela_dados[coluna_dados].loc[tabela_para_exibir.index], errors='coerce')
-                    total_matriculas = valores_numericos.sum()
-                    totais[coluna_dados] = formatar_numero(total_matriculas)
-                
-                # Atualizar linha de totais
-                linha_totais = pd.DataFrame([totais], index=['TOTAL'])
-                for col in tabela_para_exibir.columns:
-                    if col not in totais:
-                        linha_totais[col] = ""
-                linha_totais = linha_totais[tabela_para_exibir.columns]
-                
-                # Atualizar a tabela com a nova seleção
-                tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
-                tabela_estilizada = estilizar_tabela(tabela_com_totais)
-                
-                # Exibir a tabela atualizada
-                st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
-                
-                # Atualizar a informação de registros
-                st.info(f"Total de {len(tabela_para_exibir)} registros encontrados. Total de Matrículas: {formatar_numero(total_matriculas)}.")
-            
-            st.write(f"Exibindo página {pagina_atual} de {total_paginas}")
+        st.write(f"Página {pagina_atual} de {total_paginas}")
     
     # Funções para exportar dados
     def converter_df_para_csv(df):
