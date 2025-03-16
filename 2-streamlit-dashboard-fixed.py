@@ -366,7 +366,7 @@ st.markdown("""
     /* Aumenta a espessura da barra de rolagem */
     ::-webkit-scrollbar {
         width: 20px;
-        height: 25px;
+        height: 15px;
     }
     
     /* Estilo do "track" (trilho) da barra de rolagem */
@@ -378,7 +378,7 @@ st.markdown("""
     /* Estilo do "thumb" (parte móvel) da barra de rolagem */
     ::-webkit-scrollbar-thumb {
         background: #888;
-        border-radius: 7px;
+        border-radius: 10px;
     }
     
     /* Ao passar o mouse */
