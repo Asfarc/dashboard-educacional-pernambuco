@@ -436,22 +436,43 @@ tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
 with tab1:
     # Opções de paginação primeiro (para saber quantos registros mostrar)
     st.write("### Configurações de exibição")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
+        # Mostrar todos os registros não é recomendado para grandes conjuntos de dados
+        total_registros = len(tabela_exibicao)
+        if total_registros > 1000:
+            st.warning(f"⚠️ Há {total_registros} registros no total. Mostrar todos pode causar lentidão.")
+            mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
+        else:
+            mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
     
     with col2:
         if not mostrar_todos:
+            # Limitar a quantidade máxima de registros por página para evitar lentidão
+            max_registros = min(500, total_registros)
             registros_por_pagina = st.slider(
                 "Registros por página:", 
                 min_value=10, 
-                max_value=500, 
-                value=200,  # Valor padrão aumentado para 200
+                max_value=max_registros,
+                value=min(200, max_registros),  # O valor padrão é 200 ou o número total de registros, o que for menor
                 step=10
             )
         else:
-            registros_por_pagina = len(tabela_exibicao)
+            # Se selecionar mostrar todos, ainda limitamos a um máximo seguro para evitar travamentos
+            if total_registros > 1000:
+                registros_por_pagina = 1000
+                st.warning(f"Para evitar travamentos, limitamos a exibição a 1000 registros de um total de {total_registros}.")
+            else:
+                registros_por_pagina = total_registros
+    
+    with col3:
+        # Opção para ativar modo de desempenho
+        modo_desempenho = st.checkbox("Ativar modo de desempenho", value=True, 
+                                      help="Otimiza o carregamento para grandes conjuntos de dados.")
+        if modo_desempenho and total_registros > 500:
+            st.info("Modo de desempenho ativado. Algumas formatações visuais serão simplificadas.")
+
     
     # Adicionar filtros de busca mais próximos da tabela e com largura reduzida
     st.write("### Filtros da tabela")
@@ -509,49 +530,105 @@ with tab1:
         else:
             st.write("Não há colunas adicionais disponíveis")
     
-    # Aplicar filtros
+    # Aplicar filtros com feedback de desempenho
     tabela_filtrada = tabela_exibicao.copy()
+    filtros_aplicados = False
     
-    # Filtros em tempo real conforme o usuário digita
+    # Adicionar botão de aplicar filtros para conjuntos grandes de dados
+    if len(tabela_exibicao) > 1000:
+        col_filtrar = st.columns([1])[0]
+        with col_filtrar:
+            aplicar_filtros = st.button("Aplicar Filtros", type="primary")
+        mostrar_dica = True
+    else:
+        aplicar_filtros = True  # Para conjuntos pequenos, sempre aplicar filtros em tempo real
+        mostrar_dica = False
+    
+    # Filtros para texto
     if filtro_texto and coluna_texto_selecionada != "Nenhum":
-        # Para nomes, filtra após 3 caracteres
-        if len(filtro_texto) >= 3:
-            tabela_filtrada = tabela_filtrada[
-                tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False, na=False)
-            ]
+        if len(filtro_texto) >= 3 and aplicar_filtros:
+            # Usar método mais eficiente para grandes conjuntos de dados
+            if len(tabela_filtrada) > 5000:
+                # Para dados muito grandes, usamos um método mais rápido 
+                # mas potencialmente menos preciso (sem case=False)
+                tabela_filtrada = tabela_filtrada[
+                    tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, na=False)
+                ]
+            else:
+                tabela_filtrada = tabela_filtrada[
+                    tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False, na=False)
+                ]
+            filtros_aplicados = True
+        elif mostrar_dica and len(filtro_texto) > 0 and len(filtro_texto) < 3:
+            st.info("Digite pelo menos 3 caracteres para filtrar por texto.")
     
+    # Filtros para códigos
     if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
-        # Para códigos, filtra após o primeiro caractere
-        if len(filtro_codigo) >= 1:
+        if len(filtro_codigo) >= 1 and aplicar_filtros:
             tabela_filtrada = tabela_filtrada[
                 tabela_filtrada[coluna_codigo_selecionada].astype(str).str.contains(filtro_codigo, na=False)
             ]
+            filtros_aplicados = True
+            
+    # Mostrar informações sobre o número de registros filtrados
+    if filtros_aplicados and len(tabela_filtrada) < len(tabela_exibicao):
+        st.success(f"Filtro aplicado: {len(tabela_filtrada)} de {len(tabela_exibicao)} registros correspondem aos critérios.")
     
     # Cálculo de paginação
     total_registros = len(tabela_filtrada)
     total_paginas = max(1, (total_registros - 1) // registros_por_pagina + 1)
     
-    # Paginação - apenas permitir uma tabela por vez
+    # Paginação otimizada
     if not mostrar_todos and total_paginas > 1:
-        col1, col2 = st.columns([1, 5])
-        with col1:
-            st.write("**Página:**")
-        with col2:
-            pagina_atual = st.number_input(
-                "",
-                min_value=1,
-                max_value=total_paginas,
-                value=1,
-                key="pagina_atual",
-                label_visibility="collapsed"
-            )
+        # Para grandes conjuntos de dados, usamos uma interface de paginação mais eficiente
+        if total_registros > 1000:
+            col1, col2, col3 = st.columns([1, 3, 1])
+            with col1:
+                st.write("**Página:**")
+            with col2:
+                pagina_atual = st.number_input(
+                    "",
+                    min_value=1,
+                    max_value=total_paginas,
+                    value=1,
+                    key="pagina_atual",
+                    label_visibility="collapsed"
+                )
+            with col3:
+                # Adicionar botões para navegação rápida
+                col_prev, col_next = st.columns(2)
+                with col_prev:
+                    if st.button("◀ Anterior", disabled=(pagina_atual <= 1)):
+                        pagina_atual -= 1
+                with col_next:
+                    if st.button("Próxima ▶", disabled=(pagina_atual >= total_paginas)):
+                        pagina_atual += 1
+        else:
+            # Interface simples para conjuntos menores de dados
+            col1, col2 = st.columns([1, 5])
+            with col1:
+                st.write("**Página:**")
+            with col2:
+                pagina_atual = st.number_input(
+                    "",
+                    min_value=1,
+                    max_value=total_paginas,
+                    value=1,
+                    key="pagina_atual",
+                    label_visibility="collapsed"
+                )
         
+        # Calcular quais registros mostrar
         inicio = (pagina_atual - 1) * registros_por_pagina
         fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
         tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
     else:
-        # Exibir todos os registros
-        tabela_para_exibir = tabela_filtrada
+        # Limitação de registros para evitar travamentos
+        if len(tabela_filtrada) > registros_por_pagina:
+            tabela_para_exibir = tabela_filtrada.iloc[:registros_por_pagina]
+            st.warning(f"Para melhor desempenho, exibindo os primeiros {registros_por_pagina} de {len(tabela_filtrada)} registros.")
+        else:
+            tabela_para_exibir = tabela_filtrada
     
     # Calcular a soma para a linha de totais
     totais = {}
@@ -582,31 +659,51 @@ with tab1:
     tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
     
     # Exibir informação atualizada sobre total de registros no estilo info azul
-    st.info(f"Exibindo {len(tabela_para_exibir)} de {total_registros} resultados.")
+    # Também adiciona informação sobre desempenho quando necessário
+    if total_registros > 1000 and not mostrar_todos:
+        st.info(f"Exibindo {len(tabela_para_exibir)} de {total_registros} resultados. Para melhor desempenho, evite exibir todos os registros de uma vez.")
     
     # Aplicar a estilização melhorada para a tabela com destaque para a linha de totais
     def estilizar_tabela(df):
-        # Estilo para centralizar todas as células e destacar a linha de totais
-        return df.style \
-            .set_properties(**{'text-align': 'center'}) \
-            .set_table_styles([
-                {'selector': 'th', 'props': [('text-align', 'center')]},
-                {'selector': 'td', 'props': [('text-align', 'center')]},
-                # Destacar a linha de totais com estilo mais visível
-                {'selector': 'tr:last-child', 'props': [
-                    ('font-weight', 'bold'),
-                    ('background-color', '#e6f2ff'),  # Azul claro
-                    ('border-top', '2px solid #b3d9ff'),  # Linha superior mais visível
-                    ('color', '#0066cc')  # Texto em azul escuro
-                ]}
-            ])
+        # Verificar o tamanho do dataframe para decidir o nível de estilização
+        if len(df) > 1000:
+            # Para tabelas muito grandes, usar estilo mínimo para melhor desempenho
+            return df.style.set_properties(**{'text-align': 'center'})
+        else:
+            # Estilo completo para tabelas menores
+            return df.style \
+                .set_properties(**{'text-align': 'center'}) \
+                .set_table_styles([
+                    {'selector': 'th', 'props': [('text-align', 'center')]},
+                    {'selector': 'td', 'props': [('text-align', 'center')]},
+                    # Destacar a linha de totais com estilo mais visível
+                    {'selector': 'tr:last-child', 'props': [
+                        ('font-weight', 'bold'),
+                        ('background-color', '#e6f2ff'),  # Azul claro
+                        ('border-top', '2px solid #b3d9ff'),  # Linha superior mais visível
+                        ('color', '#0066cc')  # Texto em azul escuro
+                    ]}
+                ])
     
-    # Exibir a tabela com altura ajustada para mostrar todos os registros sem rolagem excessiva
-    altura_tabela = min(len(tabela_com_totais) * 35 + 38, 800)  # 35px por linha + 38px para o cabeçalho, máximo aumentado
+    # Determinar se devemos usar o modo de desempenho simplificado
+    usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
     
-    # Exibir a tabela sem o índice (removendo a primeira coluna)
-    tabela_estilizada = estilizar_tabela(tabela_com_totais)
-    st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
+    # Exibir a tabela com altura ajustada
+    altura_tabela = min(len(tabela_com_totais) * 35 + 38, 800)  # 35px por linha + 38px para o cabeçalho
+    
+    # Aplicar estilo apropriado baseado no modo de desempenho
+    if usar_estilo_simples:
+        # No modo de desempenho, usamos a tabela sem estilos complexos
+        # Garantir que a última linha seja o total
+        tabela_com_totais_simples = tabela_com_totais.copy()
+        if "TOTAL" in tabela_com_totais_simples.iloc[-1].values:
+            # Usamos estilo mínimo para melhorar o desempenho
+            st.dataframe(tabela_com_totais_simples, use_container_width=True, height=altura_tabela, hide_index=True)
+            st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
+    else:
+        # Modo normal com todos os estilos
+        tabela_estilizada = estilizar_tabela(tabela_com_totais)
+        st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
     
     # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
