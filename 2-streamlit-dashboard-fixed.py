@@ -363,22 +363,22 @@ st.markdown("## Dados Detalhados")
 # Adicionar CSS personalizado para aumentar a espessura da barra de rolagem
 st.markdown("""
 <style>
-    /* Aumenta a espessura da barra de rolagem */
+    /* Aumenta a espessura da barra de rolagem principal */
     ::-webkit-scrollbar {
-        width: 15px;
-        height: 15px;
+        width: 14px;
+        height: 14px;
     }
     
     /* Estilo do "track" (trilho) da barra de rolagem */
     ::-webkit-scrollbar-track {
         background: #f1f1f1;
-        border-radius: 1px;
+        border-radius: 7px;
     }
     
     /* Estilo do "thumb" (parte móvel) da barra de rolagem */
     ::-webkit-scrollbar-thumb {
         background: #888;
-        border-radius: 1px;
+        border-radius: 7px;
     }
     
     /* Ao passar o mouse */
@@ -386,9 +386,19 @@ st.markdown("""
         background: #555;
     }
     
-    /* Estilização específica para a tabela de dados */
-    .stDataFrame {
-        overflow: auto;
+    /* Elimina a rolagem interna da tabela para prevenir barras de rolagem duplas */
+    .stDataFrame > div:first-child {
+        overflow: hidden !important;
+    }
+    
+    /* Garante que apenas o contêiner externo tenha rolagem */
+    .main .block-container {
+        overflow-y: auto;
+    }
+    
+    /* Remove barras de rolagem de elementos internos específicos */
+    div[data-testid="stVerticalBlock"] {
+        overflow: visible !important;
     }
     
     /* Ajuste para o canto da barra de rolagem */
@@ -454,9 +464,20 @@ else:
 tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
 
 with tab1:
-    # Opções de paginação primeiro (para saber quantos registros mostrar)
+    # Adicionar controle para ajustar a altura da tabela e resolver problemas de barras de rolagem
     st.write("### Configurações de exibição")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col4:
+        # Permitir que o usuário ajuste a altura da tabela
+        altura_personalizada = st.checkbox("Ajustar altura da tabela", value=False,
+                                         help="Use esta opção se estiver vendo barras de rolagem duplicadas")
+        if altura_personalizada:
+            altura_manual = st.slider("Altura da tabela (pixels)", 
+                                    min_value=200, 
+                                    max_value=1000, 
+                                    value=600, 
+                                    step=50)
     
     with col1:
         # Mostrar todos os registros não é recomendado para grandes conjuntos de dados
@@ -708,8 +729,17 @@ with tab1:
     # Determinar se devemos usar o modo de desempenho simplificado
     usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
     
-    # Exibir a tabela com altura ajustada
-    altura_tabela = min(len(tabela_com_totais) * 35 + 38, 800)  # 35px por linha + 38px para o cabeçalho
+    # Exibir a tabela com altura ajustada - menor altura para evitar barras de rolagem duplas
+    # Se o usuário escolheu ajustar manualmente a altura
+    if 'altura_personalizada' in locals() and altura_personalizada:
+        altura_tabela = altura_manual
+    # Caso contrário, calcular automaticamente
+    elif len(tabela_com_totais) > 20:
+        # Para tabelas maiores, definimos uma altura fixa mais conservadora
+        altura_tabela = 600  # Altura fixa para evitar problemas de rolagem dupla
+    else:
+        # Para tabelas menores, calculamos com base no número de linhas
+        altura_tabela = len(tabela_com_totais) * 35 + 38  # 35px por linha + 38px para o cabeçalho
     
     # Aplicar estilo apropriado baseado no modo de desempenho
     if usar_estilo_simples:
@@ -718,12 +748,14 @@ with tab1:
         tabela_com_totais_simples = tabela_com_totais.copy()
         if "TOTAL" in tabela_com_totais_simples.iloc[-1].values:
             # Usamos estilo mínimo para melhorar o desempenho
-            st.dataframe(tabela_com_totais_simples, use_container_width=True, height=altura_tabela, hide_index=True)
+            with st.container():
+                st.dataframe(tabela_com_totais_simples, use_container_width=True, height=altura_tabela, hide_index=True)
             st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
     else:
         # Modo normal com todos os estilos
         tabela_estilizada = estilizar_tabela(tabela_com_totais)
-        st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
+        with st.container():
+            st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
     
     # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
