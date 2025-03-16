@@ -365,7 +365,7 @@ st.markdown("""
 <style>
     /* Aumenta a espessura da barra de rolagem */
     ::-webkit-scrollbar {
-        width: 14px;
+        width: 20px;
         height: 14px;
     }
     
