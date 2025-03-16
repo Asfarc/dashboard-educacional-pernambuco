@@ -366,7 +366,7 @@ st.markdown("""
     /* Aumenta a espessura da barra de rolagem */
     ::-webkit-scrollbar {
         width: 20px;
-        height: 18px;
+        height: 25px;
     }
     
     /* Estilo do "track" (trilho) da barra de rolagem */
