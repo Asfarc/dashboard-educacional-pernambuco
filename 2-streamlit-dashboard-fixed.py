@@ -1,15 +1,18 @@
-import streamlit as st
+# 1) Imports da biblioteca padrão
+import os
+import io
+import re
+import json
+from pathlib import Path
+
+# 2) Imports de bibliotecas de terceiros
+import numpy as np
 import pandas as pd
 import plotly.express as px
-import numpy as np
-import os
-from pathlib import Path
-import io
-import json
-import re
-
-# Biblioteca do AgGrid
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
+import streamlit as st
+from st_aggrid import (
+    AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
+)
 
 # -------------------------------
 # Configuração Inicial da Página
@@ -20,7 +23,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 
 # -------------------------------
 # Funções Auxiliares
@@ -348,9 +350,46 @@ def adicionar_linha_totais(df, coluna_dados):
 
     # Concatenar com o DataFrame original
     return pd.concat([df, linha_totais])
+# -----------------------------------------------------------------
+# 1. Função para centralizar ORDENAR e FORMATAR (CASO VOCÊ QUEIRA)
+# -----------------------------------------------------------------
+def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
+    """
+    Ordena o DataFrame base pela coluna_ordenacao (se existir), cria uma cópia
+    e formata as colunas numéricas e percentuais para exibição.
+    Retorna (tabela_dados, tabela_exibicao).
+    """
+    # Filtra só colunas que existem
+    colunas_existentes = [c for c in colunas_para_exibir if c in df_base.columns]
+    tabela_dados = df_base[colunas_existentes]
+
+    # Ordenar se a coluna principal existir
+    if coluna_ordenacao in tabela_dados.columns:
+        tabela_dados = tabela_dados.sort_values(by=coluna_ordenacao, ascending=False)
+
+    # Cria cópia para exibir (formatar sem mexer nos dados brutos)
+    tabela_exibicao = tabela_dados.copy()
+
+    # Aplicando formatações
+    with pd.option_context('mode.chained_assignment', None):
+        # Formata a coluna principal
+        if coluna_ordenacao in tabela_exibicao.columns:
+            tabela_exibicao[coluna_ordenacao] = tabela_exibicao[coluna_ordenacao].apply(
+                lambda x: formatar_numero(x) if pd.notnull(x) else "-"
+            )
+
+        # Formata '% do Total'
+        if '% do Total' in tabela_exibicao.columns:
+            tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
+                lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
+            )
+
+    return tabela_dados, tabela_exibicao
 
 def converter_df_para_csv(df):
-    """Converte DataFrame para formato CSV"""
+    """Converte DataFrame para formato CSV, incluindo tratamento para DataFrame vazio."""
+    if df is None or df.empty:
+        return "Não há dados para exportar.".encode('utf-8')
     try:
         return df.to_csv(index=False).encode('utf-8')
     except Exception as e:
@@ -359,7 +398,13 @@ def converter_df_para_csv(df):
 
 
 def converter_df_para_excel(df):
-    """Converte DataFrame para formato Excel"""
+    """Converte DataFrame para formato Excel, incluindo tratamento para DataFrame vazio."""
+    if df is None or df.empty:
+        # Retorna um arquivo Excel válido mas com uma aba vazia
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            pd.DataFrame({"Sem dados": []}).to_excel(writer, index=False, sheet_name='Sem_Dados')
+        return output.getvalue()
     try:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -371,6 +416,40 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
+# --------------------------------------------------------
+# 2. (Opcional) Função para centralizar NAVEGAÇÃO no AgGrid
+# --------------------------------------------------------
+def navegar_tabela(label_botao, key_botao, posicao='top'):
+    """
+    Cria um botão que, quando clicado, rola a tabela AgGrid para o topo ou para o final.
+    :param label_botao: Texto que aparece no botão (ex: "⏫ Primeira Linha").
+    :param key_botao: Chave única para o botão.
+    :param posicao: 'top' ou 'bottom' -- define a direção da rolagem.
+    """
+    if st.button(label_botao, key=key_botao):
+        scroll_script = f"""
+            <script>
+                setTimeout(function() {{
+                    try {{
+                        const gridDiv = document.querySelector('.ag-root-wrapper');
+                        if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {{
+                            const api = gridDiv.gridOptions.api;
+                            if ('{posicao}' === 'top') {{
+                                api.ensureIndexVisible(0);
+                                api.setFocusedCell(0, api.getColumnDefs()[0].field);
+                            }} else {{
+                                const lastIndex = api.getDisplayedRowCount() - 1;
+                                if (lastIndex >= 0) {{
+                                    api.ensureIndexVisible(lastIndex);
+                                    api.setFocusedCell(lastIndex, api.getColumnDefs()[0].field);
+                                }}
+                            }}
+                        }}
+                    }} catch(e) {{ console.error(e); }}
+                }}, 300);
+            </script>
+        """
+        st.markdown(scroll_script, unsafe_allow_html=True)
 
 # Função para exibir a tabela com AgGrid - implementação corrigida
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
@@ -636,14 +715,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "average": "Média",
         "count": "Contagem"
     }
-    # Adicionar uma função personalizada para formatar números na interface do AgGrid
-    js_number_formatter = JsCode("""
-    function(value) {
-        if (value === null || value === undefined || isNaN(value)) return '-';
-        // Formatar números com pontos como separadores de milhar
-        return value.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
-    }
-    """)
 
     # 2. CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
     gb.configure_default_column(
@@ -655,7 +726,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         floatingFilter=True,
         filterParams={
             "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
-            "buttons": ["apply", "reset"],  # Já está corretamente configurado para "apply" e "reset"
+            "buttons": ["apply", "reset"],
             "closeOnApply": False
         },
         resizable=True,
@@ -670,11 +741,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         getRowStyle=js_total_row,
         suppressCellFocus=False,
         alwaysShowVerticalScroll=True,
-        localeText=localeText,  # Adicione a tradução
+        localeText=localeText,
     )
 
-    # Configurar colunas numéricas específicas para melhor filtro e agregação
-    # Validar se coluna_dados existe antes de configurar
+    # Configurar colunas numéricas específicas
     if coluna_dados and coluna_dados in df_para_exibir.columns:
         gb.configure_column(
             coluna_dados,
@@ -699,18 +769,16 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 valueFormatter=JsCode("""
                     function(params) {
                         if (params.value === null || params.value === undefined || isNaN(params.value)) return '-';
-                        // Garantir que o valor seja tratado como número
                         const numValue = Number(params.value);
                         return numValue.toFixed(2) + '%';
                     }
-                    """),
+                """),
                 aggFunc="avg",
                 cellClass="numeric-cell"
             )
 
-    # 4. OTIMIZAÇÃO PARA GRANDES DATASETS - abordagem mais robusta
+    # 4. OTIMIZAÇÃO PARA GRANDES DATASETS
     if is_large_dataset:
-        # Evitar uso de APIs não documentadas, usar opções estáveis
         gb.configure_grid_options(
             rowBuffer=100,
             animateRows=False,
@@ -719,8 +787,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             enableCellTextSelection=True,
             enableBrowserTooltips=True
         )
-
-        # Técnicas mais seguras para conjuntos extremamente grandes
         if is_very_large_dataset and mostrar_tudo:
             gb.configure_grid_options(
                 rowModelType='clientSide',
@@ -728,7 +794,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 maxBlocksInCache=10
             )
 
-    # 5. ESTATÍSTICAS - implementação mais segura
+    # 5. ESTATÍSTICAS
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
