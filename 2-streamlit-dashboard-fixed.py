@@ -349,32 +349,6 @@ def adicionar_linha_totais(df, coluna_dados):
     # Concatenar com o DataFrame original
     return pd.concat([df, linha_totais])
 
-
-def aplicar_estilo_tabela(df, modo_desempenho=False):
-    """
-    Aplica estilos à tabela conforme o modo de desempenho.
-    (Não será usada diretamente no AgGrid, mas mantemos aqui para não remover código).
-    """
-    if modo_desempenho or len(df) > 1000:
-        # Estilo mínimo para melhor desempenho
-        return df.style.set_properties(**{'text-align': 'center'})
-    else:
-        # Estilo completo para tabelas menores
-        return df.style \
-            .set_properties(**{'text-align': 'center'}) \
-            .set_table_styles([
-            {'selector': 'th', 'props': [('text-align', 'center')]},
-            {'selector': 'td', 'props': [('text-align', 'center')]},
-            # Destacar a linha de totais
-            {'selector': 'tr:last-child', 'props': [
-                ('font-weight', 'bold'),
-                ('background-color', '#e6f2ff'),
-                ('border-top', '2px solid #b3d9ff'),
-                ('color', '#0066cc')
-            ]}
-        ])
-
-
 def converter_df_para_csv(df):
     """Converte DataFrame para formato CSV"""
     try:
@@ -498,63 +472,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         } catch (error) {
             console.error('Erro ao estilizar linha:', error);
             return null;
-        }
-    }
-    """)
-
-    # 3. NAVEGAÇÃO REAL - implementação segura com JsCode
-    js_navigation_top = JsCode("""
-    function(e) {
-        try {
-            // Encontrar o componente AgGrid
-            const gridDiv = document.querySelector('.ag-root-wrapper');
-            if (!gridDiv || !gridDiv.gridOptions || !gridDiv.gridOptions.api) {
-                console.error('Grid API não encontrada');
-                return;
-            }
-
-            const api = gridDiv.gridOptions.api;
-
-            // Navegar para o topo
-            api.ensureIndexVisible(0);
-
-            // Scrollar para o topo
-            const firstRow = api.getDisplayedRowAtIndex(0);
-            if (firstRow) {
-                api.setFocusedCell(0, api.getColumnDefs()[0].field);
-            }
-        } catch (error) {
-            console.error('Erro na navegação para o topo:', error);
-        }
-    }
-    """)
-
-    js_navigation_bottom = JsCode("""
-    function(e) {
-        try {
-            // Encontrar o componente AgGrid
-            const gridDiv = document.querySelector('.ag-root-wrapper');
-            if (!gridDiv || !gridDiv.gridOptions || !gridDiv.gridOptions.api) {
-                console.error('Grid API não encontrada');
-                return;
-            }
-
-            const api = gridDiv.gridOptions.api;
-
-            // Obter o índice da última linha
-            const maxIndex = api.getDisplayedRowCount() - 1;
-            if (maxIndex < 0) return;
-
-            // Navegar para o final
-            api.ensureIndexVisible(maxIndex);
-
-            // Scrollar para o final
-            const lastRow = api.getDisplayedRowAtIndex(maxIndex);
-            if (lastRow) {
-                api.setFocusedCell(maxIndex, api.getColumnDefs()[0].field);
-            }
-        } catch (error) {
-            console.error('Erro na navegação para o final:', error);
         }
     }
     """)
