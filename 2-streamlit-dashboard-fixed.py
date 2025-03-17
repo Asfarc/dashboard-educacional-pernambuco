@@ -719,6 +719,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "average": "Média",
         "count": "Contagem"
     }
+    # Adicionar uma função personalizada para formatar números na interface do AgGrid
+    js_number_formatter = JsCode("""
+    function(value) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        // Formatar números com pontos como separadores de milhar
+        return value.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
+    }
+    """)
 
     # 2. CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
     gb.configure_default_column(
@@ -746,6 +754,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressCellFocus=False,
         alwaysShowVerticalScroll=True,
         localeText=localeText,  # Adicione a tradução
+        defaultColDef={
+            "valueFormatter": js_number_formatter  # Aplicar formatação para todas as colunas numéricas
+        },
+        numericFormat={
+            "thousandSeparator": ".",
+            "decimalSeparator": ","
+        }
     )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
