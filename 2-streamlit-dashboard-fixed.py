@@ -365,35 +365,39 @@ def converter_df_para_excel(df):
 
 # Função para exibir a tabela com AgGrid
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600):
-    """
-    Exibe o DataFrame usando AgGrid, agora SEM paginação manual e com rolagem vertical real.
-    Convertendo tudo em string para evitar 'Invalid number' na linha 'TOTAL'.
-    """
-    df_str = df_para_exibir.astype(str)  # tudo como texto, evitando erro no AgGrid
-    gb = GridOptionsBuilder.from_dataframe(df_str)
+    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
-    # Configura colunas padrão
+    # Configurar colunas numéricas
+    if coluna_dados in df_para_exibir.columns:
+        gb.configure_column(
+            coluna_dados,
+            type=["numericColumn"],
+            filter="agNumberColumnFilter",
+            aggFunc="sum"
+        )
+
+    # Configurar grid
+    gb.configure_pagination(enabled=False)
+    gb.configure_side_bar()  # Painel de filtros
     gb.configure_default_column(
         groupable=True,
         editable=False,
         wrapText=True,
         autoHeight=True
     )
-    # Usar rolagem vertical nativa do AgGrid (sem paginação do AgGrid também):
-    gb.configure_pagination(enabled=False)
 
     grid_options = gb.build()
 
-    AgGrid(
-        df_str,
+    grid_return = AgGrid(
+        df_para_exibir,
         gridOptions=grid_options,
         height=altura,
-        data_return_mode=DataReturnMode.AS_INPUT,
-        update_mode=GridUpdateMode.NO_UPDATE,
+        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+        update_mode=GridUpdateMode.MODEL_CHANGED,
         fit_columns_on_grid_load=True,
         theme="streamlit",
     )
-
+    return grid_return
 
 # -------------------------------
 # Carregamento de Dados
