@@ -1,18 +1,16 @@
-# 1) Imports da biblioteca padrão
-import os
-import io
-import re
-import json
-from pathlib import Path
-
-# 2) Imports de bibliotecas de terceiros
-import numpy as np
+import streamlit as st
 import pandas as pd
 import plotly.express as px
-import streamlit as st
-from st_aggrid import (
-    AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
-)
+import numpy as np
+import os
+from pathlib import Path
+import io
+import json
+import re
+
+# Biblioteca do AgGrid
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
+
 
 # -------------------------------
 # Configuração Inicial da Página
@@ -23,6 +21,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # -------------------------------
 # Funções Auxiliares
@@ -95,9 +94,6 @@ def criar_mapeamento_colunas(df):
     Cria um dicionário que mapeia as etapas de ensino para os nomes das colunas.
     Esse mapeamento inclui a coluna principal, subetapas e séries, facilitando a seleção
     dos dados conforme os filtros do usuário.
-
-    Parâmetros:
-    df (DataFrame): DataFrame a ser usado como referência para verificar colunas existentes
     """
     # Criar mapeamento de colunas (case-insensitive) apenas uma vez
     colunas_map = {col.lower().strip(): col for col in df.columns}
@@ -350,6 +346,8 @@ def adicionar_linha_totais(df, coluna_dados):
 
     # Concatenar com o DataFrame original
     return pd.concat([df, linha_totais])
+
+
 # -----------------------------------------------------------------
 # 1. Função para centralizar ORDENAR e FORMATAR (CASO VOCÊ QUEIRA)
 # -----------------------------------------------------------------
@@ -386,6 +384,7 @@ def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao
 
     return tabela_dados, tabela_exibicao
 
+
 def converter_df_para_csv(df):
     """Converte DataFrame para formato CSV, incluindo tratamento para DataFrame vazio."""
     if df is None or df.empty:
@@ -415,6 +414,7 @@ def converter_df_para_excel(df):
         output = io.BytesIO()
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
+
 
 # --------------------------------------------------------
 # 2. (Opcional) Função para centralizar NAVEGAÇÃO no AgGrid
@@ -450,6 +450,7 @@ def navegar_tabela(label_botao, key_botao, posicao='top'):
             </script>
         """
         st.markdown(scroll_script, unsafe_allow_html=True)
+
 
 # Função para exibir a tabela com AgGrid - implementação corrigida
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
@@ -648,8 +649,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "notBlank": "Não em branco",
 
         # Configure essa função personalizada para formatar números
-        "thousandSeparator": ".",  # Usar ponto como separador de milhar
-        "decimalSeparator": ",",   # Usar vírgula como separador decimal
+        "thousandSeparator": ".",
+        "decimalSeparator": ",",
 
         # Botões dos filtros
         "applyFilter": "Aplicar",
@@ -816,8 +817,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }
     )
 
-    # Configurar barra lateral e paginação
-    gb.configure_side_bar()  # Painel lateral para colunas e filtros
+    # Barra lateral e seleção
+    gb.configure_side_bar()
     gb.configure_selection('single')
 
     # Construir as opções finais do grid
@@ -826,7 +827,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Interface para controles de navegação
     st.write("### Navegação da tabela")
 
-    # CSS mais limpo para os botões de navegação
     st.markdown("""
         <style>
         .nav-panel {
@@ -855,60 +855,23 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             transform: translateY(1px);
         }
         </style>
-        """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-    # Usar colunas para posicionar botões de navegação
-    col_nav_top1, col_nav_top2, col_nav_top3 = st.columns([6, 3, 3])
-
-    # Implementação dos botões de navegação - versão streamlit sem dependência de JavaScript direto
+    # Botões de navegação acima
+    col_nav_top1, col_nav_top2 = st.columns([1, 1])
+    with col_nav_top1:
+        navegar_tabela("⏫ Primeira Linha", "btn_top_1", posicao='top')
     with col_nav_top2:
-        def navegar_tabela(streamlit_key, posicao='top'):
-            """
-            Injeta JavaScript no Streamlit para rolar a tabela AgGrid até a primeira ou última linha.
-            :param streamlit_key: chave única do botão para evitar conflitos
-            :param posicao: 'top' ou 'bottom'
-            """
-            label = "⏫ Primeira Linha" if posicao == 'top' else "⏬ Última Linha"
-            if st.button(label, key=streamlit_key):
-                scroll_script = """
-                    <script>
-                        setTimeout(function() {
-                            try {
-                                const gridDiv = document.querySelector('.ag-root-wrapper');
-                                if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                                    const api = gridDiv.gridOptions.api;
-                                    if ('{posicao}' === 'top') {
-                                        api.ensureIndexVisible(0);
-                                        api.setFocusedCell(0, api.getColumnDefs()[0].field);
-                                    } else {
-                                        const lastIndex = api.getDisplayedRowCount() - 1;
-                                        if (lastIndex >= 0) {
-                                            api.ensureIndexVisible(lastIndex);
-                                            api.setFocusedCell(lastIndex, api.getColumnDefs()[0].field);
-                                        }
-                                    }
-                                }
-                            } catch(e) { console.error(e); }
-                        }, 300);
-                    </script>
-                """.replace('{posicao}', posicao)
-                st.markdown(scroll_script, unsafe_allow_html=True)
+        navegar_tabela("⏬ Última Linha", "btn_bottom_1", posicao='bottom')
 
-        # Uso acima da tabela
-        col_nav_top1, col_nav_top2 = st.columns([1, 1])
-        with col_nav_top1:
-            navegar_tabela("btn_top_1", posicao='top')
-        with col_nav_top2:
-            navegar_tabela("btn_bottom_1", posicao='bottom')
-
-    # Alternativa para navegação com teclas de atalho
+    # Dicas de navegação
     st.markdown("""
         <div style="background-color: #f5f7fa; padding: 10px; border-radius: 5px; margin-top: 5px; margin-bottom: 15px; font-size: 0.9em;">
             <strong>✨ Dicas de navegação:</strong> Use <kbd>Home</kbd> para ir à primeira linha e <kbd>End</kbd> para ir à última.
             <kbd>↑</kbd>/<kbd>↓</kbd> navega entre linhas, <kbd>←</kbd>/<kbd>→</kbd> entre colunas.
             <kbd>Ctrl+F</kbd> ou a barra de filtro acima para buscar em todas as colunas.
         </div>
-        """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
     # Renderizar o grid
     grid_return = AgGrid(
@@ -916,25 +879,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         gridOptions=grid_options,
         height=altura,
         custom_css="""
-                .ag-row-selected { background-color: #eff7ff !important; }
-                .numeric-cell { text-align: right; }
-                .ag-header-cell-text { font-weight: bold; }
-                .ag-cell { overflow: hidden; text-overflow: ellipsis; }
-            """,
+            .ag-row-selected { background-color: #eff7ff !important; }
+            .numeric-cell { text-align: right; }
+            .ag-header-cell-text { font-weight: bold; }
+            .ag-cell { overflow: hidden; text-overflow: ellipsis; }
+        """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
         fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,  # Necessário para funções JsCode
+        allow_unsafe_jscode=True,
         theme="streamlit",
-        key=f"aggrid_{id(df_para_exibir)}"  # ID único para cada tabela
+        key=f"aggrid_{id(df_para_exibir)}"
     )
 
-    # Uso abaixo da tabela
+    # Botões de navegação abaixo
     col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
     with col_nav_bot1:
-        navegar_tabela("btn_top_2", posicao='top')
+        navegar_tabela("⏫ Primeira Linha", "btn_top_2", posicao='top')
     with col_nav_bot2:
-        navegar_tabela("btn_bottom_2", posicao='bottom')
+        navegar_tabela("⏬ Última Linha", "btn_bottom_2", posicao='bottom')
 
     # Feedback sobre filtros aplicados
     filtered_data = grid_return['data']
@@ -1010,7 +973,7 @@ if etapa_selecionada not in mapeamento_colunas:
     st.error(f"A etapa '{etapa_selecionada}' não foi encontrada no mapeamento de colunas.")
     st.stop()
 
-# Filtro da Subetapa (varia de acordo com a etapa selecionada)
+# Filtro da Subetapa
 if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[etapa_selecionada]["subetapas"]:
     subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
     subetapa_selecionada = st.sidebar.selectbox(
@@ -1020,7 +983,7 @@ if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[e
 else:
     subetapa_selecionada = "Todas"
 
-# Filtro para a Série, se aplicável à subetapa selecionada
+# Filtro para a Série, se aplicável
 series_disponiveis = []
 if (subetapa_selecionada != "Todas" and
         "series" in mapeamento_colunas[etapa_selecionada] and
@@ -1044,8 +1007,7 @@ if coluna_existe:
     coluna_dados = coluna_real
 else:
     st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
-    # Tenta usar a coluna principal como fallback
-    coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")  # Corrigido typo "."
+    coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
     coluna_existe, coluna_principal_real = verificar_coluna_existe(df_filtrado, coluna_principal)
 
     if coluna_existe:
@@ -1054,6 +1016,7 @@ else:
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
+
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
@@ -1068,12 +1031,12 @@ if subetapa_selecionada != "Todas":
         filtro_texto += f" | **Série:** {serie_selecionada}"
 st.markdown(filtro_texto)
 
+
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
 col1, col2, col3 = st.columns(3)
 
-# KPI 1 - Com tratamento de erros
 try:
     total_matriculas = df_filtrado[coluna_dados].sum()
     with col1:
@@ -1083,7 +1046,6 @@ except Exception as e:
         st.metric("Total de Matrículas", "-")
         st.caption(f"Erro ao calcular: {str(e)}")
 
-# KPI 2 - Com tratamento de erros
 with col2:
     try:
         if tipo_visualizacao == "Escola":
@@ -1106,7 +1068,6 @@ with col2:
         st.metric("Média de Matrículas", "-")
         st.caption(f"Erro ao calcular: {str(e)}")
 
-# KPI 3 - Com tratamento de erros
 with col3:
     try:
         if tipo_visualizacao == "Escola":
@@ -1127,12 +1088,12 @@ with col3:
             st.metric("Máximo de Matrículas", "-")
         st.caption(f"Erro ao calcular: {str(e)}")
 
+
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
 # -------------------------------
 st.markdown("## Dados Detalhados")
 
-# Selecionar colunas iniciais de forma segura
 colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
@@ -1146,24 +1107,18 @@ elif tipo_visualizacao == "Município":
 else:
     colunas_adicionais = ["CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 
-# Adicionar apenas colunas que existem no DataFrame
 for col in colunas_adicionais:
     if col in df_filtrado.columns:
         colunas_tabela.append(col)
 
-# Adicionar coluna de dados se existir
 if coluna_dados in df_filtrado.columns:
     colunas_tabela.append(coluna_dados)
 
-# Verifica colunas existentes no df_filtrado
 colunas_existentes = [col for col in colunas_tabela if col in df_filtrado.columns]
 colunas_tabela = colunas_existentes
 
-# Criando uma view em vez de cópia - economizando memória
 if coluna_dados in df_filtrado.columns:
-    # Aplicar to_numeric sem criar cópia
     with pd.option_context('mode.chained_assignment', None):
-        # Disable SettingWithCopyWarning
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
         df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
 
@@ -1175,16 +1130,13 @@ if coluna_dados in df_filtrado.columns:
             )
         colunas_tabela.append('% do Total')
 
-    # Ordenar dados
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
-
-    # Para exibição, formatamos os valores numéricos
     tabela_exibicao = tabela_dados.copy()
+
     with pd.option_context('mode.chained_assignment', None):
         tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
             lambda x: formatar_numero(x) if pd.notnull(x) else "-"
         )
-
         if '% do Total' in tabela_exibicao.columns:
             tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
                 lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
@@ -1193,7 +1145,6 @@ else:
     tabela_dados = df_filtrado[colunas_existentes].copy()
     tabela_exibicao = tabela_dados.copy()
 
-# Cria abas
 tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
 
 with tab1:
@@ -1210,14 +1161,13 @@ with tab1:
                                       value=600,
                                       step=50)
         else:
-            altura_manual = 600  # Valor padrão
+            altura_manual = 600
 
     with col1:
         total_registros = len(tabela_exibicao)
         mostrar_todos = st.checkbox("Mostrar todos os registros", value=True)
 
     with col2:
-        # Espaço para manter layout
         st.write(" ")
     with col3:
         modo_desempenho = st.checkbox("Ativar modo de desempenho", value=True,
@@ -1247,7 +1197,6 @@ with tab1:
                             tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
                                 lambda x: formatar_numero(x) if pd.notnull(x) else "-"
                             )
-
                         if '% do Total' in tabela_exibicao.columns:
                             tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
                                 lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
@@ -1257,11 +1206,8 @@ with tab1:
         else:
             st.write("Não há colunas adicionais disponíveis")
 
-    # Filtros via campo de busca
     tabela_filtrada = tabela_exibicao.copy()
-    filtros_aplicados = False
 
-    # Botão "Aplicar Filtros" em datasets grandes
     if len(tabela_exibicao) > 1000:
         col_filtrar = st.columns([1])[0]
         with col_filtrar:
@@ -1271,23 +1217,19 @@ with tab1:
         aplicar_filtros = True
         mostrar_dica = False
 
-    # Adicionar linha de totais com tratamento de erros
     try:
         tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
     except Exception as e:
         st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
         tabela_com_totais = tabela_filtrada
 
-        # Exibe a tabela inteira no AgGrid
     altura_tabela = altura_manual
     try:
         grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
     except Exception as e:
         st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
-        # Fallback para st.dataframe se o AgGrid falhar
         st.dataframe(tabela_com_totais, height=altura_tabela)
 
-    # Botões de download com tratamento de erros
     col1, col2 = st.columns(2)
     with col1:
         try:
@@ -1319,48 +1261,34 @@ with tab2:
 
         with col1:
             try:
-                # Calcular estatísticas com tratamento de erro para cada métrica
                 try:
                     total_valor = formatar_numero(tabela_dados[coluna_dados].sum())
                 except:
                     total_valor = "-"
-
                 try:
                     media_valor = formatar_numero(tabela_dados[coluna_dados].mean())
                 except:
                     media_valor = "-"
-
                 try:
                     mediana_valor = formatar_numero(tabela_dados[coluna_dados].median())
                 except:
                     mediana_valor = "-"
-
                 try:
                     min_valor = formatar_numero(tabela_dados[coluna_dados].min())
                 except:
                     min_valor = "-"
-
                 try:
                     max_valor = formatar_numero(tabela_dados[coluna_dados].max())
                 except:
                     max_valor = "-"
-
                 try:
                     std_valor = formatar_numero(tabela_dados[coluna_dados].std())
                 except:
                     std_valor = "-"
 
-                # Criar DataFrame de resumo mesmo se algumas métricas falharem
                 resumo = pd.DataFrame({
                     'Métrica': ['Total', 'Média', 'Mediana', 'Mínimo', 'Máximo', 'Desvio Padrão'],
-                    'Valor': [
-                        total_valor,
-                        media_valor,
-                        mediana_valor,
-                        min_valor,
-                        max_valor,
-                        std_valor
-                    ]
+                    'Valor': [total_valor, media_valor, mediana_valor, min_valor, max_valor, std_valor]
                 })
 
                 st.write("### Resumo Estatístico")
@@ -1375,11 +1303,9 @@ with tab2:
             try:
                 st.write("### Top 5 Valores")
                 if len(tabela_dados) > 0:
-                    # Usar nlargest com tratamento de erro
                     try:
                         top5 = tabela_dados.nlargest(min(5, len(tabela_dados)), coluna_dados)
 
-                        # Selecionar colunas para exibição de forma segura
                         colunas_exibir = []
                         if tipo_visualizacao == "Escola" and "NOME DA ESCOLA" in top5.columns:
                             colunas_exibir.append("NOME DA ESCOLA")
@@ -1391,21 +1317,17 @@ with tab2:
                         if "DEPENDENCIA ADMINISTRATIVA" in top5.columns:
                             colunas_exibir.append("DEPENDENCIA ADMINISTRATIVA")
 
-                        # Garantir que a coluna de dados seja incluída se existir
                         if coluna_dados in top5.columns:
                             colunas_exibir.append(coluna_dados)
 
-                        # Incluir coluna de percentual se existir
                         if '% do Total' in top5.columns:
                             colunas_exibir.append('% do Total')
 
-                        # Filtrar apenas colunas que existem
-                        colunas_exibir = [col for col in colunas_exibir if col in top5.columns]
+                        colunas_exibir = [c for c in colunas_exibir if c in top5.columns]
 
                         if colunas_exibir:
                             top5_exibir = top5[colunas_exibir].copy()
 
-                            # Formatar valores numéricos
                             if coluna_dados in top5_exibir.columns:
                                 top5_exibir[coluna_dados] = top5_exibir[coluna_dados].apply(
                                     lambda x: formatar_numero(x) if pd.notnull(x) else "-"
