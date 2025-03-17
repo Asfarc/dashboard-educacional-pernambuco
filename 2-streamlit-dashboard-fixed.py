@@ -563,9 +563,7 @@ colunas_tabela.append(coluna_dados)
 
 # Verifica se todas as colunas estão presentes no DataFrame filtrado
 colunas_existentes = [col for col in colunas_tabela if col in df_filtrado.columns]
-if set(colunas_existentes) != set(colunas_tabela):
-    st.warning(f"Algumas colunas não estão disponíveis para exibição na tabela: {set(colunas_tabela) - set(colunas_existentes)}")
-    colunas_tabela = colunas_existentes
+colunas_tabela = colunas_existentes
 
 # Converter a coluna de dados para numérico para ordenação correta
 df_filtrado_tabela = df_filtrado.copy()
