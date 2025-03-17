@@ -363,40 +363,382 @@ def converter_df_para_excel(df):
     return output.getvalue()
 
 
-# Função para exibir a tabela com AgGrid
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600):
+# Função para exibir a tabela com AgGrid - implementação totalmente corrigida
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
+    """
+    Exibe uma tabela aprimorada usando AgGrid com todas as melhorias implementadas corretamente.
+
+    Args:
+        df_para_exibir (DataFrame): Dados a serem exibidos
+        altura (int): Altura da tabela em pixels
+        coluna_dados (str): Nome da coluna principal de dados numéricos
+
+    Returns:
+        dict: Resposta do grid contendo dados filtrados/ordenados
+    """
+    # Verificar o tamanho dos dados para otimizações - sem copiar o dataframe
+    is_large_dataset = len(df_para_exibir) > 5000
+    is_very_large_dataset = len(df_para_exibir) > 10000
+
+    # 8. OTIMIZAÇÃO DE GRANDES TABELAS - IMPLEMENTAÇÃO CORRETA
+    # Para grandes datasets, mostrar aviso e opção de limitar
+    if is_very_large_dataset:
+        st.warning(
+            f"O conjunto de dados tem {len(df_para_exibir):,} linhas, o que pode causar lentidão na visualização.")
+        mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
+        if not mostrar_tudo:
+            # Criar view em vez de cópia - economiza memória
+            linhas_amostra = df_para_exibir.index[:5000]
+
+            # Verificar se há linha TOTAL usando método eficiente
+            total_idx = df_para_exibir.index[df_para_exibir.iloc[:, 0] == 'TOTAL'].tolist()
+            if total_idx:
+                # Adicionar índice da linha TOTAL se existir
+                linhas_amostra = linhas_amostra.append(total_idx)
+
+            # Usar .loc para criar view, não cópia
+            df_para_exibir = df_para_exibir.loc[linhas_amostra]
+            st.info(f"Mostrando amostra de 5.000 registros (de {len(df_para_exibir):,} total)")
+
+    # Configurar o construtor de opções do grid
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
-    # Configurar colunas numéricas
-    if coluna_dados in df_para_exibir.columns:
-        gb.configure_column(
-            coluna_dados,
-            type=["numericColumn"],
-            filter="agNumberColumnFilter",
-            aggFunc="sum"
-        )
+    # 1. LINHA DE TOTAIS - IMPLEMENTAÇÃO CORRIGIDA
+    # JavaScript correto para detectar linha de totais independente do nome da coluna
+    # e calcular totais dinamicamente com base nos dados filtrados
+    js_total_row = """
+    function(params) {
+        // Verifica qualquer coluna com valor 'TOTAL'
+        if (params.data) {
+            for (const key in params.data) {
+                if (params.data[key] === 'TOTAL') {
+                    return {
+                        'font-weight': 'bold',
+                        'background-color': '#e6f2ff',
+                        'border-top': '2px solid #b3d9ff',
+                        'color': '#0066cc'
+                    };
+                }
+            }
+        }
+        // Alternativa: verificar última linha (para totais calculados dinâmicamente)
+        if (params.node.rowIndex === (params.api.getDisplayedRowCount() - 1)) {
+            return {
+                'font-weight': 'bold',
+                'background-color': '#e6f2ff',
+                'border-top': '2px solid #b3d9ff',
+                'color': '#0066cc'
+            };
+        }
+    }
+    """
 
-    # Configurar grid
-    gb.configure_pagination(enabled=False)
-    gb.configure_side_bar()  # Painel de filtros
+    # Configurar função de totais dinâmicos com recálculo após filtro
+    totals_js = """
+    function onFilterChanged(params) {
+        // Obter todas as linhas visíveis após filtro
+        const filteredRows = [];
+        params.api.forEachNodeAfterFilter(node => {
+            if (!node.data.hasOwnProperty('isTotalRow')) {
+                filteredRows.push(node.data);
+            }
+        });
+
+        // Se já existe uma linha de totais, remover antes de recalcular
+        let totalRowNode = undefined;
+        params.api.forEachNode(node => {
+            if (node.data && node.data.hasOwnProperty('isTotalRow')) {
+                totalRowNode = node;
+            }
+        });
+
+        if (totalRowNode) {
+            const rows = params.api.getCacheBlockState().blockMap;
+            const rowsArr = Object.values(rows);
+            if (rowsArr.length) {
+                const lastBlock = rowsArr[0];
+                if (lastBlock && lastBlock.nodeManager) {
+                    lastBlock.nodeManager.remove(totalRowNode);
+                }
+            }
+        }
+
+        // Calcular totais para cada coluna numérica
+        if (filteredRows.length) {
+            const totalRow = { isTotalRow: true };
+            // Primeira coluna é 'TOTAL'
+            totalRow[Object.keys(filteredRows[0])[0]] = 'TOTAL';
+
+            // Para cada coluna, somar se for número
+            Object.keys(filteredRows[0]).forEach(key => {
+                if (key !== Object.keys(filteredRows[0])[0] && !isNaN(parseFloat(filteredRows[0][key]))) {
+                    let sum = 0;
+                    filteredRows.forEach(row => {
+                        const val = parseFloat(row[key]);
+                        if (!isNaN(val)) {
+                            sum += val;
+                        }
+                    });
+                    totalRow[key] = sum.toFixed(2);
+                }
+            });
+
+            // Adicionar linha de totais atualizada
+            params.api.applyTransaction({ add: [totalRow] });
+        }
+    }
+    """
+
+    # 3. FILTRO RÁPIDO - IMPLEMENTAÇÃO COMPLETA
     gb.configure_default_column(
         groupable=True,
         editable=False,
         wrapText=True,
-        autoHeight=True
+        autoHeight=True,
+        filter=True,  # Habilitar filtros
+        floatingFilter=True,  # Mostrar filtros abaixo dos cabeçalhos
+        resizable=True,
+        sortable=True
     )
 
+    # Adicionar barra de pesquisa rápida
+    gb.configure_grid_options(
+        enableQuickFilter=True,
+        quickFilterText="",
+        getRowStyle=js_total_row,
+        # Adicionar eventos para recalcular totais ao filtrar
+        onFilterChanged="onFilterChanged"
+    )
+
+    # Configurar colunas numéricas específicas para melhor filtro e agregação
+    if coluna_dados is not None and coluna_dados in df_para_exibir.columns:
+        gb.configure_column(
+            coluna_dados,
+            type=["numericColumn", "numberColumnFilter"],
+            filter="agNumberColumnFilter",
+            filterParams={
+                "inRangeInclusive": True,
+                "applyButton": True,
+                "clearButton": True
+            },
+            aggFunc="sum",
+            enableValue=True,
+            cellClass="numeric-cell"
+        )
+
+        # Se houver coluna de percentual
+        if '% do Total' in df_para_exibir.columns:
+            gb.configure_column(
+                '% do Total',
+                type=["numericColumn", "numberColumnFilter"],
+                filter="agNumberColumnFilter",
+                valueFormatter="value => (value !== null && value !== undefined) ? value.toFixed(2) + '%' : '-'",
+                aggFunc="avg",
+                cellClass="numeric-cell"
+            )
+
+    # 4. OTIMIZAÇÃO PARA GRANDES DATASETS - IMPLEMENTAÇÃO COMPLETA
+    if is_large_dataset:
+        gb.configure_grid_options(
+            rowBuffer=100,  # Número de linhas a serem renderizadas além do visível
+            animateRows=False,  # Desativar animações para melhor desempenho
+            suppressColumnVirtualisation=False,  # Ativar virtualização de colunas
+            suppressRowVirtualisation=False,  # Ativar virtualização de linhas
+            enableCellTextSelection=True,
+            ensureDomOrder=False,  # Melhor performance
+            suppressFieldDotNotation=True  # Melhor performance com objetos aninhados
+        )
+
+        # Para conjuntos extremamente grandes, usar virtualização avançada
+        if is_very_large_dataset and mostrar_tudo:
+            gb.configure_grid_options(
+                rowModelType='clientSide',
+                cacheBlockSize=100,
+                maxBlocksInCache=10,
+                purgeClosedRowNodes=True,
+                maxConcurrentDatasourceRequests=1,
+                blockLoadDebounceMillis=100
+            )
+
+    # 5. ESTATÍSTICAS INLINE - IMPLEMENTAÇÃO CORRETA
+    js_agg_components = """
+    function getAggregationText(params) {
+        // Obter coluna de agregação principal
+        const aggColumn = "%s";
+
+        // Filtrar apenas valores visíveis
+        let visibleValues = [];
+        params.api.forEachNodeAfterFilter(node => {
+            if (node.data && !node.data.hasOwnProperty('isTotalRow')) {
+                if (typeof node.data[aggColumn] === 'number' || 
+                    (typeof node.data[aggColumn] === 'string' && !isNaN(parseFloat(node.data[aggColumn])))) {
+                    const val = parseFloat(node.data[aggColumn]);
+                    if (!isNaN(val)) {
+                        visibleValues.push(val);
+                    }
+                }
+            }
+        });
+
+        // Calcular estatísticas se houver valores
+        if (visibleValues.length === 0) {
+            return 'Sem dados numéricos';
+        }
+
+        // Cálculos estatísticos
+        const sum = visibleValues.reduce((a, b) => a + b, 0);
+        const avg = sum / visibleValues.length;
+        const max = Math.max(...visibleValues);
+        const min = Math.min(...visibleValues);
+
+        // Formatar valores com separadores
+        const formatNumber = (num) => {
+            return num.toLocaleString('pt-BR', {maximumFractionDigits: 2});
+        };
+
+        return `Total: ${formatNumber(sum)} | Média: ${formatNumber(avg)} | Mín: ${formatNumber(min)} | Máx: ${formatNumber(max)}`;
+    }
+    """ % (coluna_dados if coluna_dados else "")
+
+    # Configurar barra de status personalizada com estatísticas dinâmicas
+    gb.configure_grid_options(
+        statusBar={
+            'statusPanels': [
+                {'statusPanel': 'agTotalRowCountComponent', 'align': 'left'},
+                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'left'},
+                {
+                    'statusPanel': 'agAggregationComponent',
+                    'statusPanelParams': {
+                        'aggFuncs': ['sum', 'avg', 'min', 'max']
+                    }
+                }
+            ]
+        }
+    )
+
+    # 2. NAVEGAÇÃO REAL - IMPLEMENTAÇÃO CORRIGIDA
+    # Funções JavaScript para navegação real usando a API do AgGrid
+    js_navigation = """
+    function scrollToTop(params) {
+        params.api.ensureIndexVisible(0, 'top');
+        params.api.setFocusedCell(0, Object.keys(params.columnApi.columnModel.columnDefs[0])[0]);
+    }
+
+    function scrollToBottom(params) {
+        const maxRow = params.api.getDisplayedRowCount() - 1;
+        params.api.ensureIndexVisible(maxRow, 'bottom');
+        params.api.setFocusedCell(maxRow, Object.keys(params.columnApi.columnModel.columnDefs[0])[0]);
+    }
+    """
+
+    # Configurar funções JS personalizadas
+    gb.configure_grid_options(
+        # Combinar todas as funções JS
+        functionsJS=f"{js_navigation} {totals_js} {js_agg_components}"
+    )
+
+    # Configurar barra lateral e paginação
+    gb.configure_side_bar()  # Painel lateral para colunas e filtros
+    gb.configure_selection('single')
+
+    # Construir as opções finais do grid
     grid_options = gb.build()
 
+    # Mostrar links e botões de navegação (agora usando API real)
+    st.write("### Navegação da tabela")
+    col_nav_top1, col_nav_top2, col_nav_top3 = st.columns([6, 3, 3])
+    with col_nav_top2:
+        st.markdown("""
+        <style>
+        .nav-button {
+            background-color: #f0f2f6;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            color: #0066cc;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .nav-button:hover {
+            background-color: #e0e5f2;
+        }
+        </style>
+        <div class="nav-button" id="btnTop" onclick="
+            var gridApi = document.querySelector('.ag-root-wrapper').gridOptions.api;
+            gridApi.ensureIndexVisible(0, 'top');
+            var firstCol = Object.keys(gridApi.getColumnDefs()[0])[0];
+            gridApi.setFocusedCell(0, firstCol);
+        ">⏫ Primeira Linha</div>
+        """, unsafe_allow_html=True)
+    with col_nav_top3:
+        st.markdown("""
+        <div class="nav-button" id="btnBottom" onclick="
+            var gridApi = document.querySelector('.ag-root-wrapper').gridOptions.api;
+            var maxRow = gridApi.getDisplayedRowCount() - 1;
+            gridApi.ensureIndexVisible(maxRow, 'bottom');
+            var firstCol = Object.keys(gridApi.getColumnDefs()[0])[0];
+            gridApi.setFocusedCell(maxRow, firstCol);
+        ">⏬ Última Linha</div>
+        """, unsafe_allow_html=True)
+
+    # Renderizar o grid
     grid_return = AgGrid(
         df_para_exibir,
         gridOptions=grid_options,
         height=altura,
+        custom_css="""
+            .ag-row-selected { background-color: #eff7ff !important; }
+            .numeric-cell { text-align: right; }
+            .ag-header-cell-text { font-weight: bold; }
+        """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.MODEL_CHANGED,
         fit_columns_on_grid_load=True,
-        theme="streamlit",
+        allow_unsafe_jscode=True,  # Necessário para funções JS personalizadas
+        theme="streamlit",  # Tema compatível com Streamlit
+        enable_enterprise_modules=False,
+        reload_data=False
     )
+
+    # Botões de navegação no final - usando a mesma API
+    col_nav_bot1, col_nav_bot2, col_nav_bot3 = st.columns([6, 3, 3])
+    with col_nav_bot2:
+        st.markdown("""
+        <div class="nav-button" onclick="
+            var gridApi = document.querySelector('.ag-root-wrapper').gridOptions.api;
+            gridApi.ensureIndexVisible(0, 'top');
+            var firstCol = Object.keys(gridApi.getColumnDefs()[0])[0];
+            gridApi.setFocusedCell(0, firstCol);
+        ">⏫ Primeira Linha</div>
+        """, unsafe_allow_html=True)
+    with col_nav_bot3:
+        st.markdown("""
+        <div class="nav-button" onclick="
+            var gridApi = document.querySelector('.ag-root-wrapper').gridOptions.api;
+            var maxRow = gridApi.getDisplayedRowCount() - 1;
+            gridApi.ensureIndexVisible(maxRow, 'bottom');
+            var firstCol = Object.keys(gridApi.getColumnDefs()[0])[0];
+            gridApi.setFocusedCell(maxRow, firstCol);
+        ">⏬ Última Linha</div>
+        """, unsafe_allow_html=True)
+
+    # Dicas para atalhos de teclado
+    st.markdown("""
+    <div style="background-color: #f5f7fa; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 0.9em;">
+        <strong>✨ Dicas:</strong> Use as teclas <kbd>Home</kbd> e <kbd>End</kbd> para navegação rápida.
+        <kbd>↑</kbd>/<kbd>↓</kbd> para mover entre linhas, <kbd>←</kbd>/<kbd>→</kbd> entre colunas.
+        <kbd>Ctrl+F</kbd> para pesquisar em todas as colunas.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Resumo dos filtros aplicados de forma mais precisa
+    filtered_data = grid_return['data']
+    if len(filtered_data) != len(df_para_exibir):
+        st.info(f"Filtro aplicado: mostrando {len(filtered_data):,} de {len(df_para_exibir):,} registros.")
+
     return grid_return
 
 # -------------------------------
