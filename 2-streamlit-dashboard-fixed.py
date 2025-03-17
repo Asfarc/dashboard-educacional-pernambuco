@@ -508,28 +508,6 @@ st.markdown("""
         height: 14px;
     }
     
-    /* Estilo para os links de navegação */
-    a[href^="#"] {
-        background-color: #f0f2f6;
-        padding: 8px 15px;
-        border-radius: 5px;
-        text-decoration: none;
-        color: #0066cc;
-        font-weight: bold;
-        display: inline-block;
-        text-align: center;
-        margin: 10px 0;
-        border: 1px solid #ddd;
-    }
-    
-    a[href^="#"]:hover {
-        background-color: #e0e2e6;
-    }
-    
-    /* Ajuste para as âncoras */
-    div[id^="topo-tabela"], div[id^="final-tabela"] {
-        scroll-margin-top: 70px;
-    }    
     /* Estilo do "track" (trilho) da barra de rolagem */
     ::-webkit-scrollbar-track {
         background: #f1f1f1;
@@ -566,8 +544,103 @@ st.markdown("""
     ::-webkit-scrollbar-corner {
         background: #f1f1f1;
     }
+<style>
+    /* Estilo para os botões de rolagem */
+    .scroll-btn {
+        background-color: #f0f2f6;
+        padding: 8px 12px;
+        border-radius: 5px;
+        color: #0066cc;
+        font-weight: bold;
+        cursor: pointer;
+        border: 1px solid #ddd;
+        margin: 5px;
+        transition: background-color 0.2s;
+    }
+    
+    .scroll-btn:hover {
+        background-color: #e0e2e6;
+    }
 </style>
+
+<script>
+    // Função para rolar para o topo da tabela
+    function scrollTableToTop() {
+        // Tenta encontrar todos os contêineres de tabela
+        setTimeout(function() {
+            try {
+                const tables = document.querySelectorAll('.stDataFrame');
+                
+                if (tables.length > 0) {
+                    // Encontrar contêineres com overflow
+                    for (let i = 0; i < tables.length; i++) {
+                        // Encontra todos os divs dentro da tabela
+                        const divs = tables[i].querySelectorAll('div');
+                        
+                        for (let j = 0; j < divs.length; j++) {
+                            const div = divs[j];
+                            // Procura o div com propriedade overflow e que tenha scroll
+                            if (getComputedStyle(div).overflow !== 'hidden' && 
+                                div.scrollHeight > div.clientHeight) {
+                                console.log("Rolando para o topo", div);
+                                div.scrollTop = 0;
+                                return;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao rolar para o topo:", error);
+            }
+        }, 300);
+    }
+    
+    // Função para rolar para o final da tabela
+    function scrollTableToBottom() {
+        // Tenta encontrar todos os contêineres de tabela
+        setTimeout(function() {
+            try {
+                const tables = document.querySelectorAll('.stDataFrame');
+                
+                if (tables.length > 0) {
+                    // Encontrar contêineres com overflow
+                    for (let i = 0; i < tables.length; i++) {
+                        // Encontra todos os divs dentro da tabela
+                        const divs = tables[i].querySelectorAll('div');
+                        
+                        for (let j = 0; j < divs.length; j++) {
+                            const div = divs[j];
+                            // Procura o div com propriedade overflow e que tenha scroll
+                            if (getComputedStyle(div).overflow !== 'hidden' && 
+                                div.scrollHeight > div.clientHeight) {
+                                console.log("Rolando para o final", div);
+                                div.scrollTop = div.scrollHeight;
+                                return;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao rolar para o final:", error);
+            }
+        }, 300);
+    }
+    
+    // Adiciona também suporte para teclas Home e End
+    document.addEventListener('keydown', function(e) {
+        // Se a tecla Home for pressionada
+        if (e.key === 'Home') {
+            scrollTableToTop();
+        }
+        
+        // Se a tecla End for pressionada
+        if (e.key === 'End') {
+            scrollTableToBottom();
+        }
+    });
+</script>
 """, unsafe_allow_html=True)
+
 
 # Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
 # Adicionando ANO como primeira coluna sempre
