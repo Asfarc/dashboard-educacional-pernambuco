@@ -731,12 +731,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressCellFocus=False,
         alwaysShowVerticalScroll=True,
         localeText=localeText,  # Adicione a tradução
-        defaultColDef={  # Adicione esta configuração padrão para todas as colunas
-            "filterParams": {
-                "buttons": ["apply", "reset"],
-                "closeOnApply": False
-            }
-        }
     )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
