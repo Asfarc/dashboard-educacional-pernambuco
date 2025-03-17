@@ -636,44 +636,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     }
     """ % (coluna_dados if coluna_dados else ''))
 
-    # Formatador de números para usar na barra de status e outras partes da interface
-    js_number_formatter = JsCode("""
-    function(value) {
-        if (value === null || value === undefined || isNaN(value)) return '-';
-        // Formatar números com pontos como separadores de milhar
-        return value.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
-    }
-    """)
-
-    # Função personalizada para corrigir os números na barra de status
-    js_status_formatter = JsCode("""
-    function() {
-        setTimeout(function() {
-            try {
-                // Encontrar todos os elementos da barra de status
-                const statusElements = document.querySelectorAll('.ag-status-panel');
-                if (statusElements) {
-                    // Para cada elemento, substituir vírgulas por pontos
-                    statusElements.forEach(function(element) {
-                        if (element && element.textContent) {
-                            const text = element.textContent;
-                            // Substituir apenas os números com vírgulas
-                            const newText = text.replace(/(\\d{1,3})(,\\d{3})+/g, function(match) {
-                                return match.replace(/,/g, '.');
-                            });
-                            element.textContent = newText;
-                        }
-                    });
-                }
-            } catch(error) {
-                console.error('Erro ao formatar barra de status:', error);
-            }
-        }, 50);
-
-        return true;
-    }
-    """)
-
     # Configurar o construtor de opções do grid
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
@@ -691,7 +653,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
         # Configure essa função personalizada para formatar números
         "thousandSeparator": ".",  # Usar ponto como separador de milhar
-        "decimalSeparator": ",",  # Usar vírgula como separador decimal
+        "decimalSeparator": ",",   # Usar vírgula como separador decimal
 
         # Botões dos filtros
         "applyFilter": "Aplicar",
@@ -757,6 +719,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "average": "Média",
         "count": "Contagem"
     }
+    # Adicionar uma função personalizada para formatar números na interface do AgGrid
+    js_number_formatter = JsCode("""
+    function(value) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        // Formatar números com pontos como separadores de milhar
+        return value.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
+    }
+    """)
 
     # 2. CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
     gb.configure_default_column(
@@ -768,7 +738,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         floatingFilter=True,
         filterParams={
             "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
-            "buttons": ["apply", "reset"],
+            "buttons": ["apply", "reset"],  # Já está corretamente configurado para "apply" e "reset"
             "closeOnApply": False
         },
         resizable=True,
@@ -776,75 +746,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressMenu=False
     )
 
-    # ÚNICA CHAMADA PARA CONFIGURAR O GRID - combinando todas as opções
-    grid_options_params = {
-        # Barra de pesquisa rápida e estilo para linha de totais
-        "enableQuickFilter": True,
-        "quickFilterText": "",
-        "getRowStyle": js_total_row,
-        "suppressCellFocus": False,
-        "alwaysShowVerticalScroll": True,
-
-        # Configurações de idioma e formatação numérica
-        "localeText": localeText,
-        "defaultColDef": {
-            "valueFormatter": js_number_formatter
+    # Adicionar barra de pesquisa rápida e estilo para linha de totais
+    gb.configure_grid_options(
+        enableQuickFilter=True,
+        quickFilterText="",
+        getRowStyle=js_total_row,
+        suppressCellFocus=False,
+        alwaysShowVerticalScroll=True,
+        localeText=localeText,  # Adicione a tradução
+        defaultColDef={
+            "valueFormatter": js_number_formatter  # Aplicar formatação para todas as colunas numéricas
         },
-        "numericFormat": {
+        numericFormat={
             "thousandSeparator": ".",
             "decimalSeparator": ","
-        },
-
-        # Barra de status com total e filtros
-        "statusBar": {
-            'statusPanels': [
-                {
-                    'statusPanel': 'agTotalRowCountComponent',
-                    'align': 'left'
-                },
-                {
-                    'statusPanel': 'agFilteredRowCountComponent',
-                    'align': 'left'
-                },
-                {
-                    'statusPanel': 'agCustomStatsToolPanel',
-                    'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions
-                    }
-                }
-            ]
-        },
-
-        # Função para formatar números na barra de status
-        "onFirstDataRendered": js_status_formatter,
-        "onFilterChanged": js_status_formatter
-    }
-
-    # Adicionar configurações para grandes datasets se necessário
-    if is_large_dataset:
-        large_dataset_options = {
-            "rowBuffer": 100,
-            "animateRows": False,
-            "suppressColumnVirtualisation": False,
-            "suppressRowVirtualisation": False,
-            "enableCellTextSelection": True,
-            "enableBrowserTooltips": True
         }
-        grid_options_params.update(large_dataset_options)
-
-        # Configurações adicionais para datasets muito grandes
-        if is_very_large_dataset and mostrar_tudo:
-            very_large_dataset_options = {
-                "rowModelType": 'clientSide',
-                "cacheBlockSize": 100,
-                "maxBlocksInCache": 10
-            }
-            grid_options_params.update(very_large_dataset_options)
-
-    # Aplicar todas as configurações de uma vez
-    gb.configure_grid_options(**grid_options_params)
+    )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
+    # Validar se coluna_dados existe antes de configurar
     if coluna_dados and coluna_dados in df_para_exibir.columns:
         gb.configure_column(
             coluna_dados,
@@ -878,8 +798,50 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 cellClass="numeric-cell"
             )
 
-    # Configurar barra lateral e seleção
-    gb.configure_side_bar()
+    # 4. OTIMIZAÇÃO PARA GRANDES DATASETS - abordagem mais robusta
+    if is_large_dataset:
+        # Evitar uso de APIs não documentadas, usar opções estáveis
+        gb.configure_grid_options(
+            rowBuffer=100,
+            animateRows=False,
+            suppressColumnVirtualisation=False,
+            suppressRowVirtualisation=False,
+            enableCellTextSelection=True,
+            enableBrowserTooltips=True
+        )
+
+        # Técnicas mais seguras para conjuntos extremamente grandes
+        if is_very_large_dataset and mostrar_tudo:
+            gb.configure_grid_options(
+                rowModelType='clientSide',
+                cacheBlockSize=100,
+                maxBlocksInCache=10
+            )
+
+    # 5. ESTATÍSTICAS - implementação mais segura
+    gb.configure_grid_options(
+        statusBar={
+            'statusPanels': [
+                {
+                    'statusPanel': 'agTotalRowCountComponent',
+                    'align': 'left'
+                },
+                {
+                    'statusPanel': 'agFilteredRowCountComponent',
+                    'align': 'left'
+                },
+                {
+                    'statusPanel': 'agCustomStatsToolPanel',
+                    'statusPanelParams': {
+                        'aggStatFunc': js_agg_functions
+                    }
+                }
+            ]
+        }
+    )
+
+    # Configurar barra lateral e paginação
+    gb.configure_side_bar()  # Painel lateral para colunas e filtros
     gb.configure_selection('single')
 
     # Construir as opções finais do grid
@@ -977,17 +939,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         </div>
         """, unsafe_allow_html=True)
 
-    # CSS adicional para corrigir formatação dos números na barra de status
-    css_adicional = """
-        /* Garantir que os números na barra de status usem pontos como separadores */
-        .ag-status-panel {
-            font-variant-numeric: tabular-nums !important;
-        }
-        .ag-status-bar-value {
-            font-variant-numeric: tabular-nums !important;
-        }
-    """
-
     # Renderizar o grid
     grid_return = AgGrid(
         df_para_exibir,
@@ -998,7 +949,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 .numeric-cell { text-align: right; }
                 .ag-header-cell-text { font-weight: bold; }
                 .ag-cell { overflow: hidden; text-overflow: ellipsis; }
-            """ + css_adicional,
+            """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
         fit_columns_on_grid_load=True,
@@ -1054,42 +1005,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 </script>
                 """, unsafe_allow_html=True)
 
-    # Script para corrigir a formatação dos números no status bar após a tabela ser renderizada
-    st.markdown("""
-        <script>
-            // Função para formatar números na barra de status
-            function formatNumbersInStatusBar() {
-                setTimeout(function() {
-                    // Encontrar todos os elementos da barra de status
-                    const statusElements = document.querySelectorAll('.ag-status-panel');
-                    if (statusElements && statusElements.length > 0) {
-                        statusElements.forEach(function(element) {
-                            if (element.textContent) {
-                                // Substituir vírgulas por pontos nos números
-                                let text = element.textContent;
-                                text = text.replace(/(\d+),(\d{3})/g, '$1.$2');
-                                element.textContent = text;
-                            }
-                        });
-                    }
-                }, 100);
-            }
-
-            // Executar quando o documento estiver pronto
-            document.addEventListener('DOMContentLoaded', formatNumbersInStatusBar);
-
-            // Tentar novamente após um tempo para garantir
-            setTimeout(formatNumbersInStatusBar, 500);
-            setTimeout(formatNumbersInStatusBar, 1000);
-            setTimeout(formatNumbersInStatusBar, 2000);
-        </script>
-    """, unsafe_allow_html=True)
-
     # Feedback sobre filtros aplicados
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
-        st.info(
-            f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} de {formatar_numero(len(df_para_exibir))} registros.")
+        st.info(f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} de {formatar_numero(len(df_para_exibir))} registros.")
 
     return grid_return
 
