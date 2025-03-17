@@ -651,6 +651,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "blank": "Em branco",
         "notBlank": "Não em branco",
 
+        # Configure essa função personalizada para formatar números
+        "thousandSeparator": ".",  # Usar ponto como separador de milhar
+        "decimalSeparator": ",",   # Usar vírgula como separador decimal
+
         # Botões dos filtros
         "applyFilter": "Aplicar",
         "resetFilter": "Limpar",
@@ -803,8 +807,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'left'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'left'},
+                {
+                    'statusPanel': 'agTotalRowCountComponent',
+                    'align': 'left'
+                },
+                {
+                    'statusPanel': 'agFilteredRowCountComponent',
+                    'align': 'left'
+                },
                 {
                     'statusPanel': 'agCustomStatsToolPanel',
                     'statusPanelParams': {
