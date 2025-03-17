@@ -31,16 +31,16 @@ def formatar_numero(numero):
     Formata números grandes adicionando separadores de milhar.
     Se o número for NaN ou '-', retorna '-'.
     """
+    if pd.isna(numero) or numero == "-":
+        return "-"
     try:
-        if pd.isna(numero):
-            return "-"
-        num = float(numero)
-        if num.is_integer():
-            return f"{int(num):,}".replace(",", ".")
-        else:
-            return f"{num:,.2f}".replace(",", ".")
-    except:
-        return str(numero)
+        return f"{int(numero):,}".replace(",", ".")
+    except (ValueError, TypeError):
+        # Se não conseguir converter para inteiro, tenta formatar como float
+        try:
+            return f"{float(numero):,.2f}".replace(",", ".")
+        except (ValueError, TypeError):
+            return str(numero)
 
 
 @st.cache_data
@@ -106,18 +106,13 @@ def criar_mapeamento_colunas(df):
         if nome_padrao in df.columns:
             return nome_padrao
 
-        # Tentar encontrar por regex
-        padrao = re.compile(re.escape(nome_padrao), re.IGNORECASE)
-        for col in df.columns:
-            if padrao.search(col):
-                return col
+        # Verifica se existe uma versão case-insensitive da coluna
+        nome_normalizado = nome_padrao.lower().strip()
+        if nome_normalizado in colunas_map:
+            return colunas_map[nome_normalizado]
 
         # Se não encontrar, retorna o nome original
         return nome_padrao
-
-        # Log de erro detalhado
-        st.error(f"Coluna '{nome_padrao}' não encontrada. Colunas disponíveis: {list(df.columns)}")
-        return ""
 
     mapeamento = {
         "Educação Infantil": {
@@ -646,14 +641,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressMenu=False
     )
 
-    # Substituir configuração de gridOptions:
+    # Adicionar barra de pesquisa rápida e estilo para linha de totais
     gb.configure_grid_options(
-        domLayout='autoHeight',  # Layout automático
-        rowModelType='infinite' if len(df_para_exibir) > 10000 else 'clientSide',
-        cacheBlockSize=100,
-        maxBlocksInCache=10,
-        pagination=True,
-        paginationPageSize=100
+        enableQuickFilter=True,
+        quickFilterText="",
+        getRowStyle=js_total_row,
+        # Evitar uso de onFilterChanged que depende de APIs internas
+        suppressCellFocus=False,
+        alwaysShowVerticalScroll=True
     )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
@@ -679,20 +674,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 '% do Total',
                 type=["numericColumn", "numberColumnFilter"],
                 filter="agNumberColumnFilter",
-                # 🚨 CRÍTICO: Formatação correta com tratamento de erros
                 valueFormatter=JsCode("""
                     function(params) {
-                        try {
-                            const valor = Number(params.value) || 0;
-                            return valor.toLocaleString('pt-BR', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            }) + '%';
-                        } catch(e) {
-                            return '-';
-                        }
+                        if (params.value === null || params.value === undefined) return '-';
+                        return params.value.toFixed(2) + '%';
                     }
-                """),
+                    """),
                 aggFunc="avg",
                 cellClass="numeric-cell"
             )
@@ -942,7 +929,7 @@ mapeamento_colunas = criar_mapeamento_colunas(df)
 if "ANO" in df.columns:
     anos_disponiveis = sorted(df["ANO"].unique())
     ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
-    df_filtrado = df[df["ANO"].astype(int) == int(ano_selecionado)]
+    df_filtrado = df[df["ANO"] == ano_selecionado]
 else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
@@ -1038,12 +1025,12 @@ col1, col2, col3 = st.columns(3)
 # KPI 1 - Com tratamento de erros
 try:
     total_matriculas = df_filtrado[coluna_dados].sum()
-except:
-    total_matriculas = 0
     with col1:
-        st.metric("Total de Matrículas",
-                  formatar_numero(total_matriculas),
-                  help="Valores zerados podem indicar dados ausentes")
+        st.metric("Total de Matrículas", formatar_numero(total_matriculas))
+except Exception as e:
+    with col1:
+        st.metric("Total de Matrículas", "-")
+        st.caption(f"Erro ao calcular: {str(e)}")
 
 # KPI 2 - Com tratamento de erros
 with col2:
@@ -1132,16 +1119,9 @@ if coluna_dados in df_filtrado.columns:
     total = df_filtrado_tabela[coluna_dados].sum()
     if total > 0:
         with pd.option_context('mode.chained_assignment', None):
-            df_filtrado_tabela['% do Total'] = (
-                df_filtrado_tabela[coluna_dados]
-                .astype(np.float32)  # Primeira conversão otimizada
-                .div(total)
-                .mul(100)
-                .round(2)
-                .fillna(0)  # Remove NaNs
-                .astype(np.float32)  # Garante tipo final
+            df_filtrado_tabela['% do Total'] = df_filtrado_tabela[coluna_dados].apply(
+                lambda x: (x / total) * 100 if pd.notnull(x) else None
             )
-            df_filtrado_tabela['% do Total'] = df_filtrado_tabela['% do Total'].astype(float)
         colunas_tabela.append('% do Total')
 
     # Ordenar dados
@@ -1307,12 +1287,6 @@ with tab1:
 
         # Exibe a tabela inteira no AgGrid
     altura_tabela = altura_manual
-
-    if not pd.api.types.is_numeric_dtype(tabela_com_totais['% do Total']):
-        st.error("Erro crítico: Coluna de porcentagem contém valores não numéricos")
-        st.write("Valores problemáticos:", tabela_com_totais['% do Total'].unique())
-        st.stop()
-
     try:
         grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
     except Exception as e:
