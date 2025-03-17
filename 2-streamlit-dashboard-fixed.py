@@ -716,7 +716,7 @@ with tab1:
                     )
         else:
             st.write("Não há colunas adicionais disponíveis")
-    
+
     # Aplicar filtros com feedback de desempenho
     tabela_filtrada = tabela_exibicao.copy()
     filtros_aplicados = False
@@ -890,38 +890,125 @@ with tab1:
     if not mostrar_todos and total_paginas > 1:
         st.write(
             f"Página {pagina_atual} de {total_paginas} • Registros por página: {formatar_numero(registros_por_pagina)}")
+    st.markdown("""
+    <style>
+    .nav-buttons {
+        position: absolute;
+        right: 20px;
+        margin-top: -50px;
+        display: flex;
+        gap: 10px;
+        z-index: 999;
+    }
+    .nav-btn {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .nav-btn:hover {
+        background-color: #f0f0f0;
+    }
+    </style>
+    <div class="nav-buttons">
+        <button onclick="scrollTableToTop()" class="nav-btn" title="Ir ao topo da tabela">↑ Topo</button>
+        <button onclick="scrollTableToBottom()" class="nav-btn" title="Ir ao final da tabela">↓ Final</button>
+    </div>
 
-    # Botões para navegar dentro da tabela visível
-    cols_nav = st.columns([4, 1, 1])
-    with cols_nav[1]:
-        if st.button("↑ Ir ao topo", key="nav_top"):
-            st.markdown("""
-                <script>
-                    // Tenta encontrar o elemento da tabela e rolar para o topo
-                    setTimeout(function() {
-                        const tables = document.querySelectorAll('.stDataFrame');
-                        if (tables.length > 0) {
-                            const scrollable = tables[0].querySelector('div');
-                            if (scrollable) scrollable.scrollTop = 0;
-                        }
-                    }, 100);
-                </script>
-                """, unsafe_allow_html=True)
+    <script>
+    function scrollTableToTop() {
+        // Função melhorada para encontrar o contêiner correto da tabela
+        setTimeout(function() {
+            // Busca todos os possíveis contêineres de tabela
+            const tables = document.querySelectorAll('.stDataFrame');
+            if (tables.length > 0) {
+                // Primeiro, tenta encontrar o contêiner direto que tenha scroll
+                let scrollables = tables[0].querySelectorAll('div[style*="overflow"]');
+                let scrollable = null;
 
-    with cols_nav[2]:
-        if st.button("↓ Ir ao final", key="nav_bottom"):
-            st.markdown("""
-                <script>
-                    // Tenta encontrar o elemento da tabela e rolar para o final
-                    setTimeout(function() {
-                        const tables = document.querySelectorAll('.stDataFrame');
-                        if (tables.length > 0) {
-                            const scrollable = tables[0].querySelector('div');
-                            if (scrollable) scrollable.scrollTop = scrollable.scrollHeight;
-                        }
-                    }, 100);
-                </script>
-                """, unsafe_allow_html=True)
+                // Percorre os contêineres para encontrar o que tem scrollHeight > clientHeight
+                for (let i = 0; i < scrollables.length; i++) {
+                    if (scrollables[i].scrollHeight > scrollables[i].clientHeight) {
+                        scrollable = scrollables[i];
+                        break;
+                    }
+                }
+
+                // Se não encontrou, tenta o primeiro div dentro da tabela
+                if (!scrollable) {
+                    scrollable = tables[0].querySelector('div');
+                }
+
+                // Se encontrou qualquer contêiner com scroll, rola para o topo
+                if (scrollable) {
+                    scrollable.scrollTop = 0;
+                    console.log("Rolando para o topo", scrollable);
+                }
+            }
+        }, 200);
+    }
+
+    function scrollTableToBottom() {
+        // Função melhorada para encontrar o contêiner correto da tabela
+        setTimeout(function() {
+            // Busca todos os possíveis contêineres de tabela
+            const tables = document.querySelectorAll('.stDataFrame');
+            if (tables.length > 0) {
+                // Primeiro, tenta encontrar o contêiner direto que tenha scroll
+                let scrollables = tables[0].querySelectorAll('div[style*="overflow"]');
+                let scrollable = null;
+
+                // Percorre os contêineres para encontrar o que tem scrollHeight > clientHeight
+                for (let i = 0; i < scrollables.length; i++) {
+                    if (scrollables[i].scrollHeight > scrollables[i].clientHeight) {
+                        scrollable = scrollables[i];
+                        break;
+                    }
+                }
+
+                // Se não encontrou, tenta o primeiro div dentro da tabela
+                if (!scrollable) {
+                    scrollable = tables[0].querySelector('div');
+                }
+
+                // Se encontrou qualquer contêiner com scroll, rola para o final
+                if (scrollable) {
+                    scrollable.scrollTop = scrollable.scrollHeight;
+                    console.log("Rolando para o final", scrollable);
+                }
+            }
+        }, 200);
+    }
+
+    // Executar imediatamente para garantir que o script está pronto
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM carregado, script de navegação da tabela ativo");
+    });
+    </script>
+    """, unsafe_allow_html=True)
+
+    # Adicionar também CSS para garantir que os botões permaneçam visíveis
+    # mesmo quando a tabela é muito grande
+    st.markdown("""
+    <style>
+    /* Aumentar z-index para garantir que os botões permaneçam sobre outros elementos */
+    .nav-buttons {
+        z-index: 9999;
+    }
+
+    /* Garantir que a tabela não sobreponha os botões */
+    .stDataFrame {
+        position: relative;
+        z-index: 1;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     # Botões para download
     col1, col2 = st.columns(2)
