@@ -782,17 +782,27 @@ with tab1:
                     label_visibility="collapsed"
                 )
             with col3:
-                # Adicionar botões para navegação rápida
-                col_prev, col_next = st.columns(2)
+                # Criar 4 colunas para os botões de navegação
+                col_first, col_prev, col_next, col_last = st.columns(4)
+
+                with col_first:
+                    if st.button("⏮ Primeira", disabled=(pagina_atual <= 1), key="btn_first"):
+                        pagina_atual = 1
+
                 with col_prev:
-                    if st.button("◀ Anterior", disabled=(pagina_atual <= 1)):
+                    if st.button("◀ Anterior", disabled=(pagina_atual <= 1), key="btn_prev"):
                         pagina_atual -= 1
+
                 with col_next:
-                    if st.button("Próxima ▶", disabled=(pagina_atual >= total_paginas)):
+                    if st.button("Próxima ▶", disabled=(pagina_atual >= total_paginas), key="btn_next"):
                         pagina_atual += 1
+
+                with col_last:
+                    if st.button("Última ⏭", disabled=(pagina_atual >= total_paginas), key="btn_last"):
+                        pagina_atual = total_paginas
         else:
             # Interface simples para conjuntos menores de dados
-            col1, col2 = st.columns([1, 5])
+            col1, col2, col3 = st.columns([1, 5, 2])
             with col1:
                 st.write("**Página:**")
             with col2:
@@ -804,6 +814,25 @@ with tab1:
                     key="pagina_atual",
                     label_visibility="collapsed"
                 )
+            with col3:
+                # Criar 4 colunas para os botões de navegação
+                col_first, col_prev, col_next, col_last = st.columns(4)
+
+                with col_first:
+                    if st.button("⏮", disabled=(pagina_atual <= 1), key="btn_first_simple"):
+                        pagina_atual = 1
+
+                with col_prev:
+                    if st.button("◀", disabled=(pagina_atual <= 1), key="btn_prev_simple"):
+                        pagina_atual -= 1
+
+                with col_next:
+                    if st.button("▶", disabled=(pagina_atual >= total_paginas), key="btn_next_simple"):
+                        pagina_atual += 1
+
+                with col_last:
+                    if st.button("⏭", disabled=(pagina_atual >= total_paginas), key="btn_last_simple"):
+                        pagina_atual = total_paginas
         
         # Calcular quais registros mostrar
         inicio = (pagina_atual - 1) * registros_por_pagina
