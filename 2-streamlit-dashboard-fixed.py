@@ -754,13 +754,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressCellFocus=False,
         alwaysShowVerticalScroll=True,
         localeText=localeText,  # Adicione a tradução
-        defaultColDef={
-            "valueFormatter": js_number_formatter  # Aplicar formatação para todas as colunas numéricas
-        },
-        numericFormat={
-            "thousandSeparator": ".",
-            "decimalSeparator": ","
-        }
     )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
