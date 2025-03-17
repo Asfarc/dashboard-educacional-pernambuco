@@ -18,11 +18,9 @@ st.set_page_config(
 )
 
 
-# --- Classes de Serviço ---
+# --- Classes de Serviço Corrigidas ---
 
 class DataLoader:
-    """Carregamento seguro e eficiente de dados com cache"""
-
     @staticmethod
     @st.cache_data(show_spinner="Carregando dados educacionais...")
     def load_education_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -40,11 +38,8 @@ class DataLoader:
 
 
 class ColumnManager:
-    """Gerenciamento dinâmico de estrutura de colunas"""
-
     @staticmethod
     def create_column_mapping(df: pd.DataFrame) -> Dict:
-        """Cria mapeamento dinâmico de colunas baseado em padrões"""
         column_map = {}
         for col in df.columns:
             parts = col.lower().split(' de ')
@@ -55,82 +50,28 @@ class ColumnManager:
 
     @staticmethod
     def get_numeric_columns(df: pd.DataFrame) -> List[str]:
-        """Identifica colunas numéricas automaticamente"""
         return df.select_dtypes(include=np.number).columns.tolist()
 
 
-# --- Componentes de UI ---
-
-class AggridTable:
-    """Componente AgGrid altamente configurável"""
-
-    def __init__(self, df: pd.DataFrame):
-        self.df = df
-        self.gb = GridOptionsBuilder.from_dataframe(df)
-        self._configure_defaults()
-
-    def _configure_defaults(self):
-        """Configurações base de performance e segurança"""
-        self.gb.configure_default_column(
-            resizable=True,
-            filterable=True,
-            sortable=True,
-            editable=False,
-            wrapText=True,
-            autoHeight=True,
-            suppressMenu=True
-        )
-
-        if len(self.df) > 10000:
-            self.gb.configure_grid_options(
-                rowModelType='serverSide',
-                cacheBlockSize=100,
-                maxBlocksInCache=10,
-                suppressRowVirtualisation=True
-            )
-
-    def add_columns(self, columns: List[Dict]):
-        """Adiciona configurações específicas de coluna"""
-        for col_config in columns:
-            self.gb.configure_column(**col_config)
-
-    def build(self, height: int = 600) -> Dict:
-        """Renderiza o grid final"""
-        return AgGrid(
-            self.df,
-            gridOptions=self.gb.build(),
-            height=height,
-            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-            update_mode=GridUpdateMode.MODEL_CHANGED,
-            fit_columns_on_grid_load=True,
-            theme="streamlit",
-            key="main_grid"
-        )
-
-
-# --- Lógica de Negócio ---
+# --- Lógica de Negócio Atualizada ---
 
 class EducationAnalyzer:
-    """Núcleo de análise de dados educacionais"""
-
     def __init__(self):
         self.escolas, self.estado, self.municipio = DataLoader.load_education_data()
         self.current_df = None
         self.column_mapping = None
 
     def apply_filters(self, filters: Dict) -> None:
-        """Aplica filtros ao dataset atual"""
-        query_parts = []
-        if 'dependency' in filters:
-            query_parts.append(f"`DEPENDENCIA ADMINISTRATIVA` in {filters['dependency']}")
-        if 'year' in filters:
-            query_parts.append(f"ANO == {filters['year']}")
+        # Filtro de dependência administrativa corrigido
+        if filters.get('dependency'):
+            self.current_df = self.current_df[
+                self.current_df['DEPENDENCIA ADMINISTRATIVA'].isin(filters['dependency'])
 
-        if query_parts:
-            self.current_df = self.current_df.query(' and '.join(query_parts))
+            # Filtro de ano sanitizado
+            if filters.get('year'):
+                self.current_df = self.current_df[self.current_df['ANO'] == int(filters['year'])]
 
     def calculate_metrics(self, column: str) -> Dict:
-        """Calcula métricas principais para uma coluna"""
         return {
             'total': self.current_df[column].sum(),
             'media': self.current_df[column].mean(),
@@ -140,10 +81,9 @@ class EducationAnalyzer:
         }
 
 
-# --- Interface Principal ---
+# --- Interface Principal Corrigida ---
 
 def main_interface():
-    """Configura a interface principal do dashboard"""
     analyzer = EducationAnalyzer()
 
     with st.sidebar:
@@ -153,18 +93,25 @@ def main_interface():
             ["Escola", "Município", "Estado"]
         )
 
-        # Atualiza dataset baseado na seleção
-        analyzer.current_df = getattr(analyzer, visualization_level.lower())
-        analyzer.column_mapping = ColumnManager.create_column_mapping(analyzer.current_df)
+        # Correção crucial do mapeamento
+        level_mapping = {
+            "Escola": "escolas",
+            "Município": "municipio",
+            "Estado": "estado"
+        }
+        df_name = level_mapping[visualization_level]
+        analyzer.current_df = getattr(analyzer, df_name)
 
-        # Filtros dinâmicos
+        # Filtros com sanitização
         year_filter = st.selectbox(
             "Ano:",
-            sorted(analyzer.current_df['ANO'].unique())
+            options=sorted(analyzer.current_df['ANO'].unique()),
+            format_func=lambda x: int(x)
         )
+
         dependency_filter = st.multiselect(
             "Dependência Administrativa:",
-            analyzer.current_df['DEPENDENCIA ADMINISTRATIVA'].unique()
+            options=analyzer.current_df['DEPENDENCIA ADMINISTRATIVA'].unique()
         )
 
         analyzer.apply_filters({
@@ -174,36 +121,27 @@ def main_interface():
 
     # Layout principal
     st.title("Análise de Matrículas Educacionais")
-    display_main_content(analyzer)
-
-
-def display_main_content(analyzer: EducationAnalyzer):
-    """Exibe conteúdo principal do dashboard"""
     col1, col2, col3 = st.columns(3)
+
+    # Métricas atualizadas
     numeric_cols = ColumnManager.get_numeric_columns(analyzer.current_df)
-
-    with col1:
-        selected_column = st.selectbox("Selecione a Métrica:", numeric_cols)
-
+    selected_column = col1.selectbox("Selecione a Métrica:", numeric_cols)
     metrics = analyzer.calculate_metrics(selected_column)
 
-    # Cards de métricas
     col1.metric("Total", f"{metrics['total']:,.0f}")
     col2.metric("Média", f"{metrics['media']:,.1f}")
     col3.metric("Variação", f"{metrics['max'] - metrics['min']:,.0f}")
 
     # Tabela interativa
     st.subheader("Visualização Detalhada")
-    table_config = [
+    grid = AggridTable(analyzer.current_df)
+    grid.add_columns([
         {'field': 'ANO', 'filter': 'agNumberFilter'},
         {'field': selected_column, 'type': ['numericColumn', 'numberColumnFilter']}
-    ]
-
-    grid = AggridTable(analyzer.current_df)
-    grid.add_columns(table_config)
+    ])
     grid_response = grid.build(height=700)
 
-    # Controles de exportação
+    # Exportação de dados
     with st.expander("Exportar Dados"):
         export_format = st.radio("Formato:", ["CSV", "Excel"])
         export_data = grid_response['data']
@@ -225,6 +163,5 @@ def display_main_content(analyzer: EducationAnalyzer):
             )
 
 
-# --- Ponto de Entrada ---
 if __name__ == "__main__":
     main_interface()
