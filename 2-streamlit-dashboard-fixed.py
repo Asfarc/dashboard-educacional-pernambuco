@@ -620,7 +620,7 @@ with tab1:
         # Mostrar todos os registros não é recomendado para grandes conjuntos de dados
         total_registros = len(tabela_exibicao)
         if total_registros > 1000:
-            st.warning(f"⚠️ Há {total_registros} registros no total. Mostrar todos pode causar lentidão.")
+            st.warning(f"⚠️ Há {formatar_numero(total_registros)} registros no total. Mostrar todos pode causar lentidão.")
             mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
         else:
             mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
@@ -813,7 +813,7 @@ with tab1:
     
     # Exibir informação atualizada sobre total de registros no estilo info azul
     if total_registros > 1000 and not mostrar_todos:
-        st.info(f"Exibindo {len(tabela_para_exibir)} de {total_registros} resultados. Para melhor desempenho, evite exibir todos os registros de uma vez.")
+        st.info(f"Exibindo {formatar_numero(len(tabela_para_exibir))} de {formatar_numero(total_registros)} resultados. Para melhor desempenho, evite exibir todos os registros de uma vez.")
     
     # Determinar altura da tabela
     if altura_personalizada:
