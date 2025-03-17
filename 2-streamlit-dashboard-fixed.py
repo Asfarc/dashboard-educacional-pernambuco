@@ -888,11 +888,20 @@ with tab1:
     # Aplicar estilo e exibir tabela
     usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
 
-    # Adicionar âncora e botão para navegar ao final (COLOCAR ANTES DA TABELA)
-    st.markdown('<div id="topo-tabela"></div>', unsafe_allow_html=True)
-    col_nav_topo1, col_nav_topo2 = st.columns([10, 2])
-    with col_nav_topo2:
-        st.markdown('[Ir para o final ↓](#final-tabela)', unsafe_allow_html=True)
+    # Adicionar botões de navegação interna da tabela
+    col_nav_top1, col_nav_top2, col_nav_top3 = st.columns([6, 3, 3])
+    with col_nav_top2:
+        st.markdown("""
+        <button onclick="scrollTableToTop()" class="scroll-btn" title="Ir ao topo da tabela">
+            ↑ Primeira linha
+        </button>
+        """, unsafe_allow_html=True)
+    with col_nav_top3:
+        st.markdown("""
+        <button onclick="scrollTableToBottom()" class="scroll-btn" title="Ir ao final da tabela">
+            ↓ Última linha
+        </button>
+        """, unsafe_allow_html=True)
 
     if usar_estilo_simples:
         with st.container():
@@ -904,11 +913,20 @@ with tab1:
         with st.container():
             st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
 
-    # Adicionar âncora e botão para navegar ao topo (COLOCAR DEPOIS DA TABELA)
-    st.markdown('<div id="final-tabela"></div>', unsafe_allow_html=True)
-    col_nav_base1, col_nav_base2 = st.columns([10, 2])
-    with col_nav_base2:
-        st.markdown('[Voltar ao topo ↑](#topo-tabela)', unsafe_allow_html=True)
+    # Adicionar botões de navegação na parte inferior
+    col_nav_bottom1, col_nav_bottom2, col_nav_bottom3 = st.columns([6, 3, 3])
+    with col_nav_bottom2:
+        st.markdown("""
+        <button onclick="scrollTableToTop()" class="scroll-btn" title="Ir ao topo da tabela">
+            ↑ Primeira linha
+        </button>
+        """, unsafe_allow_html=True)
+    with col_nav_bottom3:
+        st.markdown("""
+        <button onclick="scrollTableToBottom()" class="scroll-btn" title="Ir ao final da tabela">
+            ↓ Última linha
+        </button>
+        """, unsafe_allow_html=True)
 
     # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
