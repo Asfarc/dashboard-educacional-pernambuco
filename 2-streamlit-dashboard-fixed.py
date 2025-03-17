@@ -29,6 +29,7 @@ def formatar_numero(numero):
         return "-"
     return f"{int(numero):,}".replace(",", ".")
 
+@st.cache_data
 def carregar_dados():
     """
     Carrega os dados das planilhas no formato Parquet.
@@ -37,10 +38,27 @@ def carregar_dados():
     Em caso de erro, exibe uma mensagem e interrompe a execução.
     """
     try:
-        # Carregar os três arquivos Parquet
-        escolas_df = pd.read_parquet("escolas.parquet")
-        estado_df = pd.read_parquet("estado.parquet")
-        municipio_df = pd.read_parquet("municipio.parquet")
+        # Definir possíveis localizações dos arquivos
+        diretorios_possiveis = [".", "data", "dados", os.path.join(os.path.dirname(__file__), "data")]
+        
+        # Tentar encontrar os arquivos em diferentes localizações
+        escolas_df = None
+        estado_df = None
+        municipio_df = None
+        
+        for diretorio in diretorios_possiveis:
+            escolas_path = os.path.join(diretorio, "escolas.parquet")
+            estado_path = os.path.join(diretorio, "estado.parquet")
+            municipio_path = os.path.join(diretorio, "municipio.parquet")
+            
+            if os.path.exists(escolas_path) and os.path.exists(estado_path) and os.path.exists(municipio_path):
+                escolas_df = pd.read_parquet(escolas_path)
+                estado_df = pd.read_parquet(estado_path)
+                municipio_df = pd.read_parquet(municipio_path)
+                break
+        
+        if escolas_df is None or estado_df is None or municipio_df is None:
+            raise FileNotFoundError("Não foi possível encontrar os arquivos Parquet necessários.")
         
         # Converter colunas numéricas para o tipo correto
         for df in [escolas_df, estado_df, municipio_df]:
@@ -64,7 +82,7 @@ def criar_mapeamento_colunas(df):
     Parâmetros:
     df (DataFrame): DataFrame a ser usado como referência para verificar colunas existentes
     """
-    # Cria um dicionário de correspondência insensível a maiúsculas/minúsculas
+    # Criar mapeamento de colunas (case-insensitive) apenas uma vez
     colunas_map = {col.lower().strip(): col for col in df.columns}
     
     # Função auxiliar para verificar e obter o nome correto da coluna
@@ -172,21 +190,156 @@ def criar_mapeamento_colunas(df):
     
     return mapeamento
 
+def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
+    """
+    Determina a coluna de dados com base na etapa, subetapa e série selecionadas.
+    
+    Parâmetros:
+    etapa (str): Etapa de ensino selecionada
+    subetapa (str): Subetapa selecionada ("Todas" ou nome específico)
+    serie (str): Série selecionada ("Todas" ou nome específico)
+    mapeamento (dict): Mapeamento de colunas
+    
+    Retorna:
+    str: Nome da coluna de dados
+    """
+    # Verificar se a etapa existe no mapeamento
+    if etapa not in mapeamento:
+        st.error(f"A etapa '{etapa}' não foi encontrada no mapeamento de colunas.")
+        return ""
+    
+    # Caso 1: Nenhuma subetapa selecionada, usa coluna principal da etapa
+    if subetapa == "Todas":
+        return mapeamento[etapa].get("coluna_principal", "")
+    
+    # Verificar se a subetapa existe
+    if "subetapas" not in mapeamento[etapa] or subetapa not in mapeamento[etapa]["subetapas"]:
+        st.warning(f"A subetapa '{subetapa}' não foi encontrada para a etapa '{etapa}'.")
+        return mapeamento[etapa].get("coluna_principal", "")
+    
+    # Caso 2: Nenhuma série específica selecionada, usa coluna da subetapa
+    if serie == "Todas":
+        return mapeamento[etapa]["subetapas"][subetapa]
+    
+    # Verificar se a subetapa tem séries e se a série selecionada existe
+    series_subetapa = mapeamento[etapa].get("series", {}).get(subetapa, {})
+    if not series_subetapa or serie not in series_subetapa:
+        st.warning(f"A série '{serie}' não foi encontrada para a subetapa '{subetapa}'.")
+        return mapeamento[etapa]["subetapas"][subetapa]
+    
+    # Caso 3: Série específica selecionada
+    return series_subetapa[serie]
+
+def verificar_coluna_existe(df, coluna_nome):
+    """
+    Verifica se uma coluna existe no DataFrame, tentando encontrar uma correspondência
+    exata ou insensível a maiúsculas/minúsculas.
+    
+    Parâmetros:
+    df (DataFrame): DataFrame a ser verificado
+    coluna_nome (str): Nome da coluna a procurar
+    
+    Retorna:
+    tuple: (coluna_existe, coluna_real)
+        coluna_existe (bool): Indica se a coluna foi encontrada
+        coluna_real (str): Nome real da coluna encontrada ou nome original
+    """
+    # Verifica se a coluna existe exatamente como especificada
+    if coluna_nome in df.columns:
+        return True, coluna_nome
+    
+    # Verifica se existe uma versão case-insensitive
+    coluna_normalizada = coluna_nome.lower().strip()
+    colunas_normalizadas = {col.lower().strip(): col for col in df.columns}
+    
+    if coluna_normalizada in colunas_normalizadas:
+        return True, colunas_normalizadas[coluna_normalizada]
+    
+    # Não encontrou a coluna
+    return False, coluna_nome
+
+def adicionar_linha_totais(df, coluna_dados):
+    """
+    Adiciona uma linha de totais ao DataFrame.
+    
+    Parâmetros:
+    df (DataFrame): DataFrame a ser processado
+    coluna_dados (str): Nome da coluna de dados numéricos
+    
+    Retorna:
+    DataFrame: DataFrame com a linha de totais adicionada
+    """
+    # Criar uma linha de totais
+    totais = {}
+    
+    # Inicializar todas as colunas como vazias
+    for col in df.columns:
+        totais[col] = ""
+    
+    # Primeira coluna como "TOTAL"
+    if len(df.columns) > 0:
+        totais[df.columns[0]] = "TOTAL"
+    
+    # Calcular total para a coluna de dados
+    if coluna_dados in df.columns:
+        valor_total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
+        totais[coluna_dados] = formatar_numero(valor_total)
+    
+    # Definir percentual como 100%
+    if '% do Total' in df.columns:
+        totais['% do Total'] = "100.00%"
+    
+    # Criar DataFrame com a linha de totais
+    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
+    
+    # Concatenar com o DataFrame original
+    return pd.concat([df, linha_totais])
+
+def aplicar_estilo_tabela(df, modo_desempenho=False):
+    """
+    Aplica estilos à tabela conforme o modo de desempenho.
+    
+    Parâmetros:
+    df (DataFrame): DataFrame a estilizar
+    modo_desempenho (bool): Indica se deve usar estilo simplificado para melhor desempenho
+    
+    Retorna:
+    Styler: DataFrame estilizado
+    """
+    if modo_desempenho or len(df) > 1000:
+        # Estilo mínimo para melhor desempenho
+        return df.style.set_properties(**{'text-align': 'center'})
+    else:
+        # Estilo completo para tabelas menores
+        return df.style \
+            .set_properties(**{'text-align': 'center'}) \
+            .set_table_styles([
+                {'selector': 'th', 'props': [('text-align', 'center')]},
+                {'selector': 'td', 'props': [('text-align', 'center')]},
+                # Destacar a linha de totais
+                {'selector': 'tr:last-child', 'props': [
+                    ('font-weight', 'bold'),
+                    ('background-color', '#e6f2ff'),
+                    ('border-top', '2px solid #b3d9ff'),
+                    ('color', '#0066cc')
+                ]}
+            ])
+
+def converter_df_para_csv(df):
+    """Converte DataFrame para formato CSV"""
+    return df.to_csv(index=False).encode('utf-8')
+
+def converter_df_para_excel(df):
+    """Converte DataFrame para formato Excel"""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Dados')
+    return output.getvalue()
+
 # -------------------------------
 # Carregamento de Dados
 # -------------------------------
-try:
-    escolas_df, estado_df, municipio_df = carregar_dados()
-except Exception as e:
-    st.error(f"Erro ao carregar os dados: {e}")
-    st.stop()
-
-# Primeira seleção do DataFrame
-tipo_visualizacao = "Estado"  # Valor padrão
-df = estado_df  # DataFrame padrão para iniciar
-
-# Agora crie o mapeamento de colunas usando o DataFrame inicial
-mapeamento_colunas = criar_mapeamento_colunas(df)
+escolas_df, estado_df, municipio_df = carregar_dados()
 
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
@@ -207,6 +360,9 @@ elif tipo_visualizacao == "Município":
     df = municipio_df
 else:
     df = estado_df
+
+# Agora crie o mapeamento de colunas usando o DataFrame selecionado
+mapeamento_colunas = criar_mapeamento_colunas(df)
 
 # Filtro do Ano
 if "ANO" in df.columns:
@@ -266,26 +422,26 @@ else:
     serie_selecionada = "Todas"
 
 # -------------------------------
-# Determinação da Coluna de Dados
+# Determinação da Coluna de Dados (utilizando a nova função)
 # -------------------------------
-try:
-    if subetapa_selecionada == "Todas":
-        # Se nenhuma subetapa for selecionada, use a coluna principal da etapa
-        coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
-    elif serie_selecionada == "Todas" or "series" not in mapeamento_colunas[etapa_selecionada] or subetapa_selecionada not in mapeamento_colunas[etapa_selecionada].get("series", {}):
-        # Se nenhuma série for selecionada ou a subetapa não tiver séries, use a coluna da subetapa
-        coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
+coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
+
+# Verifica se a coluna existe no DataFrame
+coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
+if coluna_existe:
+    coluna_dados = coluna_real
+else:
+    st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
+    # Tenta usar a coluna principal como fallback
+    coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
+    coluna_existe, coluna_principal_real = verificar_coluna_existe(df_filtrado, coluna_principal)
+    
+    if coluna_existe:
+        coluna_dados = coluna_principal_real
+        st.info(f"Usando '{coluna_dados}' como alternativa.")
     else:
-        # Se uma série específica for selecionada, verifique se ela existe
-        if serie_selecionada in mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada]:
-            coluna_dados = mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada][serie_selecionada]
-        else:
-            # Caso contrário, use a coluna da subetapa
-            coluna_dados = mapeamento_colunas[etapa_selecionada]["subetapas"][subetapa_selecionada]
-except KeyError as e:
-    st.error(f"Erro ao acessar as informações de mapeamento: {e}")
-    # Fallback para a coluna principal se houver erro
-    coluna_dados = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
+        st.error("Não foi possível encontrar dados para a etapa selecionada.")
+        st.stop()
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais do Dashboard
@@ -300,23 +456,6 @@ if subetapa_selecionada != "Todas":
     if serie_selecionada != "Todas" and serie_selecionada in series_disponiveis:
         filtro_texto += f" | **Série:** {serie_selecionada}"
 st.markdown(filtro_texto)
-
-# Verifica se a coluna de dados existe; se não, tenta encontrar uma coluna similar
-if coluna_dados not in df_filtrado.columns:
-    # Tenta verificar se há uma versão case-insensitive da coluna
-    coluna_normalizada = coluna_dados.lower().strip()
-    colunas_normalizadas = {col.lower().strip(): col for col in df_filtrado.columns}
-    
-    if coluna_normalizada in colunas_normalizadas:
-        coluna_dados_original = coluna_dados
-        coluna_dados = colunas_normalizadas[coluna_normalizada]
-        st.info(f"Usando coluna '{coluna_dados}' em vez de '{coluna_dados_original}'")
-    else:
-        st.warning(f"A coluna {coluna_dados} não está disponível nos dados.")
-        coluna_dados = mapeamento_colunas[etapa_selecionada]["coluna_principal"]
-        if coluna_dados not in df_filtrado.columns:
-            st.error("Não foi possível encontrar dados para a etapa selecionada.")
-            st.stop()
 
 # -------------------------------
 # Seção de Indicadores (KPIs)
@@ -671,106 +810,36 @@ with tab1:
         else:
             tabela_para_exibir = tabela_filtrada
     
-    # Calcular a soma para a linha de totais
-    totais = {}
-    total_matriculas = 0
-    if coluna_dados in tabela_para_exibir.columns:
-        # Converter para numérico para cálculos corretos
-        valores_numericos = pd.to_numeric(tabela_dados[coluna_dados].loc[tabela_para_exibir.index], errors='coerce')
-        total_matriculas = valores_numericos.sum()
-        totais[coluna_dados] = formatar_numero(total_matriculas)
-    
-    if '% do Total' in tabela_para_exibir.columns:
-        totais['% do Total'] = "100.00%"
-    
-    # Adicionar linha de totais
-    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
-    
-    # Preencher a primeira coluna da linha de totais com "TOTAL"
-    for col in tabela_para_exibir.columns:
-        if col == colunas_tabela[0]:  # Primeira coluna (ANO)
-            linha_totais[col] = "TOTAL"
-        elif col not in totais:
-            linha_totais[col] = ""
-    
-    # Ordenar as colunas para corresponder à tabela principal
-    linha_totais = linha_totais[tabela_para_exibir.columns]
-    
-    # Combinar a tabela principal com a linha de totais
-    tabela_com_totais = pd.concat([tabela_para_exibir, linha_totais])
+    # Adicionar linha de totais usando a função refatorada
+    tabela_com_totais = adicionar_linha_totais(tabela_para_exibir, coluna_dados)
     
     # Exibir informação atualizada sobre total de registros no estilo info azul
-    # Também adiciona informação sobre desempenho quando necessário
     if total_registros > 1000 and not mostrar_todos:
         st.info(f"Exibindo {len(tabela_para_exibir)} de {total_registros} resultados. Para melhor desempenho, evite exibir todos os registros de uma vez.")
     
-    # Aplicar a estilização melhorada para a tabela com destaque para a linha de totais
-    def estilizar_tabela(df):
-        # Verificar o tamanho do dataframe para decidir o nível de estilização
-        if len(df) > 1000:
-            # Para tabelas muito grandes, usar estilo mínimo para melhor desempenho
-            return df.style.set_properties(**{'text-align': 'center'})
-        else:
-            # Estilo completo para tabelas menores
-            return df.style \
-                .set_properties(**{'text-align': 'center'}) \
-                .set_table_styles([
-                    {'selector': 'th', 'props': [('text-align', 'center')]},
-                    {'selector': 'td', 'props': [('text-align', 'center')]},
-                    # Destacar a linha de totais com estilo mais visível
-                    {'selector': 'tr:last-child', 'props': [
-                        ('font-weight', 'bold'),
-                        ('background-color', '#e6f2ff'),  # Azul claro
-                        ('border-top', '2px solid #b3d9ff'),  # Linha superior mais visível
-                        ('color', '#0066cc')  # Texto em azul escuro
-                    ]}
-                ])
-    
-    # Determinar se devemos usar o modo de desempenho simplificado
-    usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
-    
-    # Exibir a tabela com altura ajustada - menor altura para evitar barras de rolagem duplas
-    # Se o usuário escolheu ajustar manualmente a altura
-    if 'altura_personalizada' in locals() and altura_personalizada:
+    # Determinar altura da tabela
+    if altura_personalizada:
         altura_tabela = altura_manual
-    # Caso contrário, calcular automaticamente
     elif len(tabela_com_totais) > 20:
-        # Para tabelas maiores, definimos uma altura fixa mais conservadora
-        altura_tabela = 600  # Altura fixa para evitar problemas de rolagem dupla
+        altura_tabela = 600  # Altura fixa para tabelas maiores
     else:
-        # Para tabelas menores, calculamos com base no número de linhas
         altura_tabela = len(tabela_com_totais) * 35 + 38  # 35px por linha + 38px para o cabeçalho
     
-    # Aplicar estilo apropriado baseado no modo de desempenho
+    # Aplicar estilo e exibir tabela
+    usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
+    
     if usar_estilo_simples:
-        # No modo de desempenho, usamos a tabela sem estilos complexos
-        # Garantir que a última linha seja o total
-        tabela_com_totais_simples = tabela_com_totais.copy()
-        if "TOTAL" in tabela_com_totais_simples.iloc[-1].values:
-            # Usamos estilo mínimo para melhorar o desempenho
-            with st.container():
-                st.dataframe(tabela_com_totais_simples, use_container_width=True, height=altura_tabela, hide_index=True)
-            st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
+        with st.container():
+            st.dataframe(tabela_com_totais, use_container_width=True, height=altura_tabela, hide_index=True)
+        st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
     else:
-        # Modo normal com todos os estilos
-        tabela_estilizada = estilizar_tabela(tabela_com_totais)
+        tabela_estilizada = aplicar_estilo_tabela(tabela_com_totais, modo_desempenho)
         with st.container():
             st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
     
     # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
         st.write(f"Página {pagina_atual} de {total_paginas}")
-    
-    # Funções para exportar dados
-    def converter_df_para_csv(df):
-        return df.to_csv(index=False).encode('utf-8')
-    
-    def converter_df_para_excel(df):
-        import io
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name='Dados')
-        return output.getvalue()
     
     # Botões para download
     col1, col2 = st.columns(2)
