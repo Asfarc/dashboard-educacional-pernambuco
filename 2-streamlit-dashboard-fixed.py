@@ -508,6 +508,28 @@ st.markdown("""
         height: 14px;
     }
     
+    /* Estilo para os links de navegação */
+    a[href^="#"] {
+        background-color: #f0f2f6;
+        padding: 8px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        color: #0066cc;
+        font-weight: bold;
+        display: inline-block;
+        text-align: center;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+    }
+    
+    a[href^="#"]:hover {
+        background-color: #e0e2e6;
+    }
+    
+    /* Ajuste para as âncoras */
+    div[id^="topo-tabela"], div[id^="final-tabela"] {
+        scroll-margin-top: 70px;
+    }    
     /* Estilo do "track" (trilho) da barra de rolagem */
     ::-webkit-scrollbar-track {
         background: #f1f1f1;
@@ -855,16 +877,6 @@ with tab1:
         st.info(
             f"Exibindo {formatar_numero(len(tabela_para_exibir))} de {formatar_numero(total_registros)} resultados.")
 
-    # Adicionar dica de navegação na tabela
-    st.markdown("""
-        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-            <p style="margin: 0;">
-                <b>Dica de navegação:</b> Use as teclas <kbd>Home</kbd> para ir ao topo da tabela e <kbd>End</kbd> para ir ao final.
-                <br>Use as teclas <kbd>↑</kbd> <kbd>↓</kbd> ou a roda do mouse para navegar entre as linhas.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
     # Determinar altura da tabela
     if altura_personalizada:
         altura_tabela = altura_manual
@@ -876,6 +888,12 @@ with tab1:
     # Aplicar estilo e exibir tabela
     usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
 
+    # Adicionar âncora e botão para navegar ao final (COLOCAR ANTES DA TABELA)
+    st.markdown('<div id="topo-tabela"></div>', unsafe_allow_html=True)
+    col_nav_topo1, col_nav_topo2 = st.columns([10, 2])
+    with col_nav_topo2:
+        st.markdown('[Ir para o final ↓](#final-tabela)', unsafe_allow_html=True)
+
     if usar_estilo_simples:
         with st.container():
             st.dataframe(tabela_com_totais, use_container_width=True, height=altura_tabela, hide_index=True)
@@ -886,182 +904,17 @@ with tab1:
         with st.container():
             st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
 
+    # Adicionar âncora e botão para navegar ao topo (COLOCAR DEPOIS DA TABELA)
+    st.markdown('<div id="final-tabela"></div>', unsafe_allow_html=True)
+    col_nav_base1, col_nav_base2 = st.columns([10, 2])
+    with col_nav_base2:
+        st.markdown('[Voltar ao topo ↑](#topo-tabela)', unsafe_allow_html=True)
+
     # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
         st.write(
             f"Página {pagina_atual} de {total_paginas} • Registros por página: {formatar_numero(registros_por_pagina)}")
 
-    # 1. Adicione CSS para estilizar o contêiner dos botões
-    st.markdown("""
-    <style>
-    .botoes-navegacao {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # 2. Criar uma div para agrupar os botões usando st.container e colunas
-    botoes_container = st.container()
-    with botoes_container:
-        coluna_espaco, coluna_topo, coluna_final = st.columns([10, 1, 1])
-
-        # Botão para ir ao topo - usando componente nativo Streamlit
-        with coluna_topo:
-            if st.button("↑ Topo", key="btn_topo_tabela", help="Ir ao topo da tabela"):
-                # Este script será executado quando o botão for clicado
-                st.markdown("""
-                <script>
-                    // Use um seletor mais específico para encontrar a tabela correta
-                    setTimeout(function() {
-                        try {
-                            // Identifica todas as tabelas na página
-                            const tables = document.querySelectorAll('.stDataFrame');
-                            let scrolled = false;
-
-                            // Para cada tabela encontrada
-                            for (let i = 0; i < tables.length; i++) {
-                                // Encontra todos os divs dentro da tabela
-                                const allDivs = tables[i].querySelectorAll('div');
-
-                                // Testa cada div para ver se tem rolagem
-                                for (let j = 0; j < allDivs.length; j++) {
-                                    const div = allDivs[j];
-                                    // Verifica se o div tem rolagem vertical
-                                    if (div.scrollHeight > div.clientHeight) {
-                                        // Encontrou o elemento correto, rola para o topo
-                                        div.scrollTop = 0;
-                                        console.log('Rolado para o topo:', div);
-                                        scrolled = true;
-                                        break;
-                                    }
-                                }
-
-                                if (scrolled) break;
-                            }
-
-                            if (!scrolled) {
-                                console.log('Não foi possível encontrar um elemento com rolagem');
-                            }
-                        } catch (error) {
-                            console.error('Erro ao rolar para o topo:', error);
-                        }
-                    }, 300);
-                </script>
-                """, unsafe_allow_html=True)
-
-        # Botão para ir ao final - usando componente nativo Streamlit
-        with coluna_final:
-            if st.button("↓ Final", key="btn_final_tabela", help="Ir ao final da tabela"):
-                # Este script será executado quando o botão for clicado
-                st.markdown("""
-                <script>
-                    // Use um seletor mais específico para encontrar a tabela correta
-                    setTimeout(function() {
-                        try {
-                            // Identifica todas as tabelas na página
-                            const tables = document.querySelectorAll('.stDataFrame');
-                            let scrolled = false;
-
-                            // Para cada tabela encontrada
-                            for (let i = 0; i < tables.length; i++) {
-                                // Encontra todos os divs dentro da tabela
-                                const allDivs = tables[i].querySelectorAll('div');
-
-                                // Testa cada div para ver se tem rolagem
-                                for (let j = 0; j < allDivs.length; j++) {
-                                    const div = allDivs[j];
-                                    // Verifica se o div tem rolagem vertical
-                                    if (div.scrollHeight > div.clientHeight) {
-                                        // Encontrou o elemento correto, rola para o final
-                                        div.scrollTop = div.scrollHeight;
-                                        console.log('Rolado para o final:', div);
-                                        scrolled = true;
-                                        break;
-                                    }
-                                }
-
-                                if (scrolled) break;
-                            }
-
-                            if (!scrolled) {
-                                console.log('Não foi possível encontrar um elemento com rolagem');
-                            }
-                        } catch (error) {
-                            console.error('Erro ao rolar para o final:', error);
-                        }
-                    }, 300);
-                </script>
-                """, unsafe_allow_html=True)
-
-    # 3. Adicione uma opção alternativa usando atalhos de teclado
-    st.markdown("""
-    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; margin-bottom: 15px;">
-        <p style="margin: 0; font-size: 14px;">
-            <strong>💡 Dica:</strong> Você também pode usar as teclas <kbd>Home</kbd> para ir ao topo e <kbd>End</kbd> para ir ao final da tabela.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 4. Adicione um script permanente para responder aos atalhos de teclado
-    st.markdown("""
-    <script>
-    document.addEventListener('keydown', function(e) {
-        // Verifica se a tabela está visível na página
-        const tables = document.querySelectorAll('.stDataFrame');
-        if (tables.length === 0) return;
-
-        // Se pressionou Home, role para o topo da tabela
-        if (e.key === 'Home') {
-            e.preventDefault();
-
-            const allDivs = tables[0].querySelectorAll('div');
-            for (let i = 0; i < allDivs.length; i++) {
-                const div = allDivs[i];
-                if (div.scrollHeight > div.clientHeight) {
-                    div.scrollTop = 0;
-                    break;
-                }
-            }
-        }
-
-        // Se pressionou End, role para o final da tabela
-        if (e.key === 'End') {
-            e.preventDefault();
-
-            const allDivs = tables[0].querySelectorAll('div');
-            for (let i = 0; i < allDivs.length; i++) {
-                const div = allDivs[i];
-                if (div.scrollHeight > div.clientHeight) {
-                    div.scrollTop = div.scrollHeight;
-                    break;
-                }
-            }
-        }
-    });
-    </script>
-    """, unsafe_allow_html=True)
-
-    # Adicionar também CSS para garantir que os botões permaneçam visíveis
-    # mesmo quando a tabela é muito grande
-    st.markdown("""
-    <style>
-    /* Aumentar z-index para garantir que os botões permaneçam sobre outros elementos */
-    .nav-buttons {
-        z-index: 9999;
-    }
-
-    /* Garantir que a tabela não sobreponha os botões */
-    .stDataFrame {
-        position: relative;
-        z-index: 1;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
     # Botões para download
     col1, col2 = st.columns(2)
     
