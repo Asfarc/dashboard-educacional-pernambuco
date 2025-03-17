@@ -760,11 +760,11 @@ with tab1:
     # Mostrar informações sobre o número de registros filtrados
     if filtros_aplicados and len(tabela_filtrada) < len(tabela_exibicao):
         st.success(f"Filtro aplicado: {len(tabela_filtrada)} de {len(tabela_exibicao)} registros correspondem aos critérios.")
-    
+
     # Cálculo de paginação
     total_registros = len(tabela_filtrada)
     total_paginas = max(1, (total_registros - 1) // registros_por_pagina + 1)
-    
+
     # Paginação otimizada
     if not mostrar_todos and total_paginas > 1:
         # Para grandes conjuntos de dados, usamos uma interface de paginação mais eficiente
@@ -833,8 +833,8 @@ with tab1:
                 with col_last:
                     if st.button("⏭", disabled=(pagina_atual >= total_paginas), key="btn_last_simple"):
                         pagina_atual = total_paginas
-        
-        # Calcular quais registros mostrar
+
+        # Calcular quais registros mostrar - MANTENDO O NÚMERO CONSISTENTE DE REGISTROS POR PÁGINA
         inicio = (pagina_atual - 1) * registros_por_pagina
         fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
         tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
@@ -842,17 +842,29 @@ with tab1:
         # Limitação de registros para evitar travamentos
         if len(tabela_filtrada) > registros_por_pagina:
             tabela_para_exibir = tabela_filtrada.iloc[:registros_por_pagina]
-            st.warning(f"Para melhor desempenho, exibindo os primeiros {registros_por_pagina} de {len(tabela_filtrada)} registros.")
+            st.warning(
+                f"Para melhor desempenho, exibindo os primeiros {formatar_numero(registros_por_pagina)} de {formatar_numero(len(tabela_filtrada))} registros.")
         else:
             tabela_para_exibir = tabela_filtrada
-    
+
     # Adicionar linha de totais usando a função refatorada
     tabela_com_totais = adicionar_linha_totais(tabela_para_exibir, coluna_dados)
-    
+
     # Exibir informação atualizada sobre total de registros no estilo info azul
     if total_registros > 1000 and not mostrar_todos:
-        st.info(f"Exibindo {formatar_numero(len(tabela_para_exibir))} de {formatar_numero(total_registros)} resultados. Para melhor desempenho, evite exibir todos os registros de uma vez.")
-    
+        st.info(
+            f"Exibindo {formatar_numero(len(tabela_para_exibir))} de {formatar_numero(total_registros)} resultados.")
+
+    # Adicionar dica de navegação na tabela
+    st.markdown("""
+        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+            <p style="margin: 0;">
+                <b>Dica de navegação:</b> Use as teclas <kbd>Home</kbd> para ir ao topo da tabela e <kbd>End</kbd> para ir ao final.
+                <br>Use as teclas <kbd>↑</kbd> <kbd>↓</kbd> ou a roda do mouse para navegar entre as linhas.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
     # Determinar altura da tabela
     if altura_personalizada:
         altura_tabela = altura_manual
@@ -860,134 +872,56 @@ with tab1:
         altura_tabela = 600  # Altura fixa para tabelas maiores
     else:
         altura_tabela = len(tabela_com_totais) * 35 + 38  # 35px por linha + 38px para o cabeçalho
-    
+
     # Aplicar estilo e exibir tabela
     usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
-    
+
     if usar_estilo_simples:
         with st.container():
             st.dataframe(tabela_com_totais, use_container_width=True, height=altura_tabela, hide_index=True)
         st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
-        # Adicionar botões de navegação rápida para a tabela
-        st.markdown("""
-        <style>
-            /* Estilos para os botões de navegação */
-            .scroll-button {
-                position: absolute;
-                background-color: rgba(70, 130, 180, 0.7);
-                color: white;
-                border: none;
-                border-radius: 4px;
-                width: 30px;
-                height: 30px;
-                font-size: 18px;
-                cursor: pointer;
-                z-index: 999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: background-color 0.3s;
-            }
 
-            .scroll-button:hover {
-                background-color: rgba(70, 130, 180, 1);
-            }
-
-            /* Posicionamento dos botões */
-            .scroll-top-top {
-                top: 10px;
-                right: 15px;
-            }
-
-            .scroll-top-bottom {
-                top: 45px;
-                right: 15px;
-            }
-
-            .scroll-bottom-top {
-                bottom: 45px;
-                right: 15px;
-            }
-
-            .scroll-bottom-bottom {
-                bottom: 10px;
-                right: 15px;
-            }
-
-            /* Garantir que os botões fiquem visíveis */
-            .stDataFrame {
-                position: relative;
-            }
-        </style>
-
-        <script>
-            // Função para adicionar os botões após o carregamento da página
-            document.addEventListener('DOMContentLoaded', function() {
-                // Espera até que a tabela seja renderizada
-                setTimeout(function() {
-                    const dataFrames = document.querySelectorAll('.stDataFrame');
-
-                    dataFrames.forEach(function(df) {
-                        // Criar botões
-                        const scrollTopTop = document.createElement('button');
-                        scrollTopTop.innerHTML = '↑';
-                        scrollTopTop.className = 'scroll-button scroll-top-top';
-                        scrollTopTop.title = 'Ir para o topo';
-
-                        const scrollTopBottom = document.createElement('button');
-                        scrollTopBottom.innerHTML = '↓';
-                        scrollTopBottom.className = 'scroll-button scroll-top-bottom';
-                        scrollTopBottom.title = 'Ir para o final';
-
-                        const scrollBottomTop = document.createElement('button');
-                        scrollBottomTop.innerHTML = '↑';
-                        scrollBottomTop.className = 'scroll-button scroll-bottom-top';
-                        scrollBottomTop.title = 'Ir para o topo';
-
-                        const scrollBottomBottom = document.createElement('button');
-                        scrollBottomBottom.innerHTML = '↓';
-                        scrollBottomBottom.className = 'scroll-button scroll-bottom-bottom';
-                        scrollBottomBottom.title = 'Ir para o final';
-
-                        // Adicionar eventos
-                        scrollTopTop.addEventListener('click', function() {
-                            const scrollArea = df.querySelector('.stDataFrame > div');
-                            scrollArea.scrollTop = 0;
-                        });
-
-                        scrollTopBottom.addEventListener('click', function() {
-                            const scrollArea = df.querySelector('.stDataFrame > div');
-                            scrollArea.scrollTop = scrollArea.scrollHeight;
-                        });
-
-                        scrollBottomTop.addEventListener('click', function() {
-                            const scrollArea = df.querySelector('.stDataFrame > div');
-                            scrollArea.scrollTop = 0;
-                        });
-
-                        scrollBottomBottom.addEventListener('click', function() {
-                            const scrollArea = df.querySelector('.stDataFrame > div');
-                            scrollArea.scrollTop = scrollArea.scrollHeight;
-                        });
-
-                        // Adicionar botões ao DOM
-                        df.appendChild(scrollTopTop);
-                        df.appendChild(scrollTopBottom);
-                        df.appendChild(scrollBottomTop);
-                        df.appendChild(scrollBottomBottom);
-                    });
-                }, 1000); // Espera 1 segundo para garantir que a tabela foi carregada
-            });
-        </script>
-        """, unsafe_allow_html=True)
     else:
         tabela_estilizada = aplicar_estilo_tabela(tabela_com_totais, modo_desempenho)
         with st.container():
             st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
-    
+
     # Informação de paginação abaixo da tabela
     if not mostrar_todos and total_paginas > 1:
-        st.write(f"Página {pagina_atual} de {total_paginas}")
+        st.write(
+            f"Página {pagina_atual} de {total_paginas} • Registros por página: {formatar_numero(registros_por_pagina)}")
+
+    # Botões para navegar dentro da tabela visível
+    cols_nav = st.columns([4, 1, 1])
+    with cols_nav[1]:
+        if st.button("↑ Ir ao topo", key="nav_top"):
+            st.markdown("""
+                <script>
+                    // Tenta encontrar o elemento da tabela e rolar para o topo
+                    setTimeout(function() {
+                        const tables = document.querySelectorAll('.stDataFrame');
+                        if (tables.length > 0) {
+                            const scrollable = tables[0].querySelector('div');
+                            if (scrollable) scrollable.scrollTop = 0;
+                        }
+                    }, 100);
+                </script>
+                """, unsafe_allow_html=True)
+
+    with cols_nav[2]:
+        if st.button("↓ Ir ao final", key="nav_bottom"):
+            st.markdown("""
+                <script>
+                    // Tenta encontrar o elemento da tabela e rolar para o final
+                    setTimeout(function() {
+                        const tables = document.querySelectorAll('.stDataFrame');
+                        if (tables.length > 0) {
+                            const scrollable = tables[0].querySelector('div');
+                            if (scrollable) scrollable.scrollTop = scrollable.scrollHeight;
+                        }
+                    }, 100);
+                </script>
+                """, unsafe_allow_html=True)
     
     # Botões para download
     col1, col2 = st.columns(2)
