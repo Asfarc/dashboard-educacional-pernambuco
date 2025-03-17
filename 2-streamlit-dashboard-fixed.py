@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 import io
 
+# Biblioteca do AgGrid
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
+
 # -------------------------------
 # Configuração Inicial da Página
 # -------------------------------
@@ -15,7 +18,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 
 # -------------------------------
 # Funções Auxiliares
@@ -29,7 +31,6 @@ def formatar_numero(numero):
     if pd.isna(numero) or numero == "-":
         return "-"
     return f"{int(numero):,}".replace(",", ".")
-
 
 @st.cache_data
 def carregar_dados():
@@ -327,13 +328,7 @@ def adicionar_linha_totais(df, coluna_dados):
 def aplicar_estilo_tabela(df, modo_desempenho=False):
     """
     Aplica estilos à tabela conforme o modo de desempenho.
-
-    Parâmetros:
-    df (DataFrame): DataFrame a estilizar
-    modo_desempenho (bool): Indica se deve usar estilo simplificado para melhor desempenho
-
-    Retorna:
-    Styler: DataFrame estilizado
+    (Não será usada diretamente no AgGrid, mas mantemos aqui para não remover código).
     """
     if modo_desempenho or len(df) > 1000:
         # Estilo mínimo para melhor desempenho
@@ -366,6 +361,38 @@ def converter_df_para_excel(df):
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Dados')
     return output.getvalue()
+
+
+# Função para exibir a tabela com AgGrid
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600):
+    """
+    Exibe o DataFrame usando AgGrid, agora SEM paginação manual e com rolagem vertical real.
+    Convertendo tudo em string para evitar 'Invalid number' na linha 'TOTAL'.
+    """
+    df_str = df_para_exibir.astype(str)  # tudo como texto, evitando erro no AgGrid
+    gb = GridOptionsBuilder.from_dataframe(df_str)
+
+    # Configura colunas padrão
+    gb.configure_default_column(
+        groupable=True,
+        editable=False,
+        wrapText=True,
+        autoHeight=True
+    )
+    # Usar rolagem vertical nativa do AgGrid (sem paginação do AgGrid também):
+    gb.configure_pagination(enabled=False)
+
+    grid_options = gb.build()
+
+    AgGrid(
+        df_str,
+        gridOptions=grid_options,
+        height=altura,
+        data_return_mode=DataReturnMode.AS_INPUT,
+        update_mode=GridUpdateMode.NO_UPDATE,
+        fit_columns_on_grid_load=True,
+        theme="streamlit",
+    )
 
 
 # -------------------------------
@@ -454,7 +481,7 @@ else:
     serie_selecionada = "Todas"
 
 # -------------------------------
-# Determinação da Coluna de Dados (utilizando a nova função)
+# Determinação da Coluna de Dados
 # -------------------------------
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
 
@@ -476,12 +503,11 @@ else:
         st.stop()
 
 # -------------------------------
-# Cabeçalho e Informações Iniciais do Dashboard
+# Cabeçalho e Informações Iniciais
 # -------------------------------
 st.title("Dashboard de Matrículas - Inepy")
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
-# Exibição dos filtros selecionados
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
 if subetapa_selecionada != "Todas":
     filtro_texto += f" | **Subetapa:** {subetapa_selecionada}"
@@ -494,12 +520,12 @@ st.markdown(filtro_texto)
 # -------------------------------
 col1, col2, col3 = st.columns(3)
 
-# KPI 1: Total de Matrículas na etapa/subetapa/série selecionada
+# KPI 1
 total_matriculas = df_filtrado[coluna_dados].sum()
 with col1:
     st.metric("Total de Matrículas", formatar_numero(total_matriculas))
 
-# KPI 2: Média de Matrículas
+# KPI 2
 with col2:
     if tipo_visualizacao == "Escola":
         if len(df_filtrado) > 0:
@@ -515,7 +541,7 @@ with col2:
         else:
             st.metric("Média de Matrículas", "-")
 
-# KPI 3: Indicador adicional conforme a visualização
+# KPI 3
 with col3:
     if tipo_visualizacao == "Escola":
         total_escolas = len(df_filtrado)
@@ -531,176 +557,27 @@ with col3:
 # -------------------------------
 st.markdown("## Dados Detalhados")
 
-# Adicionar CSS personalizado para aumentar a espessura da barra de rolagem
-st.markdown("""
-<style>
-    /* Aumenta a espessura da barra de rolagem principal */
-    ::-webkit-scrollbar {
-        width: 14px;
-        height: 14px;
-    }
-
-    /* Estilo do "track" (trilho) da barra de rolagem */
-    ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 7px;
-    }
-
-    /* Estilo do "thumb" (parte móvel) da barra de rolagem */
-    ::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 7px;
-    }
-
-    /* Ao passar o mouse */
-    ::-webkit-scrollbar-thumb:hover {
-        background: #555;
-    }
-
-    /* Elimina a rolagem interna da tabela para prevenir barras de rolagem duplas */
-    .stDataFrame > div:first-child {
-        overflow: hidden !important;
-    }
-
-    /* Garante que apenas o contêiner externo tenha rolagem */
-    .main .block-container {
-        overflow-y: auto;
-    }
-
-    /* Remove barras de rolagem de elementos internos específicos */
-    div[data-testid="stVerticalBlock"] {
-        overflow: visible !important;
-    }
-
-    /* Ajuste para o canto da barra de rolagem */
-    ::-webkit-scrollbar-corner {
-        background: #f1f1f1;
-    }
-
-    /* Estilo para os botões de rolagem */
-    .scroll-btn {
-        background-color: #f0f2f6;
-        padding: 8px 12px;
-        border-radius: 5px;
-        color: #0066cc;
-        font-weight: bold;
-        cursor: pointer;
-        border: 1px solid #ddd;
-        margin: 5px;
-        transition: background-color 0.2s;
-    }
-
-    .scroll-btn:hover {
-        background-color: #e0e2e6;
-    }
-</style>
-
-<script>
-    // Função para rolar para o topo da tabela
-    function scrollTableToTop() {
-        // Tenta encontrar todos os contêineres de tabela
-        setTimeout(function() {
-            try {
-                const tables = document.querySelectorAll('.stDataFrame');
-
-                if (tables.length > 0) {
-                    // Encontrar contêineres com overflow
-                    for (let i = 0; i < tables.length; i++) {
-                        // Encontra todos os divs dentro da tabela
-                        const divs = tables[i].querySelectorAll('div');
-
-                        for (let j = 0; j < divs.length; j++) {
-                            const div = divs[j];
-                            // Procura o div com propriedade overflow e que tenha scroll
-                            if (getComputedStyle(div).overflow !== 'hidden' && 
-                                div.scrollHeight > div.clientHeight) {
-                                console.log("Rolando para o topo", div);
-                                div.scrollTop = 0;
-                                return;
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Erro ao rolar para o topo:", error);
-            }
-        }, 300);
-    }
-
-    // Função para rolar para o final da tabela
-    function scrollTableToBottom() {
-        // Tenta encontrar todos os contêineres de tabela
-        setTimeout(function() {
-            try {
-                const tables = document.querySelectorAll('.stDataFrame');
-
-                if (tables.length > 0) {
-                    // Encontrar contêineres com overflow
-                    for (let i = 0; i < tables.length; i++) {
-                        // Encontra todos os divs dentro da tabela
-                        const divs = tables[i].querySelectorAll('div');
-
-                        for (let j = 0; j < divs.length; j++) {
-                            const div = divs[j];
-                            // Procura o div com propriedade overflow e que tenha scroll
-                            if (getComputedStyle(div).overflow !== 'hidden' && 
-                                div.scrollHeight > div.clientHeight) {
-                                console.log("Rolando para o final", div);
-                                div.scrollTop = div.scrollHeight;
-                                return;
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Erro ao rolar para o final:", error);
-            }
-        }, 300);
-    }
-
-    // Adiciona também suporte para teclas Home e End
-    document.addEventListener('keydown', function(e) {
-        // Se a tecla Home for pressionada
-        if (e.key === 'Home') {
-            scrollTableToTop();
-        }
-
-        // Se a tecla End for pressionada
-        if (e.key === 'End') {
-            scrollTableToBottom();
-        }
-    });
-</script>
-""", unsafe_allow_html=True)
-
-# Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
-# Adicionando ANO como primeira coluna sempre
+# Selecionar colunas iniciais
 colunas_tabela = ["ANO"]
-
 if tipo_visualizacao == "Escola":
-    colunas_tabela.extend(
-        ["CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF",
-         "DEPENDENCIA ADMINISTRATIVA"])
+    colunas_tabela.extend(["CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
+                           "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
 elif tipo_visualizacao == "Município":
-    colunas_tabela.extend(
-        ["CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
-else:  # Estado
+    colunas_tabela.extend(["CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO",
+                           "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
+else:
     colunas_tabela.extend(["CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"])
 
-# Adiciona a coluna de dados selecionada ao final
 colunas_tabela.append(coluna_dados)
 
-# Verifica se todas as colunas estão presentes no DataFrame filtrado
+# Verifica colunas existentes no df_filtrado
 colunas_existentes = [col for col in colunas_tabela if col in df_filtrado.columns]
 colunas_tabela = colunas_existentes
 
-# Converter a coluna de dados para numérico para ordenação correta
 df_filtrado_tabela = df_filtrado.copy()
 if coluna_dados in df_filtrado_tabela.columns:
-    # Converter para numérico para cálculos e ordenação
     df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
 
-    # Adicionar coluna de percentual
     total = df_filtrado_tabela[coluna_dados].sum()
     if total > 0:
         df_filtrado_tabela['% do Total'] = df_filtrado_tabela[coluna_dados].apply(
@@ -708,16 +585,13 @@ if coluna_dados in df_filtrado_tabela.columns:
         )
         colunas_tabela.append('% do Total')
 
-    # Ordenar a tabela pelos valores do coluna_dados em ordem decrescente
     tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
 
-    # Criar versão formatada para exibição
     tabela_exibicao = tabela_dados.copy()
     tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
         lambda x: formatar_numero(x) if pd.notnull(x) else "-"
     )
 
-    # Formatar a coluna de percentual se existir
     if '% do Total' in tabela_exibicao.columns:
         tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
             lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
@@ -726,16 +600,14 @@ else:
     tabela_dados = df_filtrado_tabela[colunas_existentes]
     tabela_exibicao = tabela_dados.copy()
 
-# Criar abas para diferentes visualizações
+# Cria abas
 tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
 
 with tab1:
-    # Adicionar controle para ajustar a altura da tabela e resolver problemas de barras de rolagem
     st.write("### Configurações de exibição")
     col1, col2, col3, col4 = st.columns(4)
 
     with col4:
-        # Permitir que o usuário ajuste a altura da tabela
         altura_personalizada = st.checkbox("Ajustar altura da tabela", value=False,
                                            help="Use esta opção se estiver vendo barras de rolagem duplicadas")
         if altura_personalizada:
@@ -744,60 +616,25 @@ with tab1:
                                       max_value=1000,
                                       value=600,
                                       step=50)
+        else:
+            altura_manual = 600  # Valor padrão
 
     with col1:
-        # Mostrar todos os registros não é recomendado para grandes conjuntos de dados
         total_registros = len(tabela_exibicao)
-        if total_registros > 1000:
-            st.warning(
-                f"⚠️ Há {formatar_numero(total_registros)} registros no total. Mostrar todos pode causar lentidão.")
-            mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
-        else:
-            mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
+        # (Comentado) Paginação manual
+        # st.warning(f"Há {formatar_numero(total_registros)} registros no total, exibidos todos de uma vez via AgGrid.")
+        mostrar_todos = st.checkbox("Mostrar todos os registros", value=True)
 
     with col2:
-        if not mostrar_todos:
-            max_registros = min(500, total_registros)
-
-            # Caso 1: Se há poucos registros, não usamos slider
-            if max_registros < 10:
-                registros_por_pagina = max_registros
-                st.info(f"Total de {formatar_numero(max_registros)} registros disponíveis.")
-            # Caso 2: Usamos slider com configurações ajustadas ao número de registros
-            else:
-                # Definir step adequado ao número de registros
-                step = 1 if max_registros < 20 else 10
-
-                registros_por_pagina = st.slider(
-                    "Registros por página:",
-                    min_value=1,  # Valor mínimo sempre será 1
-                    max_value=max_registros,
-                    value=min(200, max_registros),
-                    step=step
-                )
-        else:
-            # Se selecionar mostrar todos, ainda limitamos a um máximo seguro para evitar travamentos
-            if total_registros > 1000:
-                registros_por_pagina = 1000
-                st.warning(
-                    f"Para evitar travamentos, limitamos a exibição a 1000 registros de um total de {formatar_numero(total_registros)}.")
-            else:
-                registros_por_pagina = total_registros
-
+        # (Comentado) Registros por página
+        st.write(" ")  # espaço
     with col3:
-        # Opção para ativar modo de desempenho
         modo_desempenho = st.checkbox("Ativar modo de desempenho", value=True,
                                       help="Otimiza o carregamento para grandes conjuntos de dados.")
-        if modo_desempenho and total_registros > 500:
-            st.info("Modo de desempenho ativado. Algumas formatações visuais serão simplificadas.")
 
-    # Adicionar filtros de busca mais próximos da tabela e com largura reduzida
     st.write("### Filtros da tabela")
-
-    # Ajustando proporções para evitar quebra de texto nos rótulos
     col1, col2, col3, col4, col5, col6 = st.columns([0.6, 3.0, 0.6, 3.0, 0.6, 3.0])
 
-    # Filtros para texto (nomes de localidades)
     filtro_texto = None
     colunas_localidade = [col for col in ["NOME DA UF", "NOME DO MUNICIPIO", "NOME DA ESCOLA"] if
                           col in tabela_exibicao.columns]
@@ -810,7 +647,6 @@ with tab1:
                 filtro_texto = st.text_input("", placeholder=f"Filtrar {coluna_texto_selecionada}...",
                                              label_visibility="collapsed", key="filtro_texto")
 
-    # Filtros para códigos (numéricos)
     filtro_codigo = None
     colunas_codigo = [col for col in ["CODIGO DA UF", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA"] if
                       col in tabela_exibicao.columns]
@@ -823,11 +659,9 @@ with tab1:
                 filtro_codigo = st.text_input(" ", placeholder=f"Filtrar {coluna_codigo_selecionada}...",
                                               label_visibility="collapsed", key="filtro_codigo")
 
-    # Colunas adicionais
     with col5:
         st.write("**Colunas:**")
     with col6:
-        # Permitir que o usuário selecione colunas adicionais para exibir
         todas_colunas = [col for col in df_filtrado.columns if col not in colunas_tabela]
         if todas_colunas:
             colunas_adicionais = st.multiselect(
@@ -838,7 +672,6 @@ with tab1:
             )
             if colunas_adicionais:
                 colunas_tabela = colunas_tabela + colunas_adicionais
-                # Atualizar tabelas com as novas colunas
                 tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
                 tabela_exibicao = tabela_dados.copy()
                 tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
@@ -851,27 +684,24 @@ with tab1:
         else:
             st.write("Não há colunas adicionais disponíveis")
 
-    # Aplicar filtros com feedback de desempenho
+    # Filtros via campo de busca
     tabela_filtrada = tabela_exibicao.copy()
     filtros_aplicados = False
 
-    # Adicionar botão de aplicar filtros para conjuntos grandes de dados
+    # Botão "Aplicar Filtros" em datasets grandes
     if len(tabela_exibicao) > 1000:
         col_filtrar = st.columns([1])[0]
         with col_filtrar:
             aplicar_filtros = st.button("Aplicar Filtros", type="primary")
         mostrar_dica = True
     else:
-        aplicar_filtros = True  # Para conjuntos pequenos, sempre aplicar filtros em tempo real
+        aplicar_filtros = True
         mostrar_dica = False
 
-    # Filtros para texto
+    # Filtro de texto
     if filtro_texto and coluna_texto_selecionada != "Nenhum":
         if len(filtro_texto) >= 3 and aplicar_filtros:
-            # Usar método mais eficiente para grandes conjuntos de dados
             if len(tabela_filtrada) > 5000:
-                # Para dados muito grandes, usamos um método mais rápido
-                # mas potencialmente menos preciso (sem case=False)
                 tabela_filtrada = tabela_filtrada[
                     tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, na=False)
                 ]
@@ -884,7 +714,7 @@ with tab1:
         elif mostrar_dica and len(filtro_texto) > 0 and len(filtro_texto) < 3:
             st.info("Digite pelo menos 3 caracteres para filtrar por texto.")
 
-    # Filtros para códigos
+    # Filtro de código
     if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
         if len(filtro_codigo) >= 1 and aplicar_filtros:
             tabela_filtrada = tabela_filtrada[
@@ -892,189 +722,40 @@ with tab1:
             ]
             filtros_aplicados = True
 
-    # Mostrar informações sobre o número de registros filtrados
     if filtros_aplicados and len(tabela_filtrada) < len(tabela_exibicao):
         st.success(
             f"Filtro aplicado: {len(tabela_filtrada)} de {len(tabela_exibicao)} registros correspondem aos critérios.")
 
-    # Cálculo de paginação
-    total_registros = len(tabela_filtrada)
-    total_paginas = max(1, (total_registros - 1) // registros_por_pagina + 1)
+    # Sem paginação manual: exibimos tudo
+    # (Anteriormente havia cálculo de 'pagina_atual', 'registros_por_pagina' etc.)
+    tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
 
-    # Paginação otimizada
-    if not mostrar_todos and total_paginas > 1:
-        # Para grandes conjuntos de dados, usamos uma interface de paginação mais eficiente
-        if total_registros > 1000:
-            col1, col2, col3 = st.columns([1, 3, 1])
-            with col1:
-                st.write("**Página:**")
-            with col2:
-                pagina_atual = st.number_input(
-                    "",
-                    min_value=1,
-                    max_value=total_paginas,
-                    value=1,
-                    key="pagina_atual",
-                    label_visibility="collapsed"
-                )
-            with col3:
-                # Criar 4 colunas para os botões de navegação
-                col_first, col_prev, col_next, col_last = st.columns(4)
+    # Exibe a tabela inteira no AgGrid
+    altura_tabela = altura_manual
+    exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela)
 
-                with col_first:
-                    if st.button("⏮ Primeira", disabled=(pagina_atual <= 1), key="btn_first"):
-                        pagina_atual = 1
-
-                with col_prev:
-                    if st.button("◀ Anterior", disabled=(pagina_atual <= 1), key="btn_prev"):
-                        pagina_atual -= 1
-
-                with col_next:
-                    if st.button("Próxima ▶", disabled=(pagina_atual >= total_paginas), key="btn_next"):
-                        pagina_atual += 1
-
-                with col_last:
-                    if st.button("Última ⏭", disabled=(pagina_atual >= total_paginas), key="btn_last"):
-                        pagina_atual = total_paginas
-        else:
-            # Interface simples para conjuntos menores de dados
-            col1, col2, col3 = st.columns([1, 5, 2])
-            with col1:
-                st.write("**Página:**")
-            with col2:
-                pagina_atual = st.number_input(
-                    "",
-                    min_value=1,
-                    max_value=total_paginas,
-                    value=1,
-                    key="pagina_atual",
-                    label_visibility="collapsed"
-                )
-            with col3:
-                # Criar 4 colunas para os botões de navegação
-                col_first, col_prev, col_next, col_last = st.columns(4)
-
-                with col_first:
-                    if st.button("⏮", disabled=(pagina_atual <= 1), key="btn_first_simple"):
-                        pagina_atual = 1
-
-                with col_prev:
-                    if st.button("◀", disabled=(pagina_atual <= 1), key="btn_prev_simple"):
-                        pagina_atual -= 1
-
-                with col_next:
-                    if st.button("▶", disabled=(pagina_atual >= total_paginas), key="btn_next_simple"):
-                        pagina_atual += 1
-
-                with col_last:
-                    if st.button("⏭", disabled=(pagina_atual >= total_paginas), key="btn_last_simple"):
-                        pagina_atual = total_paginas
-
-        # Calcular quais registros mostrar - MANTENDO O NÚMERO CONSISTENTE DE REGISTROS POR PÁGINA
-        inicio = (pagina_atual - 1) * registros_por_pagina
-        fim = min(inicio + registros_por_pagina, len(tabela_filtrada))
-        tabela_para_exibir = tabela_filtrada.iloc[inicio:fim]
-    else:
-        # Limitação de registros para evitar travamentos
-        if len(tabela_filtrada) > registros_por_pagina:
-            tabela_para_exibir = tabela_filtrada.iloc[:registros_por_pagina]
-            st.warning(
-                f"Para melhor desempenho, exibindo os primeiros {formatar_numero(registros_por_pagina)} de {formatar_numero(len(tabela_filtrada))} registros.")
-        else:
-            tabela_para_exibir = tabela_filtrada
-
-    # Adicionar linha de totais usando a função refatorada
-    tabela_com_totais = adicionar_linha_totais(tabela_para_exibir, coluna_dados)
-
-    # Exibir informação atualizada sobre total de registros no estilo info azul
-    if total_registros > 1000 and not mostrar_todos:
-        st.info(
-            f"Exibindo {formatar_numero(len(tabela_para_exibir))} de {formatar_numero(total_registros)} resultados.")
-
-    # Determinar altura da tabela
-    if altura_personalizada:
-        altura_tabela = altura_manual
-    elif len(tabela_com_totais) > 20:
-        altura_tabela = 600  # Altura fixa para tabelas maiores
-    else:
-        altura_tabela = len(tabela_com_totais) * 35 + 38  # 35px por linha + 38px para o cabeçalho
-
-    # Aplicar estilo e exibir tabela
-    usar_estilo_simples = modo_desempenho and len(tabela_com_totais) > 500
-
-    # Adicionar botões de navegação interna da tabela
-    col_nav_top1, col_nav_top2, col_nav_top3 = st.columns([6, 3, 3])
-    with col_nav_top2:
-        st.markdown("""
-        <button onclick="scrollTableToTop()" class="scroll-btn" title="Ir ao topo da tabela">
-            ↑ Primeira linha
-        </button>
-        """, unsafe_allow_html=True)
-    with col_nav_top3:
-        st.markdown("""
-        <button onclick="scrollTableToBottom()" class="scroll-btn" title="Ir ao final da tabela">
-            ↓ Última linha
-        </button>
-        """, unsafe_allow_html=True)
-
-    if usar_estilo_simples:
-        with st.container():
-            st.dataframe(tabela_com_totais, use_container_width=True, height=altura_tabela, hide_index=True)
-        st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
-
-    else:
-        tabela_estilizada = aplicar_estilo_tabela(tabela_com_totais, modo_desempenho)
-        with st.container():
-            st.dataframe(tabela_estilizada, use_container_width=True, height=altura_tabela, hide_index=True)
-
-    # Adicionar botões de navegação na parte inferior
-    col_nav_bottom1, col_nav_bottom2, col_nav_bottom3 = st.columns([6, 3, 3])
-    with col_nav_bottom2:
-        st.markdown("""
-        <button onclick="scrollTableToTop()" class="scroll-btn" title="Ir ao topo da tabela">
-            ↑ Primeira linha
-        </button>
-        """, unsafe_allow_html=True)
-    with col_nav_bottom3:
-        st.markdown("""
-        <button onclick="scrollTableToBottom()" class="scroll-btn" title="Ir ao final da tabela">
-            ↓ Última linha
-        </button>
-        """, unsafe_allow_html=True)
-
-    # Informação de paginação abaixo da tabela
-    if not mostrar_todos and total_paginas > 1:
-        st.write(
-            f"Página {pagina_atual} de {total_paginas} • Registros por página: {formatar_numero(registros_por_pagina)}")
-
-    # Botões para download
+    # Botões de download
     col1, col2 = st.columns(2)
-
     with col1:
-        # Download como CSV
         st.download_button(
             label="Download CSV",
-            data=converter_df_para_csv(tabela_dados.loc[tabela_para_exibir.index]),  # Apenas registros exibidos
+            data=converter_df_para_csv(tabela_dados),
             file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.csv',
             mime='text/csv',
         )
-
     with col2:
-        # Download como Excel
         st.download_button(
             label="Download Excel",
-            data=converter_df_para_excel(tabela_dados.loc[tabela_para_exibir.index]),  # Apenas registros exibidos
+            data=converter_df_para_excel(tabela_dados),
             file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
 
 with tab2:
-    # Apresentar um resumo estatístico dos dados
     if coluna_dados in tabela_dados.columns:
         col1, col2 = st.columns(2)
 
         with col1:
-            # Tabela de estatísticas
             resumo = pd.DataFrame({
                 'Métrica': ['Total', 'Média', 'Mediana', 'Mínimo', 'Máximo', 'Desvio Padrão'],
                 'Valor': [
@@ -1087,19 +768,13 @@ with tab2:
                 ]
             })
             st.write("### Resumo Estatístico")
-
-            # Estilizar a tabela de resumo
             resumo_estilizado = resumo.style.set_properties(**{'text-align': 'center'}) \
                 .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
-
             st.dataframe(resumo_estilizado, use_container_width=True, hide_index=True)
 
         with col2:
-            # Top 5 valores
             st.write("### Top 5 Valores")
             top5 = tabela_dados.nlargest(5, coluna_dados)
-
-            # Selecionar colunas para exibição
             colunas_exibir = []
             if tipo_visualizacao == "Escola" and "NOME DA ESCOLA" in top5.columns:
                 colunas_exibir.append("NOME DA ESCOLA")
@@ -1115,7 +790,6 @@ with tab2:
             if '% do Total' in top5.columns:
                 colunas_exibir.append('% do Total')
 
-            # Formatar valores para exibição
             top5_exibir = top5[colunas_exibir].copy()
             if coluna_dados in top5_exibir.columns:
                 top5_exibir[coluna_dados] = top5_exibir[coluna_dados].apply(
@@ -1127,10 +801,8 @@ with tab2:
                     lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
                 )
 
-            # Estilizar a tabela top5
             top5_estilizado = top5_exibir.style.set_properties(**{'text-align': 'center'}) \
                 .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
-
             st.dataframe(top5_estilizado, use_container_width=True, hide_index=True)
 
 # -------------------------------
