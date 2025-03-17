@@ -241,7 +241,7 @@ def verificar_coluna_existe(df, coluna_nome):
     
     Retorna:
     tuple: (coluna_existe, coluna_real)
-        coluna_existe (bool): Indica se a coluna foi encontrada
+        coluna_existe (bool): Indica se a coluna foi encontrada.
         coluna_real (str): Nome real da coluna encontrada ou nome original
     """
     # Verifica se a coluna existe exatamente como especificada
@@ -433,12 +433,12 @@ if coluna_existe:
 else:
     st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
     # Tenta usar a coluna principal como fallback
-    coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
+    coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal.", "")
     coluna_existe, coluna_principal_real = verificar_coluna_existe(df_filtrado, coluna_principal)
     
     if coluna_existe:
         coluna_dados = coluna_principal_real
-        st.info(f"Usando '{coluna_dados}' como alternativa.")
+        st.info(f"Usando '{coluna_dados}' como alternativa")
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
@@ -446,7 +446,7 @@ else:
 # -------------------------------
 # Cabeçalho e Informações Iniciais do Dashboard
 # -------------------------------
-st.title("Dashboard de Matrículas - Inep")
+st.title("Dashboard de Matrículas - Inepy")
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
 # Exibição dos filtros selecionados
