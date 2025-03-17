@@ -676,8 +676,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 filter="agNumberColumnFilter",
                 valueFormatter=JsCode("""
                     function(params) {
-                        if (params.value === null || params.value === undefined) return '-';
-                        return params.value.toFixed(2) + '%';
+                        if (params.value === null || params.value === undefined || isNaN(params.value)) return '-';
+                        // Garantir que o valor seja tratado como número
+                        const numValue = Number(params.value);
+                        return numValue.toFixed(2) + '%';
                     }
                     """),
                 aggFunc="avg",
