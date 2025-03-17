@@ -624,23 +624,32 @@ with tab1:
             mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
         else:
             mostrar_todos = st.checkbox("Mostrar todos os registros", value=False)
-    
+
     with col2:
         if not mostrar_todos:
-            # Limitar a quantidade máxima de registros por página para evitar lentidão
             max_registros = min(500, total_registros)
-            registros_por_pagina = st.slider(
-                "Registros por página:", 
-                min_value=10, 
-                max_value=max_registros,
-                value=min(200, max_registros),  # O valor padrão é 200 ou o número total de registros, o que for menor
-                step=10
-            )
+            
+            # Caso 1: Se há poucos registros, não usamos slider
+            if max_registros < 10:
+                registros_por_pagina = max_registros
+                st.info(f"Total de {formatar_numero(max_registros)} registros disponíveis.")
+            # Caso 2: Usamos slider com configurações ajustadas ao número de registros
+            else:
+                # Definir step adequado ao número de registros
+                step = 1 if max_registros < 20 else 10
+                
+                registros_por_pagina = st.slider(
+                    "Registros por página:", 
+                    min_value=1,  # Valor mínimo sempre será 1
+                    max_value=max_registros,
+                    value=min(200, max_registros),
+                    step=step
+                )
         else:
             # Se selecionar mostrar todos, ainda limitamos a um máximo seguro para evitar travamentos
             if total_registros > 1000:
                 registros_por_pagina = 1000
-                st.warning(f"Para evitar travamentos, limitamos a exibição a 1000 registros de um total de {total_registros}.")
+                st.warning(f"Para evitar travamentos, limitamos a exibição a 1000 registros de um total de {formatar_numero(total_registros)}.")
             else:
                 registros_por_pagina = total_registros
     
