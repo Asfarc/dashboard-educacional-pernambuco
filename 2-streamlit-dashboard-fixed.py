@@ -31,16 +31,16 @@ def formatar_numero(numero):
     Formata números grandes adicionando separadores de milhar.
     Se o número for NaN ou '-', retorna '-'.
     """
-    if pd.isna(numero) or numero == "-":
-        return "-"
     try:
-        return f"{int(numero):,}".replace(",", ".")
-    except (ValueError, TypeError):
-        # Se não conseguir converter para inteiro, tenta formatar como float
-        try:
-            return f"{float(numero):,.2f}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(numero)
+        if pd.isna(numero):
+            return "-"
+        num = float(numero)
+        if num.is_integer():
+            return f"{int(num):,}".replace(",", ".")
+        else:
+            return f"{num:,.2f}".replace(",", ".")
+    except:
+        return str(numero)
 
 
 @st.cache_data
@@ -106,13 +106,18 @@ def criar_mapeamento_colunas(df):
         if nome_padrao in df.columns:
             return nome_padrao
 
-        # Verifica se existe uma versão case-insensitive da coluna
-        nome_normalizado = nome_padrao.lower().strip()
-        if nome_normalizado in colunas_map:
-            return colunas_map[nome_normalizado]
+        # Tentar encontrar por regex
+        padrao = re.compile(re.escape(nome_padrao), re.IGNORECASE)
+        for col in df.columns:
+            if padrao.search(col):
+                return col
 
         # Se não encontrar, retorna o nome original
         return nome_padrao
+
+        # Log de erro detalhado
+        st.error(f"Coluna '{nome_padrao}' não encontrada. Colunas disponíveis: {list(df.columns)}")
+        return ""
 
     mapeamento = {
         "Educação Infantil": {
@@ -641,14 +646,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressMenu=False
     )
 
-    # Adicionar barra de pesquisa rápida e estilo para linha de totais
+    # Substituir configuração de gridOptions:
     gb.configure_grid_options(
-        enableQuickFilter=True,
-        quickFilterText="",
-        getRowStyle=js_total_row,
-        # Evitar uso de onFilterChanged que depende de APIs internas
-        suppressCellFocus=False,
-        alwaysShowVerticalScroll=True
+        domLayout='autoHeight',  # Layout automático
+        rowModelType='infinite' if len(df_para_exibir) > 10000 else 'clientSide',
+        cacheBlockSize=100,
+        maxBlocksInCache=10,
+        pagination=True,
+        paginationPageSize=100
     )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
@@ -929,7 +934,7 @@ mapeamento_colunas = criar_mapeamento_colunas(df)
 if "ANO" in df.columns:
     anos_disponiveis = sorted(df["ANO"].unique())
     ano_selecionado = st.sidebar.selectbox("Ano do Censo:", anos_disponiveis)
-    df_filtrado = df[df["ANO"] == ano_selecionado]
+    df_filtrado = df[df["ANO"].astype(int) == int(ano_selecionado)]
 else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
@@ -1025,12 +1030,12 @@ col1, col2, col3 = st.columns(3)
 # KPI 1 - Com tratamento de erros
 try:
     total_matriculas = df_filtrado[coluna_dados].sum()
+except:
+    total_matriculas = 0
     with col1:
-        st.metric("Total de Matrículas", formatar_numero(total_matriculas))
-except Exception as e:
-    with col1:
-        st.metric("Total de Matrículas", "-")
-        st.caption(f"Erro ao calcular: {str(e)}")
+        st.metric("Total de Matrículas",
+                  formatar_numero(total_matriculas),
+                  help="Valores zerados podem indicar dados ausentes")
 
 # KPI 2 - Com tratamento de erros
 with col2:
