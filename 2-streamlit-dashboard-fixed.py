@@ -681,12 +681,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 filter="agNumberColumnFilter",
                 valueFormatter=JsCode("""
                     function(params) {
-                        if (params.value === null || params.value === undefined) return '-';
-                        return params.value.toFixed(2) + '%';
+                        try {
+                            // Converter para número se necessário
+                            const valor = Number(params.value);
+                            
+                            if (isNaN(valor)) {
+                                return '-';
+                            }
+                            
+                            // Formatar apenas se for numérico
+                            return valor.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }) + '%';
+                        } catch (e) {
+                            console.error('Erro ao formatar:', e);
+                            return params.value;
+                        }
                     }
-                    """),
-                aggFunc="avg",
-                cellClass="numeric-cell"
+                """)
             )
 
     # 4. OTIMIZAÇÃO PARA GRANDES DATASETS - abordagem mais robusta
@@ -1124,8 +1137,13 @@ if coluna_dados in df_filtrado.columns:
     total = df_filtrado_tabela[coluna_dados].sum()
     if total > 0:
         with pd.option_context('mode.chained_assignment', None):
-            df_filtrado_tabela['% do Total'] = df_filtrado_tabela[coluna_dados].apply(
-                lambda x: (x / total) * 100 if pd.notnull(x) else None
+            df_filtrado_tabela['% do Total'] = (
+                df_filtrado_tabela[coluna_dados]
+                .astype(float)
+                .div(total)
+                .mul(100)
+                .round(2)
+                .fillna(0)  # Substituir NaNs por 0
             )
         colunas_tabela.append('% do Total')
 
@@ -1292,6 +1310,12 @@ with tab1:
 
         # Exibe a tabela inteira no AgGrid
     altura_tabela = altura_manual
+
+    if not pd.api.types.is_numeric_dtype(tabela_com_totais['% do Total']):
+        st.error("Erro crítico: Coluna de porcentagem contém valores não numéricos")
+        st.write("Valores problemáticos:", tabela_com_totais['% do Total'].unique())
+        st.stop()
+
     try:
         grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
     except Exception as e:
