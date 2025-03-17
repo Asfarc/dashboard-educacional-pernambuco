@@ -560,11 +560,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """)
 
     # 5. ESTATÍSTICAS - implementação mais robusta
-    js_agg_functions = JsCode(f"""
-    function(params) {{
-        try {{
+    js_agg_functions = JsCode("""
+    function(params) {
+        try {
             // Obter coluna de dados principal
-            const dataColumn = "{coluna_dados if coluna_dados else ''}";
+            const dataColumn = "%s";
             if (!dataColumn) return 'Coluna de dados não definida';
 
             // Coletar todos os valores visíveis
@@ -572,44 +572,55 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             let totalSum = 0;
             let count = 0;
 
-            params.api.forEachNodeAfterFilter(node => {{
+            params.api.forEachNodeAfterFilter(node => {
                 if (!node.data) return;
 
                 // Verifica se não é linha de TOTAL
                 let isTotal = false;
-                for (const key in node.data) {{
+                for (const key in node.data) {
                     if (node.data[key] && 
-                        node.data[key].toString().toUpperCase().includes('TOTAL')) {{
+                        node.data[key].toString().toUpperCase().includes('TOTAL')) {
                         isTotal = true;
                         break;
-                    }}
-                }}
+                    }
+                }
 
                 if (isTotal) return;
 
                 // Extrai o valor como número
                 const cellValue = node.data[dataColumn];
-                if (cellValue !== null && cellValue !== undefined) {{
+                if (cellValue !== null && cellValue !== undefined) {
                     const numValue = Number(cellValue.toString().replace(/[^0-9.,]/g, '').replace(',', '.'));
-                    if (!isNaN(numValue)) {{
+                    if (!isNaN(numValue)) {
                         values.push(numValue);
                         totalSum += numValue;
                         count++;
-                    }}
-                }}
-            }});
+                    }
+                }
+            });
 
             // Formatar para exibição amigável
-            const formatNum = num => {{
-                return new Intl.NumberFormat('pt-BR', {{ 
+            const formatNum = function(num) {
+                // Primeiro formatar usando Intl.NumberFormat
+                let formatted = new Intl.NumberFormat('pt-BR', { 
                     maximumFractionDigits: 2 
-                }})..format(num).replace(/\./g, '_').replace(/,/g, '.').replace(/_/g, '.');
-            }};
+                }).format(num);
+
+                // Depois converter para usar ponto como separador
+                // Substituir pontos por underscores temporariamente
+                formatted = formatted.replace(/\\./g, '_');
+                // Substituir vírgulas por pontos
+                formatted = formatted.replace(/,/g, '.');
+                // Substituir underscores de volta para pontos
+                formatted = formatted.replace(/_/g, '.');
+
+                return formatted;
+            };
 
             // Calcular estatísticas
-            if (values.length === 0) {{
+            if (values.length === 0) {
                 return 'Não há dados numéricos';
-            }}
+            }
 
             const avg = totalSum / count;
             values.sort((a, b) => a - b);
@@ -617,13 +628,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             const max = values[values.length - 1];
 
             // Mensagem formatada
-            return `Total: ${{formatNum(totalSum)}} | Média: ${{formatNum(avg)}} | Mín: ${{formatNum(min)}} | Máx: ${{formatNum(max)}}`;
-        }} catch (error) {{
+            return `Total: ${formatNum(totalSum)} | Média: ${formatNum(avg)} | Mín: ${formatNum(min)} | Máx: ${formatNum(max)}`;
+        } catch (error) {
             console.error('Erro ao calcular estatísticas:', error);
             return 'Erro ao calcular estatísticas';
-        }}
-    }}
-    """)
+        }
+    }
+    """ % (coluna_dados if coluna_dados else ''))
 
     # Configurar o construtor de opções do grid
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
