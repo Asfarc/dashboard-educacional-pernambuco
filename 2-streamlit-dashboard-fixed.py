@@ -507,44 +507,44 @@ st.markdown("""
         width: 14px;
         height: 14px;
     }
-    
+
     /* Estilo do "track" (trilho) da barra de rolagem */
     ::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 7px;
     }
-    
+
     /* Estilo do "thumb" (parte móvel) da barra de rolagem */
     ::-webkit-scrollbar-thumb {
         background: #888;
         border-radius: 7px;
     }
-    
+
     /* Ao passar o mouse */
     ::-webkit-scrollbar-thumb:hover {
         background: #555;
     }
-    
+
     /* Elimina a rolagem interna da tabela para prevenir barras de rolagem duplas */
     .stDataFrame > div:first-child {
         overflow: hidden !important;
     }
-    
+
     /* Garante que apenas o contêiner externo tenha rolagem */
     .main .block-container {
         overflow-y: auto;
     }
-    
+
     /* Remove barras de rolagem de elementos internos específicos */
     div[data-testid="stVerticalBlock"] {
         overflow: visible !important;
     }
-    
+
     /* Ajuste para o canto da barra de rolagem */
     ::-webkit-scrollbar-corner {
         background: #f1f1f1;
     }
-<style>
+
     /* Estilo para os botões de rolagem */
     .scroll-btn {
         background-color: #f0f2f6;
@@ -557,7 +557,7 @@ st.markdown("""
         margin: 5px;
         transition: background-color 0.2s;
     }
-    
+
     .scroll-btn:hover {
         background-color: #e0e2e6;
     }
@@ -570,13 +570,13 @@ st.markdown("""
         setTimeout(function() {
             try {
                 const tables = document.querySelectorAll('.stDataFrame');
-                
+
                 if (tables.length > 0) {
                     // Encontrar contêineres com overflow
                     for (let i = 0; i < tables.length; i++) {
                         // Encontra todos os divs dentro da tabela
                         const divs = tables[i].querySelectorAll('div');
-                        
+
                         for (let j = 0; j < divs.length; j++) {
                             const div = divs[j];
                             // Procura o div com propriedade overflow e que tenha scroll
@@ -594,20 +594,20 @@ st.markdown("""
             }
         }, 300);
     }
-    
+
     // Função para rolar para o final da tabela
     function scrollTableToBottom() {
         // Tenta encontrar todos os contêineres de tabela
         setTimeout(function() {
             try {
                 const tables = document.querySelectorAll('.stDataFrame');
-                
+
                 if (tables.length > 0) {
                     // Encontrar contêineres com overflow
                     for (let i = 0; i < tables.length; i++) {
                         // Encontra todos os divs dentro da tabela
                         const divs = tables[i].querySelectorAll('div');
-                        
+
                         for (let j = 0; j < divs.length; j++) {
                             const div = divs[j];
                             // Procura o div com propriedade overflow e que tenha scroll
@@ -625,14 +625,14 @@ st.markdown("""
             }
         }, 300);
     }
-    
+
     // Adiciona também suporte para teclas Home e End
     document.addEventListener('keydown', function(e) {
         // Se a tecla Home for pressionada
         if (e.key === 'Home') {
             scrollTableToTop();
         }
-        
+
         // Se a tecla End for pressionada
         if (e.key === 'End') {
             scrollTableToBottom();
@@ -640,7 +640,6 @@ st.markdown("""
     });
 </script>
 """, unsafe_allow_html=True)
-
 
 # Seleção das colunas a serem exibidas na tabela, conforme o nível de visualização
 # Adicionando ANO como primeira coluna sempre
