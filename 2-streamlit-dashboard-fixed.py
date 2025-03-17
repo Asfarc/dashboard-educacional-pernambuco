@@ -679,27 +679,22 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 '% do Total',
                 type=["numericColumn", "numberColumnFilter"],
                 filter="agNumberColumnFilter",
+                # 🚨 CRÍTICO: Formatação correta com tratamento de erros
                 valueFormatter=JsCode("""
                     function(params) {
                         try {
-                            // Converter para número se necessário
-                            const valor = Number(params.value);
-                            
-                            if (isNaN(valor)) {
-                                return '-';
-                            }
-                            
-                            // Formatar apenas se for numérico
+                            const valor = Number(params.value) || 0;
                             return valor.toLocaleString('pt-BR', {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
                             }) + '%';
-                        } catch (e) {
-                            console.error('Erro ao formatar:', e);
-                            return params.value;
+                        } catch(e) {
+                            return '-';
                         }
                     }
-                """)
+                """),
+                aggFunc="avg",
+                cellClass="numeric-cell"
             )
 
     # 4. OTIMIZAÇÃO PARA GRANDES DATASETS - abordagem mais robusta
@@ -1139,12 +1134,14 @@ if coluna_dados in df_filtrado.columns:
         with pd.option_context('mode.chained_assignment', None):
             df_filtrado_tabela['% do Total'] = (
                 df_filtrado_tabela[coluna_dados]
-                .astype(float)
+                .astype(np.float32)  # Primeira conversão otimizada
                 .div(total)
                 .mul(100)
                 .round(2)
-                .fillna(0)  # Substituir NaNs por 0
+                .fillna(0)  # Remove NaNs
+                .astype(np.float32)  # Garante tipo final
             )
+            df_filtrado_tabela['% do Total'] = df_filtrado_tabela['% do Total'].astype(float)
         colunas_tabela.append('% do Total')
 
     # Ordenar dados
