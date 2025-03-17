@@ -868,6 +868,118 @@ with tab1:
         with st.container():
             st.dataframe(tabela_com_totais, use_container_width=True, height=altura_tabela, hide_index=True)
         st.caption("*Última linha representa os totais. Modo de desempenho ativo para maior velocidade.*")
+        # Adicionar botões de navegação rápida para a tabela
+        st.markdown("""
+        <style>
+            /* Estilos para os botões de navegação */
+            .scroll-button {
+                position: absolute;
+                background-color: rgba(70, 130, 180, 0.7);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                width: 30px;
+                height: 30px;
+                font-size: 18px;
+                cursor: pointer;
+                z-index: 999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background-color 0.3s;
+            }
+
+            .scroll-button:hover {
+                background-color: rgba(70, 130, 180, 1);
+            }
+
+            /* Posicionamento dos botões */
+            .scroll-top-top {
+                top: 10px;
+                right: 15px;
+            }
+
+            .scroll-top-bottom {
+                top: 45px;
+                right: 15px;
+            }
+
+            .scroll-bottom-top {
+                bottom: 45px;
+                right: 15px;
+            }
+
+            .scroll-bottom-bottom {
+                bottom: 10px;
+                right: 15px;
+            }
+
+            /* Garantir que os botões fiquem visíveis */
+            .stDataFrame {
+                position: relative;
+            }
+        </style>
+
+        <script>
+            // Função para adicionar os botões após o carregamento da página
+            document.addEventListener('DOMContentLoaded', function() {
+                // Espera até que a tabela seja renderizada
+                setTimeout(function() {
+                    const dataFrames = document.querySelectorAll('.stDataFrame');
+
+                    dataFrames.forEach(function(df) {
+                        // Criar botões
+                        const scrollTopTop = document.createElement('button');
+                        scrollTopTop.innerHTML = '↑';
+                        scrollTopTop.className = 'scroll-button scroll-top-top';
+                        scrollTopTop.title = 'Ir para o topo';
+
+                        const scrollTopBottom = document.createElement('button');
+                        scrollTopBottom.innerHTML = '↓';
+                        scrollTopBottom.className = 'scroll-button scroll-top-bottom';
+                        scrollTopBottom.title = 'Ir para o final';
+
+                        const scrollBottomTop = document.createElement('button');
+                        scrollBottomTop.innerHTML = '↑';
+                        scrollBottomTop.className = 'scroll-button scroll-bottom-top';
+                        scrollBottomTop.title = 'Ir para o topo';
+
+                        const scrollBottomBottom = document.createElement('button');
+                        scrollBottomBottom.innerHTML = '↓';
+                        scrollBottomBottom.className = 'scroll-button scroll-bottom-bottom';
+                        scrollBottomBottom.title = 'Ir para o final';
+
+                        // Adicionar eventos
+                        scrollTopTop.addEventListener('click', function() {
+                            const scrollArea = df.querySelector('.stDataFrame > div');
+                            scrollArea.scrollTop = 0;
+                        });
+
+                        scrollTopBottom.addEventListener('click', function() {
+                            const scrollArea = df.querySelector('.stDataFrame > div');
+                            scrollArea.scrollTop = scrollArea.scrollHeight;
+                        });
+
+                        scrollBottomTop.addEventListener('click', function() {
+                            const scrollArea = df.querySelector('.stDataFrame > div');
+                            scrollArea.scrollTop = 0;
+                        });
+
+                        scrollBottomBottom.addEventListener('click', function() {
+                            const scrollArea = df.querySelector('.stDataFrame > div');
+                            scrollArea.scrollTop = scrollArea.scrollHeight;
+                        });
+
+                        // Adicionar botões ao DOM
+                        df.appendChild(scrollTopTop);
+                        df.appendChild(scrollTopBottom);
+                        df.appendChild(scrollBottomTop);
+                        df.appendChild(scrollBottomBottom);
+                    });
+                }, 1000); // Espera 1 segundo para garantir que a tabela foi carregada
+            });
+        </script>
+        """, unsafe_allow_html=True)
     else:
         tabela_estilizada = aplicar_estilo_tabela(tabela_com_totais, modo_desempenho)
         with st.container():
