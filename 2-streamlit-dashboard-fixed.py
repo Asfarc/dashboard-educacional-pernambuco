@@ -665,7 +665,7 @@ with tab1:
     st.write("### Filtros da tabela")
     
     # Ajustando proporções para evitar quebra de texto nos rótulos
-    col1, col2, col3, col4, col5, col6 = st.columns([0.8, 3.0, 0.8, 3.0, 0.8, 3.0])
+    col1, col2, col3, col4, col5, col6 = st.columns([0.6, 3.0, 0.6, 3.0, 0.6, 3.0])
     
     # Filtros para texto (nomes de localidades)
     filtro_texto = None
