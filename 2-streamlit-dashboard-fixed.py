@@ -890,105 +890,157 @@ with tab1:
     if not mostrar_todos and total_paginas > 1:
         st.write(
             f"Página {pagina_atual} de {total_paginas} • Registros por página: {formatar_numero(registros_por_pagina)}")
+
+    # 1. Adicione CSS para estilizar o contêiner dos botões
     st.markdown("""
     <style>
-    .nav-buttons {
-        position: absolute;
-        right: 20px;
-        margin-top: -50px;
+    .botoes-navegacao {
         display: flex;
+        justify-content: flex-end;
         gap: 10px;
-        z-index: 999;
-    }
-    .nav-btn {
-        background-color: rgba(255, 255, 255, 0.8);
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 6px 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .nav-btn:hover {
-        background-color: #f0f0f0;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
     </style>
-    <div class="nav-buttons">
-        <button onclick="scrollTableToTop()" class="nav-btn" title="Ir ao topo da tabela">↑ Topo</button>
-        <button onclick="scrollTableToBottom()" class="nav-btn" title="Ir ao final da tabela">↓ Final</button>
+    """, unsafe_allow_html=True)
+
+    # 2. Criar uma div para agrupar os botões usando st.container e colunas
+    botoes_container = st.container()
+    with botoes_container:
+        coluna_espaco, coluna_topo, coluna_final = st.columns([10, 1, 1])
+
+        # Botão para ir ao topo - usando componente nativo Streamlit
+        with coluna_topo:
+            if st.button("↑ Topo", key="btn_topo_tabela", help="Ir ao topo da tabela"):
+                # Este script será executado quando o botão for clicado
+                st.markdown("""
+                <script>
+                    // Use um seletor mais específico para encontrar a tabela correta
+                    setTimeout(function() {
+                        try {
+                            // Identifica todas as tabelas na página
+                            const tables = document.querySelectorAll('.stDataFrame');
+                            let scrolled = false;
+
+                            // Para cada tabela encontrada
+                            for (let i = 0; i < tables.length; i++) {
+                                // Encontra todos os divs dentro da tabela
+                                const allDivs = tables[i].querySelectorAll('div');
+
+                                // Testa cada div para ver se tem rolagem
+                                for (let j = 0; j < allDivs.length; j++) {
+                                    const div = allDivs[j];
+                                    // Verifica se o div tem rolagem vertical
+                                    if (div.scrollHeight > div.clientHeight) {
+                                        // Encontrou o elemento correto, rola para o topo
+                                        div.scrollTop = 0;
+                                        console.log('Rolado para o topo:', div);
+                                        scrolled = true;
+                                        break;
+                                    }
+                                }
+
+                                if (scrolled) break;
+                            }
+
+                            if (!scrolled) {
+                                console.log('Não foi possível encontrar um elemento com rolagem');
+                            }
+                        } catch (error) {
+                            console.error('Erro ao rolar para o topo:', error);
+                        }
+                    }, 300);
+                </script>
+                """, unsafe_allow_html=True)
+
+        # Botão para ir ao final - usando componente nativo Streamlit
+        with coluna_final:
+            if st.button("↓ Final", key="btn_final_tabela", help="Ir ao final da tabela"):
+                # Este script será executado quando o botão for clicado
+                st.markdown("""
+                <script>
+                    // Use um seletor mais específico para encontrar a tabela correta
+                    setTimeout(function() {
+                        try {
+                            // Identifica todas as tabelas na página
+                            const tables = document.querySelectorAll('.stDataFrame');
+                            let scrolled = false;
+
+                            // Para cada tabela encontrada
+                            for (let i = 0; i < tables.length; i++) {
+                                // Encontra todos os divs dentro da tabela
+                                const allDivs = tables[i].querySelectorAll('div');
+
+                                // Testa cada div para ver se tem rolagem
+                                for (let j = 0; j < allDivs.length; j++) {
+                                    const div = allDivs[j];
+                                    // Verifica se o div tem rolagem vertical
+                                    if (div.scrollHeight > div.clientHeight) {
+                                        // Encontrou o elemento correto, rola para o final
+                                        div.scrollTop = div.scrollHeight;
+                                        console.log('Rolado para o final:', div);
+                                        scrolled = true;
+                                        break;
+                                    }
+                                }
+
+                                if (scrolled) break;
+                            }
+
+                            if (!scrolled) {
+                                console.log('Não foi possível encontrar um elemento com rolagem');
+                            }
+                        } catch (error) {
+                            console.error('Erro ao rolar para o final:', error);
+                        }
+                    }, 300);
+                </script>
+                """, unsafe_allow_html=True)
+
+    # 3. Adicione uma opção alternativa usando atalhos de teclado
+    st.markdown("""
+    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; margin-bottom: 15px;">
+        <p style="margin: 0; font-size: 14px;">
+            <strong>💡 Dica:</strong> Você também pode usar as teclas <kbd>Home</kbd> para ir ao topo e <kbd>End</kbd> para ir ao final da tabela.
+        </p>
     </div>
+    """, unsafe_allow_html=True)
 
+    # 4. Adicione um script permanente para responder aos atalhos de teclado
+    st.markdown("""
     <script>
-    function scrollTableToTop() {
-        // Função melhorada para encontrar o contêiner correto da tabela
-        setTimeout(function() {
-            // Busca todos os possíveis contêineres de tabela
-            const tables = document.querySelectorAll('.stDataFrame');
-            if (tables.length > 0) {
-                // Primeiro, tenta encontrar o contêiner direto que tenha scroll
-                let scrollables = tables[0].querySelectorAll('div[style*="overflow"]');
-                let scrollable = null;
+    document.addEventListener('keydown', function(e) {
+        // Verifica se a tabela está visível na página
+        const tables = document.querySelectorAll('.stDataFrame');
+        if (tables.length === 0) return;
 
-                // Percorre os contêineres para encontrar o que tem scrollHeight > clientHeight
-                for (let i = 0; i < scrollables.length; i++) {
-                    if (scrollables[i].scrollHeight > scrollables[i].clientHeight) {
-                        scrollable = scrollables[i];
-                        break;
-                    }
-                }
+        // Se pressionou Home, role para o topo da tabela
+        if (e.key === 'Home') {
+            e.preventDefault();
 
-                // Se não encontrou, tenta o primeiro div dentro da tabela
-                if (!scrollable) {
-                    scrollable = tables[0].querySelector('div');
-                }
-
-                // Se encontrou qualquer contêiner com scroll, rola para o topo
-                if (scrollable) {
-                    scrollable.scrollTop = 0;
-                    console.log("Rolando para o topo", scrollable);
+            const allDivs = tables[0].querySelectorAll('div');
+            for (let i = 0; i < allDivs.length; i++) {
+                const div = allDivs[i];
+                if (div.scrollHeight > div.clientHeight) {
+                    div.scrollTop = 0;
+                    break;
                 }
             }
-        }, 200);
-    }
+        }
 
-    function scrollTableToBottom() {
-        // Função melhorada para encontrar o contêiner correto da tabela
-        setTimeout(function() {
-            // Busca todos os possíveis contêineres de tabela
-            const tables = document.querySelectorAll('.stDataFrame');
-            if (tables.length > 0) {
-                // Primeiro, tenta encontrar o contêiner direto que tenha scroll
-                let scrollables = tables[0].querySelectorAll('div[style*="overflow"]');
-                let scrollable = null;
+        // Se pressionou End, role para o final da tabela
+        if (e.key === 'End') {
+            e.preventDefault();
 
-                // Percorre os contêineres para encontrar o que tem scrollHeight > clientHeight
-                for (let i = 0; i < scrollables.length; i++) {
-                    if (scrollables[i].scrollHeight > scrollables[i].clientHeight) {
-                        scrollable = scrollables[i];
-                        break;
-                    }
-                }
-
-                // Se não encontrou, tenta o primeiro div dentro da tabela
-                if (!scrollable) {
-                    scrollable = tables[0].querySelector('div');
-                }
-
-                // Se encontrou qualquer contêiner com scroll, rola para o final
-                if (scrollable) {
-                    scrollable.scrollTop = scrollable.scrollHeight;
-                    console.log("Rolando para o final", scrollable);
+            const allDivs = tables[0].querySelectorAll('div');
+            for (let i = 0; i < allDivs.length; i++) {
+                const div = allDivs[i];
+                if (div.scrollHeight > div.clientHeight) {
+                    div.scrollTop = div.scrollHeight;
+                    break;
                 }
             }
-        }, 200);
-    }
-
-    // Executar imediatamente para garantir que o script está pronto
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM carregado, script de navegação da tabela ativo");
+        }
     });
     </script>
     """, unsafe_allow_html=True)
