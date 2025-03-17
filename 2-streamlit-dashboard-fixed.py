@@ -424,7 +424,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Para grandes datasets, mostrar aviso e opção de limitar
     if is_very_large_dataset:
         st.warning(
-            f"O conjunto de dados tem {len(df_para_exibir):,} linhas, o que pode causar lentidão na visualização.")
+            f"O conjunto de dados tem {formatar_numero(len(df_para_exibir))} linhas, o que pode causar lentidão na visualização.")
         mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
         if not mostrar_tudo:
             # Verificar se há linha TOTAL usando método eficiente
@@ -603,7 +603,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             const formatNum = num => {{
                 return new Intl.NumberFormat('pt-BR', {{ 
                     maximumFractionDigits: 2 
-                }}).format(num);
+                }})..format(num).replace(/\./g, '_').replace(/,/g, '.').replace(/_/g, '.');
             }};
 
             // Calcular estatísticas
@@ -972,7 +972,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Feedback sobre filtros aplicados
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
-        st.info(f"Filtro aplicado: mostrando {len(filtered_data):,} de {len(df_para_exibir):,} registros.")
+        st.info(f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} de {formatar_numero(len(df_para_exibir))} registros.")
 
     return grid_return
 
@@ -1257,31 +1257,7 @@ with tab1:
                                       help="Otimiza o carregamento para grandes conjuntos de dados.")
 
     st.write("### Filtros da tabela")
-    col1, col2, col3, col4, col5, col6 = st.columns([0.6, 3.0, 0.6, 3.0, 0.6, 3.0])
-
-    filtro_texto = None
-    colunas_localidade = [col for col in ["NOME DA UF", "NOME DO MUNICIPIO", "NOME DA ESCOLA"] if
-                          col in tabela_exibicao.columns]
-    if colunas_localidade:
-        with col1:
-            st.write("**Localidade:**")
-        with col2:
-            coluna_texto_selecionada = st.selectbox("", ["Nenhum"] + colunas_localidade, label_visibility="collapsed")
-            if coluna_texto_selecionada != "Nenhum":
-                filtro_texto = st.text_input("", placeholder=f"Filtrar {coluna_texto_selecionada}...",
-                                             label_visibility="collapsed", key="filtro_texto")
-
-    filtro_codigo = None
-    colunas_codigo = [col for col in ["CODIGO DA UF", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA"] if
-                      col in tabela_exibicao.columns]
-    if colunas_codigo:
-        with col3:
-            st.write("**Código:**")
-        with col4:
-            coluna_codigo_selecionada = st.selectbox(" ", ["Nenhum"] + colunas_codigo, label_visibility="collapsed")
-            if coluna_codigo_selecionada != "Nenhum":
-                filtro_codigo = st.text_input(" ", placeholder=f"Filtrar {coluna_codigo_selecionada}...",
-                                              label_visibility="collapsed", key="filtro_codigo")
+    col5, col6 = st.columns([1, 5])
 
     with col5:
         st.write("**Colunas:**")
@@ -1328,41 +1304,7 @@ with tab1:
         aplicar_filtros = True
         mostrar_dica = False
 
-    # Filtro de texto com tratamento de erros
-    if filtro_texto and coluna_texto_selecionada != "Nenhum":
-        if len(filtro_texto) >= 3 and aplicar_filtros:
-            try:
-                if len(tabela_filtrada) > 5000:
-                    tabela_filtrada = tabela_filtrada[
-                        tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, na=False)
-                    ]
-                else:
-                    tabela_filtrada = tabela_filtrada[
-                        tabela_filtrada[coluna_texto_selecionada].astype(str).str.contains(filtro_texto, case=False,
-                                                                                           na=False)
-                    ]
-                filtros_aplicados = True
-            except Exception as e:
-                st.error(f"Erro ao aplicar filtro de texto: {str(e)}")
-        elif mostrar_dica and len(filtro_texto) > 0 and len(filtro_texto) < 3:
-            st.info("Digite pelo menos 3 caracteres para filtrar por texto.")
-
-    # Filtro de código com tratamento de erros
-    if filtro_codigo and coluna_codigo_selecionada != "Nenhum":
-        if len(filtro_codigo) >= 1 and aplicar_filtros:
-            try:
-                tabela_filtrada = tabela_filtrada[
-                    tabela_filtrada[coluna_codigo_selecionada].astype(str).str.contains(filtro_codigo, na=False)
-                ]
-                filtros_aplicados = True
-            except Exception as e:
-                st.error(f"Erro ao aplicar filtro de código: {str(e)}")
-
-    if filtros_aplicados and len(tabela_filtrada) < len(tabela_exibicao):
-        st.success(
-            f"Filtro aplicado: {len(tabela_filtrada)} de {len(tabela_exibicao)} registros correspondem aos critérios.")
-
-        # Adicionar linha de totais com tratamento de erros
+    # Adicionar linha de totais com tratamento de erros
     try:
         tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
     except Exception as e:
