@@ -628,17 +628,94 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Configurar o construtor de opções do grid
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
+    # 1. Adicione um objeto de localização personalizado para PT-BR
+    localeText = {
+        # Textos dos filtros
+        "contains": "Contém",
+        "notContains": "Não contém",
+        "equals": "Igual a",
+        "notEqual": "Diferente de",
+        "startsWith": "Começa com",
+        "endsWith": "Termina com",
+        "blank": "Em branco",
+        "notBlank": "Não em branco",
+
+        # Botões dos filtros
+        "applyFilter": "Aplicar",
+        "resetFilter": "Limpar",
+        "clearFilter": "Limpar",
+        "cancelFilter": "Cancelar",
+
+        # Rótulos de comparação numérica
+        "lessThan": "Menor que",
+        "greaterThan": "Maior que",
+        "lessThanOrEqual": "Menor ou igual a",
+        "greaterThanOrEqual": "Maior ou igual a",
+        "inRange": "No intervalo",
+
+        # Textos da barra de status
+        "filterOoo": "Filtrado",
+        "noRowsToShow": "Sem dados para exibir",
+        "enabled": "Habilitado",
+
+        # Outras opções comuns
+        "search": "Buscar",
+        "selectAll": "Selecionar todos",
+        "searchOoo": "Buscar...",
+        "blanks": "Em branco",
+        "noMatches": "Sem correspondência",
+
+        # Textos do painel de colunas/filtros
+        "columns": "Colunas",
+        "filters": "Filtros",
+        "rowGroupColumns": "Agrupar por",
+        "rowGroupColumnsEmptyMessage": "Arraste colunas aqui para agrupar",
+        "valueColumns": "Valores",
+        "pivotMode": "Modo Pivot",
+        "groups": "Grupos",
+        "values": "Valores",
+        "pivots": "Pivôs",
+        "valueColumnsEmptyMessage": "Arraste aqui para agregar",
+        "pivotColumnsEmptyMessage": "Arraste aqui para definir pivô",
+        "toolPanelButton": "Painéis",
+
+        # Outros rótulos da UI
+        "loadingOoo": "Carregando...",
+        "page": "Página",
+        "next": "Próximo",
+        "last": "Último",
+        "first": "Primeiro",
+        "previous": "Anterior",
+        "of": "de",
+        "to": "até",
+        "rows": "linhas",
+        "loading": "Carregando...",
+
+        # Statuses da barra de status
+        "totalRows": "Total de linhas",
+        "totalAndFilteredRows": "Linhas",
+        "selectedRows": "Selecionadas",
+        "filteredRows": "Filtradas",
+
+        # Textos de agregação
+        "sum": "Soma",
+        "min": "Mínimo",
+        "max": "Máximo",
+        "average": "Média",
+        "count": "Contagem"
+    }
+
     # 2. CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
     gb.configure_default_column(
         groupable=True,
         editable=False,
         wrapText=True,
         autoHeight=True,
-        filter="agTextColumnFilter",  # Forçar tipo de filtro como texto
+        filter="agTextColumnFilter",
         floatingFilter=True,
         filterParams={
             "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
-            "buttons": ["apply", "reset"],
+            "buttons": ["apply", "reset"],  # Já está corretamente configurado para "apply" e "reset"
             "closeOnApply": False
         },
         resizable=True,
@@ -651,9 +728,15 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         enableQuickFilter=True,
         quickFilterText="",
         getRowStyle=js_total_row,
-        # Evitar uso de onFilterChanged que depende de APIs internas
         suppressCellFocus=False,
-        alwaysShowVerticalScroll=True
+        alwaysShowVerticalScroll=True,
+        localeText=localeText,  # Adicione a tradução
+        defaultColDef={  # Adicione esta configuração padrão para todas as colunas
+            "filterParams": {
+                "buttons": ["apply", "reset"],
+                "closeOnApply": False
+            }
+        }
     )
 
     # Configurar colunas numéricas específicas para melhor filtro e agregação
