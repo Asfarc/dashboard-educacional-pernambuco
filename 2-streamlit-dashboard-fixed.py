@@ -664,8 +664,8 @@ with tab1:
     # Adicionar filtros de busca mais próximos da tabela e com largura reduzida
     st.write("### Filtros da tabela")
     
-    # Usar colunas com largura reduzida (50% da largura original)
-    col1, col2, col3, col4, col5, col6 = st.columns([0.5, 4.5, 0.5, 4.5, 0.5, 4.5])  # Reduzido em 50%
+    # Ajustando proporções para evitar quebra de texto nos rótulos
+    col1, col2, col3, col4, col5, col6 = st.columns([1.5, 3.5, 1.5, 3.5, 1.5, 3.5])
     
     # Filtros para texto (nomes de localidades)
     filtro_texto = None
