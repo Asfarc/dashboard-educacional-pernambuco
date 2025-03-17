@@ -634,8 +634,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         editable=False,
         wrapText=True,
         autoHeight=True,
-        filter=True,
+        filter="agTextColumnFilter",  # Forçar tipo de filtro como texto
         floatingFilter=True,
+        filterParams={
+            "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
+            "buttons": ["apply", "reset"],
+            "closeOnApply": False
+        },
         resizable=True,
         sortable=True,
         suppressMenu=False
