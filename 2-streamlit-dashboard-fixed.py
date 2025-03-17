@@ -796,49 +796,44 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
     # Implementação dos botões de navegação - versão streamlit sem dependência de JavaScript direto
     with col_nav_top2:
-        if st.button("⏫ Primeira Linha", key="btn_top_1"):
-            st.markdown("""
-                <script>
-                    setTimeout(function() {
-                        try {
-                            // Buscar componente AgGrid
-                            const gridDiv = document.querySelector('.ag-root-wrapper');
-                            if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                                gridDiv.gridOptions.api.ensureIndexVisible(0);
-                                // Selecionar primeira linha
-                                const firstRow = gridDiv.gridOptions.api.getDisplayedRowAtIndex(0);
-                                if (firstRow) {
-                                    gridDiv.gridOptions.api.setFocusedCell(0, 
-                                        gridDiv.gridOptions.api.getColumnDefs()[0].field);
+        def navegar_tabela(streamlit_key, posicao='top'):
+            """
+            Injeta JavaScript no Streamlit para rolar a tabela AgGrid até a primeira ou última linha.
+            :param streamlit_key: chave única do botão para evitar conflitos
+            :param posicao: 'top' ou 'bottom'
+            """
+            label = "⏫ Primeira Linha" if posicao == 'top' else "⏬ Última Linha"
+            if st.button(label, key=streamlit_key):
+                scroll_script = """
+                    <script>
+                        setTimeout(function() {
+                            try {
+                                const gridDiv = document.querySelector('.ag-root-wrapper');
+                                if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
+                                    const api = gridDiv.gridOptions.api;
+                                    if ('{posicao}' === 'top') {
+                                        api.ensureIndexVisible(0);
+                                        api.setFocusedCell(0, api.getColumnDefs()[0].field);
+                                    } else {
+                                        const lastIndex = api.getDisplayedRowCount() - 1;
+                                        if (lastIndex >= 0) {
+                                            api.ensureIndexVisible(lastIndex);
+                                            api.setFocusedCell(lastIndex, api.getColumnDefs()[0].field);
+                                        }
+                                    }
                                 }
-                            }
-                        } catch(e) { console.error(e); }
-                    }, 300);
-                </script>
-                """, unsafe_allow_html=True)
+                            } catch(e) { console.error(e); }
+                        }, 300);
+                    </script>
+                """.replace('{posicao}', posicao)
+                st.markdown(scroll_script, unsafe_allow_html=True)
 
-    with col_nav_top3:
-        if st.button("⏬ Última Linha", key="btn_bottom_1"):
-            st.markdown("""
-                <script>
-                    setTimeout(function() {
-                        try {
-                            // Buscar componente AgGrid
-                            const gridDiv = document.querySelector('.ag-root-wrapper');
-                            if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                                // Obter índice da última linha
-                                const lastIndex = gridDiv.gridOptions.api.getDisplayedRowCount() - 1;
-                                if (lastIndex >= 0) {
-                                    gridDiv.gridOptions.api.ensureIndexVisible(lastIndex);
-                                    // Selecionar última linha
-                                    gridDiv.gridOptions.api.setFocusedCell(lastIndex, 
-                                        gridDiv.gridOptions.api.getColumnDefs()[0].field);
-                                }
-                            }
-                        } catch(e) { console.error(e); }
-                    }, 300);
-                </script>
-                """, unsafe_allow_html=True)
+        # Uso acima da tabela
+        col_nav_top1, col_nav_top2 = st.columns([1, 1])
+        with col_nav_top1:
+            navegar_tabela("btn_top_1", posicao='top')
+        with col_nav_top2:
+            navegar_tabela("btn_bottom_1", posicao='bottom')
 
     # Alternativa para navegação com teclas de atalho
     st.markdown("""
@@ -868,52 +863,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         key=f"aggrid_{id(df_para_exibir)}"  # ID único para cada tabela
     )
 
-    # Botões de navegação abaixo da tabela também
-    col_nav_bot1, col_nav_bot2, col_nav_bot3 = st.columns([6, 3, 3])
+    # Uso abaixo da tabela
+    col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
+    with col_nav_bot1:
+        navegar_tabela("btn_top_2", posicao='top')
     with col_nav_bot2:
-        if st.button("⏫ Primeira Linha", key="btn_top_2"):
-            st.markdown("""
-                <script>
-                    setTimeout(function() {
-                        try {
-                            // Buscar componente AgGrid
-                            const gridDiv = document.querySelector('.ag-root-wrapper');
-                            if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                                gridDiv.gridOptions.api.ensureIndexVisible(0);
-                                // Selecionar primeira linha
-                                const firstRow = gridDiv.gridOptions.api.getDisplayedRowAtIndex(0);
-                                if (firstRow) {
-                                    gridDiv.gridOptions.api.setFocusedCell(0, 
-                                        gridDiv.gridOptions.api.getColumnDefs()[0].field);
-                                }
-                            }
-                        } catch(e) { console.error(e); }
-                    }, 300);
-                </script>
-                """, unsafe_allow_html=True)
-
-    with col_nav_bot3:
-        if st.button("⏬ Última Linha", key="btn_bottom_2"):
-            st.markdown("""
-                <script>
-                    setTimeout(function() {
-                        try {
-                            // Buscar componente AgGrid
-                            const gridDiv = document.querySelector('.ag-root-wrapper');
-                            if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                                // Obter índice da última linha
-                                const lastIndex = gridDiv.gridOptions.api.getDisplayedRowCount() - 1;
-                                if (lastIndex >= 0) {
-                                    gridDiv.gridOptions.api.ensureIndexVisible(lastIndex);
-                                    // Selecionar última linha
-                                    gridDiv.gridOptions.api.setFocusedCell(lastIndex, 
-                                        gridDiv.gridOptions.api.getColumnDefs()[0].field);
-                                }
-                            }
-                        } catch(e) { console.error(e); }
-                    }, 300);
-                </script>
-                """, unsafe_allow_html=True)
+        navegar_tabela("btn_bottom_2", posicao='bottom')
 
     # Feedback sobre filtros aplicados
     filtered_data = grid_return['data']
