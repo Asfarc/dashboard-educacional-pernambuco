@@ -1021,7 +1021,7 @@ else:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-st.title("Dashboard de Matrículas - Inepy")
+st.title("Dashboard de Matrículas - Inepy - oi josse e demais! bem-vindos a minha pagina eletronica (webpages)")
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
