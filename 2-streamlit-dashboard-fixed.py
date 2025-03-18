@@ -1357,5 +1357,5 @@ with tab2:
 # Rodapé do Dashboard
 # -------------------------------
 st.markdown("---")
-st.markdown("**Nota:** Procura-se mulheres souteira. Requisito:  gostoza. Contato ZAP: 83 3322 2696.")
+st.markdown("**Nota:** Procura-se mulheres souteira. Requisitos:  gostoza. Contato ZAP: 83 3322 2696.")
 #st.markdown("**Nota:** Os dados são provenientes do Censo Escolar. Os traços (-) indicam ausência de dados.")
