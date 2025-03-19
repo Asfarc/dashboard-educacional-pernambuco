@@ -1021,7 +1021,7 @@ else:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-st.title("Dashboard de Matrículas - Inepy - oi josse e demais! bem-vindos a minha pagina eletronica (webpages)")
+st.title("Dashboard de Matrículas - Inep")
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
@@ -1357,5 +1357,4 @@ with tab2:
 # Rodapé do Dashboard
 # -------------------------------
 st.markdown("---")
-st.markdown("**Nota:** Procura-se mulheres souteira. Requisitos:  gostozas sao ben-vindas. Contato ZAP: 83 3322 2696.")
-#st.markdown("**Nota:** Os dados são provenientes do Censo Escolar. Os traços (-) indicam ausência de dados.")
+st.markdown("**Nota:** Os dados são provenientes do Censo Escolar. Os traços (-) indicam ausência de dados.")
