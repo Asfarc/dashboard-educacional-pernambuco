@@ -723,7 +723,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         groupable=True,
         editable=False,
         wrapText=True,
-        autoHeight=True,
+        autoHeight=False,
         filter="agTextColumnFilter",
         floatingFilter=True,
         filterParams={
