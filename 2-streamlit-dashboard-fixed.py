@@ -7,6 +7,7 @@ from pathlib import Path
 import io
 import json
 import re
+from constantes import *
 
 # Biblioteca do AgGrid
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
@@ -73,7 +74,7 @@ def carregar_dados():
                 break
 
         if escolas_df is None or estado_df is None or municipio_df is None:
-            raise FileNotFoundError("Não foi possível encontrar os arquivos Parquet necessários.")
+            raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
 
         # Converter colunas numéricas para o tipo correto
         for df in [escolas_df, estado_df, municipio_df]:
@@ -84,8 +85,8 @@ def carregar_dados():
         return escolas_df, estado_df, municipio_df
 
     except Exception as e:
-        st.error(f"Erro ao carregar os dados: {e}")
-        st.info("Verifique se os arquivos Parquet estão disponíveis no repositório.")
+        st.error(ERRO_CARREGAR_DADOS.format(e))
+        st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
 
 
@@ -241,7 +242,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     """
     # Verificar se a etapa existe no mapeamento
     if etapa not in mapeamento:
-        st.error(f"A etapa '{etapa}' não foi encontrada no mapeamento de colunas.")
+        st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
         return ""
 
     # Caso 1: Nenhuma subetapa selecionada, usa coluna principal da etapa
@@ -250,7 +251,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
 
     # Verificar se a subetapa existe
     if "subetapas" not in mapeamento[etapa] or subetapa not in mapeamento[etapa]["subetapas"]:
-        st.warning(f"A subetapa '{subetapa}' não foi encontrada para a etapa '{etapa}'.")
+        st.warning(ERRO_SUBETAPA_NAO_ENCONTRADA.format(subetapa, etapa))
         return mapeamento[etapa].get("coluna_principal", "")
 
     # Caso 2: Nenhuma série específica selecionada, usa coluna da subetapa
@@ -260,7 +261,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     # Verificar se a subetapa tem séries e se a série selecionada existe
     series_subetapa = mapeamento[etapa].get("series", {}).get(subetapa, {})
     if not series_subetapa or serie not in series_subetapa:
-        st.warning(f"A série '{serie}' não foi encontrada para a subetapa '{subetapa}'.")
+        st.warning(ERRO_SERIE_NAO_ENCONTRADA.format(serie, subetapa))
         return mapeamento[etapa]["subetapas"][subetapa]
 
     # Caso 3: Série específica selecionada
@@ -860,18 +861,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Botões de navegação acima
     col_nav_top1, col_nav_top2 = st.columns([1, 1])
     with col_nav_top1:
-        navegar_tabela("⏫ Primeira Linha", "btn_top_1", posicao='top')
+        navegar_tabela(ROTULO_BTN_PRIMEIRA_LINHA, "btn_top_1", posicao='top')
     with col_nav_top2:
-        navegar_tabela("⏬ Última Linha", "btn_bottom_1", posicao='bottom')
+        navegar_tabela(ROTULO_BTN_ULTIMA_LINHA)
 
     # Dicas de navegação
-    st.markdown("""
-        <div style="background-color: #f5f7fa; padding: 10px; border-radius: 5px; margin-top: 5px; margin-bottom: 15px; font-size: 0.9em;">
-            <strong>✨ Dicas de navegação:</strong> Use <kbd>Home</kbd> para ir à primeira linha e <kbd>End</kbd> para ir à última.
-            <kbd>↑</kbd>/<kbd>↓</kbd> navega entre linhas, <kbd>←</kbd>/<kbd>→</kbd> entre colunas.
-            <kbd>Ctrl+F</kbd> ou a barra de filtro acima para buscar em todas as colunas.
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
 
     # Renderizar o grid
     grid_return = AgGrid(
@@ -1021,7 +1016,7 @@ else:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-st.title("Dashboard de Matrículas - Inep")
+st.title(TITULO_DASHBOARD)
 st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
 
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
@@ -1040,7 +1035,7 @@ col1, col2, col3 = st.columns(3)
 try:
     total_matriculas = df_filtrado[coluna_dados].sum()
     with col1:
-        st.metric("Total de Matrículas", formatar_numero(total_matriculas))
+        st.metric(ROTULO_TOTAL_MATRICULAS, formatar_numero(total_matriculas))
 except Exception as e:
     with col1:
         st.metric("Total de Matrículas", "-")
@@ -1051,7 +1046,7 @@ with col2:
         if tipo_visualizacao == "Escola":
             if len(df_filtrado) > 0:
                 media_por_escola = df_filtrado[coluna_dados].mean()
-                st.metric("Média de Matrículas por Escola", formatar_numero(media_por_escola))
+                st.metric(ROTULO_MEDIA_POR_ESCOLA, formatar_numero(media_por_escola))
             else:
                 st.metric("Média de Matrículas por Escola", "-")
         else:
@@ -1059,7 +1054,7 @@ with col2:
                 media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
                 if not media_por_dependencia.empty:
                     media_geral = media_por_dependencia.mean()
-                    st.metric("Média de Matrículas", formatar_numero(media_geral))
+                    st.metric(ROTULO_MEDIA_MATRICULAS, formatar_numero(media_geral))
                 else:
                     st.metric("Média de Matrículas", "-")
             else:
@@ -1072,13 +1067,13 @@ with col3:
     try:
         if tipo_visualizacao == "Escola":
             total_escolas = len(df_filtrado)
-            st.metric("Total de Escolas", formatar_numero(total_escolas))
+            st.metric(ROTULO_TOTAL_ESCOLAS, formatar_numero(total_escolas))
         elif tipo_visualizacao == "Município":
             total_municipios = len(df_filtrado)
-            st.metric("Total de Municípios", formatar_numero(total_municipios))
+            st.metric(ROTULO_TOTAL_MUNICIPIOS, formatar_numero(total_municipios))
         else:
             max_valor = df_filtrado[coluna_dados].max()
-            st.metric("Máximo de Matrículas", formatar_numero(max_valor))
+            st.metric(ROTULO_MAXIMO_MATRICULAS, formatar_numero(max_valor))
     except Exception as e:
         if tipo_visualizacao == "Escola":
             st.metric("Total de Escolas", "-")
@@ -1092,7 +1087,7 @@ with col3:
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
 # -------------------------------
-st.markdown("## Dados Detalhados")
+st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 
 colunas_tabela = []
 if "ANO" in df_filtrado.columns:
@@ -1152,8 +1147,7 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
 
     with col4:
-        altura_personalizada = st.checkbox("Ajustar altura da tabela", value=False,
-                                           help="Use esta opção se estiver vendo barras de rolagem duplicadas")
+        altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
             altura_manual = st.slider("Altura da tabela (pixels)",
                                       min_value=200,
@@ -1165,13 +1159,13 @@ with tab1:
 
     with col1:
         total_registros = len(tabela_exibicao)
-        mostrar_todos = st.checkbox("Mostrar todos os registros", value=True)
+        mostrar_todos = st.checkbox(ROTULO_MOSTRAR_REGISTROS, value=True)
 
     with col2:
         st.write(" ")
     with col3:
-        modo_desempenho = st.checkbox("Ativar modo de desempenho", value=True,
-                                      help="Otimiza o carregamento para grandes conjuntos de dados.")
+        modo_desempenho = st.checkbox(ROTULO_MODO_DESEMPENHO, value=True,
+                                      help=DICA_MODO_DESEMPENHO)
 
     st.write("### Filtros da tabela")
     col5, col6 = st.columns([1, 5])
@@ -1235,7 +1229,7 @@ with tab1:
         try:
             csv_data = converter_df_para_csv(tabela_dados)
             st.download_button(
-                label="Download CSV",
+                label=ROTULO_BTN_DOWNLOAD_CSV,
                 data=csv_data,
                 file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.csv',
                 mime='text/csv',
@@ -1247,7 +1241,7 @@ with tab1:
         try:
             excel_data = converter_df_para_excel(tabela_dados)
             st.download_button(
-                label="Download Excel",
+                label=ROTULO_BTN_DOWNLOAD_EXCEL,
                 data=excel_data,
                 file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1342,19 +1336,19 @@ with tab2:
                                 .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
                             st.dataframe(top5_estilizado, use_container_width=True, hide_index=True)
                         else:
-                            st.info("Não há colunas disponíveis para exibir o Top 5.")
+                            st.info(INFO_SEM_COLUNAS_TOP5)
                     except Exception as e:
-                        st.error(f"Erro ao calcular top 5: {str(e)}")
-                        st.info("Não foi possível calcular os maiores valores.")
+                        st.error(ERRO_CALCULAR_TOP5.format(str(e)))
+                        st.info(INFO_NAO_CALCULADO_TOP5)
                 else:
-                    st.info("Não há dados suficientes para exibir o Top 5.")
+                    st.info(INFO_SEM_DADOS_TOP5)
             except Exception as e:
                 st.error(f"Erro ao processar top 5: {str(e)}")
     else:
-        st.warning(f"A coluna de dados '{coluna_dados}' não está disponível para análise estatística.")
+        st.warning(AVISO_COLUNA_NAO_DISPONIVEL.format(coluna_dados))
 
 # -------------------------------
 # Rodapé do Dashboard
 # -------------------------------
 st.markdown("---")
-st.markdown("**Nota:** Os dados são provenientes do Censo Escolar. Os traços (-) indicam ausência de dados.")
+st.markdown(RODAPE_NOTA)
