@@ -1,0 +1,88 @@
+{
+  "Educação Infantil": {
+    "coluna_principal": "Número de Matrículas da Educação Infantil",
+    "subetapas": {
+      "Creche": "Número de Matrículas da Educação Infantil - Creche",
+      "Pré-Escola": "Número de Matrículas da Educação Infantil - Pré-Escola"
+    },
+    "series": {}
+  },
+  "Ensino Fundamental": {
+    "coluna_principal": "Número de Matrículas do Ensino Fundamental",
+    "subetapas": {
+      "Anos Iniciais": "Número de Matrículas do Ensino Fundamental - Anos Iniciais",
+      "Anos Finais": "Número de Matrículas do Ensino Fundamental - Anos Finais"
+    },
+    "series": {
+      "Anos Iniciais": {
+        "1º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 1º Ano",
+        "2º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 2º Ano",
+        "3º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 3º Ano",
+        "4º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 4º Ano",
+        "5º Ano": "Número de Matrículas do Ensino Fundamental - Anos Iniciais - 5º Ano"
+      },
+      "Anos Finais": {
+        "6º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 6º Ano",
+        "7º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 7º Ano",
+        "8º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 8º Ano",
+        "9º Ano": "Número de Matrículas do Ensino Fundamental - Anos Finais - 9º Ano"
+      }
+    }
+  },
+  "Ensino Médio": {
+    "coluna_principal": "Número de Matrículas do Ensino Médio",
+    "subetapas": {
+      "Propedêutico": "Número de Matrículas do Ensino Médio - Propedêutico",
+      "Curso Técnico Integrado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional",
+      "Normal/Magistério": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério"
+    },
+    "series": {
+      "Propedêutico": {
+        "1ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 1º ano/1ª Série",
+        "2ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 2º ano/2ª Série",
+        "3ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 3º ano/3ª Série",
+        "4ª Série": "Número de Matrículas do Ensino Médio - Propedêutico - 4º ano/4ª Série",
+        "Não Seriado": "Número de Matrículas do Ensino Médio - Propedêutico - Não Seriado"
+      },
+      "Curso Técnico Integrado": {
+        "1ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 1º ano/1ª Série",
+        "2ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 2º ano/2ª Série",
+        "3ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 3º ano/3ª Série",
+        "4ª Série": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - 4º ano/4ª Série",
+        "Não Seriado": "Número de Matrículas do Ensino Médio - Curso Técnico Integrado à Educação Profissional - Não Seriado"
+      },
+      "Normal/Magistério": {
+        "1ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 1º ano/1ª Série",
+        "2ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 2º ano/2ª Série",
+        "3ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 3º ano/3ª Série",
+        "4ª Série": "Número de Matrículas do Ensino Médio - Modalidade Normal/Magistério - 4º ano/4ª Série"
+      }
+    }
+  },
+  "EJA": {
+    "coluna_principal": "Número de Matrículas da Educação de Jovens e Adultos (EJA)",
+    "subetapas": {
+      "Ensino Fundamental": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental",
+      "Ensino Médio": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Médio"
+    },
+    "series": {
+      "Ensino Fundamental": {
+        "Anos Iniciais": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Iniciais",
+        "Anos Finais": "Número de Matrículas da Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Anos Finais"
+      }
+    }
+  },
+  "Educação Profissional": {
+    "coluna_principal": "Número de Matrículas da Educação Profissional",
+    "subetapas": {
+      "Técnica": "Número de Matrículas da Educação Profissional Técnica",
+      "Curso FIC": "Número de Matrículas da Educação Profissional - Curso FIC Concomitante"
+    },
+    "series": {
+      "Técnica": {
+        "Concomitante": "Número de Matrículas da Educação Profissional Técnica - Curso Técnico Concomitante",
+        "Subsequente": "Número de Matrículas da Educação Profissional Técnica - Curso Técnico Subsequente"
+      }
+    }
+  }
+}
