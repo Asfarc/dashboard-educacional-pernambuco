@@ -447,7 +447,7 @@ def navegar_tabela(label_botao, key_botao, posicao='top'):
                             }}
                         }}
                     }} catch(e) {{ console.error(e); }}
-                }}, 2000);
+                }}, 4000);
             </script>
         """
         st.markdown(scroll_script, unsafe_allow_html=True)
