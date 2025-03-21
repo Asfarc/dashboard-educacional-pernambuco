@@ -863,7 +863,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     with col_nav_top1:
         navegar_tabela(ROTULO_BTN_PRIMEIRA_LINHA, "btn_top_1", posicao='top')
     with col_nav_top2:
-        navegar_tabela(ROTULO_BTN_ULTIMA_LINHA)
+        navegar_tabela(ROTULO_BTN_ULTIMA_LINHA, "btn_bottom_1", posicao='bottom')
 
     # Dicas de navegação
     st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
