@@ -1,5 +1,3 @@
-[server]
-mainScriptPath = "app.py"
 [theme]
 primaryColor = "#3498db"
 backgroundColor = "#ffffff"
