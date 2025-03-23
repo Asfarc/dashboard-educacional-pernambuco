@@ -658,22 +658,22 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
     # Configurar larguras específicas para colunas selecionadas
     if "ANO" in df_para_exibir.columns:
-        gb.configure_column("ANO", width=80)
+        gb.configure_column("ANO", width=80, headerWrapText=True, autoHeaderHeight=True)
 
     if "CODIGO DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DO MUNICIPIO", width=80)
+        gb.configure_column("CODIGO DO MUNICIPIO", width=160, headerWrapText=True, autoHeaderHeight=True)
 
     if "NOME DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column("NOME DO MUNICIPIO", width=200)
+        gb.configure_column("NOME DO MUNICIPIO", width=220, headerWrapText=True, autoHeaderHeight=True)
 
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DA ESCOLA", width=80)
+        gb.configure_column("CODIGO DA ESCOLA", width=140, headerWrapText=True, autoHeaderHeight=True)
 
     if "NOME DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("NOME DA ESCOLA", width=300)
+        gb.configure_column("NOME DA ESCOLA", width=250, headerWrapText=True, autoHeaderHeight=True)
 
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
-        gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=100)
+        gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
     # Adicionar barra de pesquisa rápida e estilo para linha de totais
     gb.configure_grid_options(
@@ -683,6 +683,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressCellFocus=False,
         alwaysShowVerticalScroll=True,
         localeText=localeText,
+        autoHeaderHeight=True,
+        headerHeight=70,  # Altura inicial maior para cabeçalhos
     )
 
     # Configurar colunas numéricas específicas
@@ -798,23 +800,61 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         custom_css="""
             .ag-row-selected { background-color: #eff7ff !important; }
             .numeric-cell { text-align: right; }
+
+            /* Estilos aprimorados para cabeçalhos com quebra de texto */
             .ag-header-cell-text { 
-                font-weight: bold;
+                font-weight: bold !important;
                 white-space: normal !important;
-                line-height: 1.2;
+                line-height: 1.2 !important;
+                overflow: visible !important;
+                font-size: 12px !important;
             }
+
             .ag-header-cell {
-                padding: 4px;
+                padding: 4px !important;
+                height: auto !important;
+                min-height: 50px !important;
+                display: flex !important;
+                align-items: center !important;
             }
-            .ag-cell { overflow: hidden; text-overflow: ellipsis; }
+
+            .ag-header-row {
+                height: auto !important;
+            }
+
+            .ag-cell { 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+            }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
+        fit_columns_on_grid_load=False,  # Desativar ajuste automático para manter as larguras definidas
         allow_unsafe_jscode=True,
         theme="streamlit",
         key=f"aggrid_{id(df_para_exibir)}"
     )
+    # JavaScript para garantir que a altura dos cabeçalhos seja ajustada corretamente
+    js_fix_headers = """
+    <script>
+        setTimeout(function() {
+            try {
+                const gridDivs = document.querySelectorAll('.ag-header-row');
+                gridDivs.forEach(function(div) {
+                    div.style.height = 'auto';
+                    div.style.minHeight = '50px';
+                });
+
+                const headerCells = document.querySelectorAll('.ag-header-cell-text');
+                headerCells.forEach(function(cell) {
+                    cell.style.whiteSpace = 'normal';
+                    cell.style.overflow = 'visible';
+                });
+            } catch(e) { console.error('Erro ao ajustar cabeçalhos:', e); }
+        }, 500);
+    </script>
+    """
+    st.markdown(js_fix_headers, unsafe_allow_html=True)
 
     # Botões de navegação abaixo
     col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
