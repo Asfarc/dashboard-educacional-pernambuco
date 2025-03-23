@@ -680,23 +680,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             cellClass="numeric-cell"
         )
 
-        # Verificar se coluna de percentual existe
-        if '% do Total' in df_para_exibir.columns:
-            gb.configure_column(
-                '% do Total',
-                type=["numericColumn", "numberColumnFilter"],
-                filter="agNumberColumnFilter",
-                valueFormatter=JsCode("""
-                    function(params) {
-                        if (params.value === null || params.value === undefined || isNaN(params.value)) return '-';
-                        const numValue = Number(params.value);
-                        return numValue.toFixed(2) + '%';
-                    }
-                """),
-                aggFunc="avg",
-                cellClass="numeric-cell"
-            )
-
     # 4. OTIMIZAÇÃO PARA GRANDES DATASETS
     if is_large_dataset:
         gb.configure_grid_options(
@@ -1031,14 +1014,6 @@ if coluna_dados in df_filtrado.columns:
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
         df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
 
-    total = df_filtrado_tabela[coluna_dados].sum()
-    if total > 0:
-        with pd.option_context('mode.chained_assignment', None):
-            df_filtrado_tabela['% do Total'] = df_filtrado_tabela[coluna_dados].apply(
-                lambda x: (x / total) * 100 if pd.notnull(x) else None
-            )
-        colunas_tabela.append('% do Total')
-
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
 
@@ -1046,10 +1021,6 @@ if coluna_dados in df_filtrado.columns:
         tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
             lambda x: formatar_numero(x) if pd.notnull(x) else "-"
         )
-        if '% do Total' in tabela_exibicao.columns:
-            tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
-                lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
-            )
 else:
     tabela_dados = df_filtrado[colunas_existentes].copy()
     tabela_exibicao = tabela_dados.copy()
