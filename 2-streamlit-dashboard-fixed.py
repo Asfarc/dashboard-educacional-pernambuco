@@ -676,15 +676,24 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
     # Adicionar barra de pesquisa rápida e estilo para linha de totais
+    # Configurar seleção de células e funcionalidades de clipboard
     gb.configure_grid_options(
-        enableQuickFilter=True,
-        quickFilterText="",
-        getRowStyle=js_total_row,
-        suppressCellFocus=False,
-        alwaysShowVerticalScroll=True,
-        localeText=localeText,
-        autoHeaderHeight=True,
-        headerHeight=70,  # Altura inicial maior para cabeçalhos
+        # Desativar completamente a seleção de linhas
+        rowSelection='none',
+        suppressRowDeselection=True,
+        suppressRowClickSelection=True,
+
+        # Habilitar apenas seleção de células
+        enableRangeSelection=True,
+        enableRangeHandle=True,
+
+        # Configurações de clipboard
+        clipboardDelimiter='\t',
+        suppressCopyRowsToClipboard=True,  # Importante: impede a cópia de linhas inteiras
+        copyHeadersToClipboard=True,
+
+        # Outras configurações para melhorar a experiência
+        ensureDomOrder=True
     )
 
     # Configurar colunas numéricas específicas
