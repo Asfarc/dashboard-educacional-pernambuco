@@ -665,7 +665,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         gb.configure_column("NOME DO MUNICIPIO", width=200)
 
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DA ESCOLA", width=150)
+        gb.configure_column("CODIGO DA ESCOLA", width=80)
 
     if "NOME DA ESCOLA" in df_para_exibir.columns:
         gb.configure_column("NOME DA ESCOLA", width=250)
