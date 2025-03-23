@@ -805,7 +805,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         gridOptions=grid_options,
         height=altura,
         custom_css="""
-            .ag-row-selected { background-color: #eff7ff !important; }
+            .ag-row-selected { background-color: transparent !important; }
             .numeric-cell { text-align: right; }
        
             /* Nova regra para células selecionadas */
