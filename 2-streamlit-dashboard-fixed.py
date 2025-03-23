@@ -742,9 +742,36 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }
     )
 
-    # Barra lateral e seleção
+    # Barra lateral e seleção avançada
     gb.configure_side_bar()
-    gb.configure_selection('single')
+    # Removemos a seleção de linhas individuais para permitir seleção de células
+    # gb.configure_selection('single')
+
+    # Configurar seleção de células e funcionalidades de clipboard
+    gb.configure_grid_options(
+        # Permitir seleção de células
+        enableRangeSelection=True,
+        enableRangeHandle=True,
+        ensureDomOrder=True,
+
+        # Habilitar funcionalidades de clipboard
+        enableCellTextSelection=True,
+        enableMultiRowDragging=True,
+        enableAdvancedFilter=True,
+
+        # Configurações de clipboard
+        clipboardDelimiter='\t',
+        suppressCopyRowsToClipboard=False,
+        copyHeadersToClipboard=True,
+
+        # Melhorar comportamento da seleção
+        suppressRowClickSelection=True,
+        suppressDragLeaveHidesColumns=True,
+
+        # Permitir multi-seleção com teclado/mouse
+        rowSelection='multiple',
+        rowMultiSelectWithClick=True
+    )
 
     # Construir as opções finais do grid
     grid_options = gb.build()
@@ -792,6 +819,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Dicas de navegação
     st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
 
+    st.info("""
+    **Dica de uso**: 
+    - Para selecionar várias células, clique e arraste o mouse como no Excel
+    - Use Ctrl+C para copiar a seleção
+    - Use Ctrl+A para selecionar todas as células
+    - Os dados copiados podem ser colados diretamente no Excel ou Google Sheets
+    """)
+
     # Renderizar o grid
     grid_return = AgGrid(
         df_para_exibir,
@@ -834,6 +869,50 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         theme="streamlit",
         key=f"aggrid_{id(df_para_exibir)}"
     )
+
+    # JavaScript para melhorar comportamento de seleção e cópia
+    js_clipboard_helper = """
+    <script>
+        setTimeout(function() {
+            try {
+                // Encontrar a instância do grid
+                const gridDiv = document.querySelector('.ag-root-wrapper');
+                if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
+                    const api = gridDiv.gridOptions.api;
+
+                    // Adicionar eventos de teclado para comportamento estilo Excel
+                    document.addEventListener('keydown', function(e) {
+                        // Verifica se Ctrl+C foi pressionado
+                        if (e.ctrlKey && e.key === 'c') {
+                            // Copia a seleção para o clipboard
+                            api.copySelectedRangeToClipboard(true);
+                        }
+
+                        // Ctrl+A para selecionar todas as células
+                        if (e.ctrlKey && e.key === 'a') {
+                            e.preventDefault();
+                            // Seleciona todas as células
+                            const allColumns = api.getColumns();
+                            if (allColumns.length > 0) {
+                                const range = {
+                                    startRow: 0,
+                                    endRow: api.getDisplayedRowCount() - 1,
+                                    startColumn: allColumns[0],
+                                    endColumn: allColumns[allColumns.length - 1]
+                                };
+                                api.addCellRange(range);
+                            }
+                        }
+                    });
+                }
+            } catch(e) { 
+                console.error('Erro ao configurar clipboard:', e); 
+            }
+        }, 800);
+    </script>
+    """
+    st.markdown(js_clipboard_helper, unsafe_allow_html=True)
+
     # JavaScript para garantir que a altura dos cabeçalhos seja ajustada corretamente
     js_fix_headers = """
     <script>
