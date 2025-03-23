@@ -654,6 +654,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressMenu=False
     )
 
+    # Configurar larguras específicas para colunas selecionadas
+    if "ANO" in df_para_exibir.columns:
+        gb.configure_column("ANO", width=80)
+
+    if "CODIGO DO MUNICIPIO" in df_para_exibir.columns:
+        gb.configure_column("CODIGO DO MUNICIPIO", width=150)
+
+    if "NOME DO MUNICIPIO" in df_para_exibir.columns:
+        gb.configure_column("NOME DO MUNICIPIO", width=200)
+
+    if "CODIGO DA ESCOLA" in df_para_exibir.columns:
+        gb.configure_column("CODIGO DA ESCOLA", width=150)
+
+    if "NOME DA ESCOLA" in df_para_exibir.columns:
+        gb.configure_column("NOME DA ESCOLA", width=250)
+
+    if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
+        gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180)
+
     # Adicionar barra de pesquisa rápida e estilo para linha de totais
     gb.configure_grid_options(
         enableQuickFilter=True,
