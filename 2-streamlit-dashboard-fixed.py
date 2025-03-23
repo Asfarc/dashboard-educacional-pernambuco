@@ -462,7 +462,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "toolPanelButton": "Painéis",
         "loadingOoo": "Carregando...",
         "page": "Página",
-        "pageSize": "Tamanho da Página",
+        "page Size": "Tamanho da Página",
         "next": "Próximo",
         "last": "Último",
         "first": "Primeiro",
