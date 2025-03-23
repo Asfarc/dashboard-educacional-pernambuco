@@ -675,25 +675,36 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
         gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
-    # Adicionar barra de pesquisa rápida e estilo para linha de totais
     # Configurar seleção de células e funcionalidades de clipboard
     gb.configure_grid_options(
-        # Desativar completamente a seleção de linhas
-        rowSelection='none',
-        suppressRowDeselection=True,
+        # Desativar completamente qualquer seleção de linhas
+        rowSelection=False,
         suppressRowClickSelection=True,
+        suppressRowDeselection=True,
+        suppressCellSelection=False,
 
-        # Habilitar apenas seleção de células
+        # Habilitar apenas seleção de células específicas
         enableRangeSelection=True,
         enableRangeHandle=True,
 
+        # Configurações que afetam o comportamento de clique
+        suppressClickEdit=False,
+
         # Configurações de clipboard
         clipboardDelimiter='\t',
-        suppressCopyRowsToClipboard=True,  # Importante: impede a cópia de linhas inteiras
+        suppressCopyRowsToClipboard=True,
         copyHeadersToClipboard=True,
 
-        # Outras configurações para melhorar a experiência
-        ensureDomOrder=True
+        # Desabilitar menus de contexto que podem afetar a seleção
+        suppressContextMenu=True,
+        suppressMenuHide=True,
+
+        # Estilos de interação
+        rowStyle={'background-color': 'white'},
+        rowClass='custom-row',
+        rowClassRules={
+            'ag-row-selected': 'false',  # Forçar classe de seleção a nunca ser aplicada
+        }
     )
 
     # Configurar colunas numéricas específicas
