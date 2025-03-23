@@ -883,30 +883,30 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
                     const api = gridDiv.gridOptions.api;
 
-                    // Adicionar eventos de teclado para comportamento estilo Excel
-                    document.addEventListener('keydown', function(e) {
-                        // Verifica se Ctrl+C foi pressionado
-                        if (e.ctrlKey && e.key === 'c') {
-                            // Copia a seleção para o clipboard
-                            api.copySelectedRangeToClipboard(true);
+                // Adicionar eventos de teclado para comportamento estilo Excel
+                document.addEventListener('keydown', function(e) {
+                    // Verifica se Ctrl+C foi pressionado
+                    if (e.ctrlKey && e.key === 'c') {
+                        // Copia a seleção para o clipboard
+                        api.copySelectedRangeToClipboard(true);
+                    }
+                
+                    // Ctrl+A para selecionar todas as células
+                    if (e.ctrlKey && e.key === 'a') {
+                        e.preventDefault();
+                        // Seleciona todas as células
+                        const allColumns = api.getColumns();
+                        if (allColumns.length > 0) {
+                            const range = {
+                                startRow: 0,
+                                endRow: api.getDisplayedRowCount() - 1,
+                                startColumn: allColumns[0],
+                                endColumn: allColumns[allColumns.length - 1]
+                            };
+                            api.addCellRange(range);
                         }
-
-                        // Ctrl+A para selecionar todas as células
-                        if (e.ctrlKey && e.key === 'a') {
-                            e.preventDefault();
-                            // Seleciona todas as células
-                            const allColumns = api.getColumns();
-                            if (allColumns.length > 0) {
-                                const range = {
-                                    startRow: 0,
-                                    endRow: api.getDisplayedRowCount() - 1,
-                                    startColumn: allColumns[0],
-                                    endColumn: allColumns[allColumns.length - 1]
-                                };
-                                api.addCellRange(range);
-                            }
-                        }
-                    });
+                    }
+                });
                 }
             } catch(e) { 
                 console.error('Erro ao configurar clipboard:', e); 
