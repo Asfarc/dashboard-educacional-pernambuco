@@ -846,7 +846,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             .ag-cell.ag-cell-range-selected-3,
             .ag-cell.ag-cell-range-selected-4 {
                 background-color: #eff7ff !important;  /* azul claro, como você desejou */
-                color: inherit !important;
+                color: #000 !important;  /* ou a cor que preferir */
             }
             
             /* Desativar seleção de texto padrão do navegador dentro da tabela */
