@@ -651,7 +651,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         },
         resizable=True,
         sortable=True,
-        suppressMenu=False
+        suppressMenu=False,
+        headerWrapText=True,
+        autoHeaderHeight=True
     )
 
     # Configurar larguras específicas para colunas selecionadas
