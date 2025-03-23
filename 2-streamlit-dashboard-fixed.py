@@ -827,18 +827,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         custom_css="""
             .ag-row-selected { background-color: #eff7ff !important; }
             .numeric-cell { text-align: right; }
-
-            /* Remover preenchimento azul da seleção */
-            .ag-cell ::selection {
-                background: transparent !important;
-                color: #000 !important;
-            }
-            /* Para Firefox */
-            .ag-cell ::-moz-selection {
-                background: transparent !important;
-                color: #000 !important;
-            }
-        
+       
             /* Nova regra para células selecionadas */
             .ag-cell.ag-cell-range-selected,
             .ag-cell.ag-cell-range-selected-1,
@@ -851,14 +840,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         
             .ag-cell.ag-cell-range-selected * {
                 color: inherit !important;
-            }
-            
-            /* Desativar seleção de texto padrão do navegador dentro da tabela */
-            .ag-root-wrapper {
-                user-select: none !important;
-                -webkit-user-select: none !important;
-                -moz-user-select: none !important;
-                -ms-user-select: none !important;
             }
 
             /* Mas permitir a seleção para copiar, porém sem a cor de fundo */
