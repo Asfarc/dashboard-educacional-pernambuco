@@ -798,7 +798,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         custom_css="""
             .ag-row-selected { background-color: #eff7ff !important; }
             .numeric-cell { text-align: right; }
-            .ag-header-cell-text { font-weight: bold; }
+            .ag-header-cell-text { 
+                font-weight: bold;
+                white-space: normal !important;
+                line-height: 1.2;
+            }
+            .ag-header-cell {
+                padding: 4px;
+            }
             .ag-cell { overflow: hidden; text-overflow: ellipsis; }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
