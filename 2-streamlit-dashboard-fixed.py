@@ -303,7 +303,7 @@ with tab1:
         todas_colunas = [col for col in df_filtrado.columns if col not in colunas_tabela]
         if todas_colunas:
             colunas_adicionais = st.multiselect(
-                "",
+                "Colunas adicionais",
                 todas_colunas,
                 label_visibility="collapsed",
                 placeholder="Selecionar colunas adicionais..."
