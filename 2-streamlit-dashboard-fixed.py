@@ -829,20 +829,42 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             .numeric-cell { text-align: right; }
 
             /* Remover preenchimento azul da seleção */
-            .ag-cell.ag-cell-range-selected {
+            .ag-theme-streamlit ::selection {
                 background-color: transparent !important;
+                color: inherit !important;
+            }
+            /* Para Firefox */
+            .ag-theme-streamlit ::-moz-selection {
+                background-color: transparent !important;
+                color: inherit !important;
+            }
+        
+            /* Forçar texto em células selecionadas a manter cor original */
+            .ag-cell.ag-cell-range-selected *,
+            .ag-cell.ag-cell-range-selected-1 *,
+            .ag-cell.ag-cell-range-selected-2 *,
+            .ag-cell.ag-cell-range-selected-3 *,
+            .ag-cell.ag-cell-range-selected-4 * {
+                background-color: transparent !important;
+                color: inherit !important;
+            }
+            
+            /* Desativar seleção de texto padrão do navegador dentro da tabela */
+            .ag-root-wrapper {
+                user-select: none !important;
+                -webkit-user-select: none !important;
+                -moz-user-select: none !important;
+                -ms-user-select: none !important;
             }
 
-            .ag-cell.ag-cell-range-selected-1 {
-                background-color: transparent !important;
+            /* Mas permitir a seleção para copiar, porém sem a cor de fundo */
+            .ag-cell {
+                user-select: text !important;
+                -webkit-user-select: text !important;
+                -moz-user-select: text !important;
+                -ms-user-select: text !important;
             }
-
-            .ag-theme-streamlit .ag-cell-focus, 
-            .ag-theme-streamlit .ag-cell-focus.ag-cell-range-selected {
-                border: 1px solid #ddd !important;
-                background-color: transparent !important;
-            }
-
+            
             /* Estilos aprimorados para cabeçalhos com quebra de texto */
             .ag-header-cell-text { 
                 font-weight: bold !important;
