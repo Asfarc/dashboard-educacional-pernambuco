@@ -819,14 +819,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     # Dicas de navegação
     st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
 
-    st.info("""
-    **Dica de uso**: 
-    - Para selecionar várias células, clique e arraste o mouse como no Excel
-    - Use Ctrl+C para copiar a seleção
-    - Use Ctrl+A para selecionar todas as células
-    - Os dados copiados podem ser colados diretamente no Excel ou Google Sheets
-    """)
-
+    # Renderizar o grid
     # Renderizar o grid
     grid_return = AgGrid(
         df_para_exibir,
@@ -835,6 +828,21 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         custom_css="""
             .ag-row-selected { background-color: #eff7ff !important; }
             .numeric-cell { text-align: right; }
+
+            /* Remover preenchimento azul da seleção */
+            .ag-cell.ag-cell-range-selected {
+                background-color: transparent !important;
+            }
+
+            .ag-cell.ag-cell-range-selected-1 {
+                background-color: rgba(240, 240, 240, 0.2) !important;
+            }
+
+            .ag-theme-streamlit .ag-cell-focus, 
+            .ag-theme-streamlit .ag-cell-focus.ag-cell-range-selected {
+                border: 1px solid #ddd !important;
+                background-color: transparent !important;
+            }
 
             /* Estilos aprimorados para cabeçalhos com quebra de texto */
             .ag-header-cell-text { 
@@ -864,7 +872,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=False,  # Desativar ajuste automático para manter as larguras definidas
+        fit_columns_on_grid_load=False,
         allow_unsafe_jscode=True,
         theme="streamlit",
         key=f"aggrid_{id(df_para_exibir)}"
