@@ -820,7 +820,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
 
     # Renderizar o grid
-    # Renderizar o grid
     grid_return = AgGrid(
         df_para_exibir,
         gridOptions=grid_options,
@@ -835,7 +834,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             }
 
             .ag-cell.ag-cell-range-selected-1 {
-                background-color: rgba(240, 240, 240, 0.2) !important;
+                background-color: transparent !important;
             }
 
             .ag-theme-streamlit .ag-cell-focus, 
