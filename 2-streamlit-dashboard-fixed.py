@@ -747,26 +747,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
     # Configurar seleção de células e funcionalidades de clipboard
     gb.configure_grid_options(
-        # Permitir seleção de células
-        rowSelection='none',  # Nenhum tipo de seleção de linha
-        enableRangeSelection=True,
-        enableRangeHandle=True,
-        ensureDomOrder=True,
-
-        # Habilitar funcionalidades de clipboard
-        enableCellTextSelection=True,
-        enableMultiRowDragging=True,
-        enableAdvancedFilter=True,
-
-        # Configurações de clipboard
-        clipboardDelimiter='\t',
-        suppressCopyRowsToClipboard=False,
-        copyHeadersToClipboard=True,
-
-        # Melhorar comportamento da seleção
-        suppressRowClickSelection=True,
-        suppressDragLeaveHidesColumns=True,
-
+        rowSelection='none',  # OK
+        enableRangeSelection=True,  # OK
+        suppressRowClickSelection=True,  # OK
+        copyHeadersToClipboard=True,  # OK
     )
 
     # Construir as opções finais do grid
