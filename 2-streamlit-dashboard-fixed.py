@@ -117,7 +117,6 @@ def criar_mapeamento_colunas(df):
     # Criar mapeamento de colunas (case-insensitive) apenas uma vez
     colunas_map = {col.lower().strip(): col for col in df.columns}
 
-    # Função auxiliar para verificar e obter o nome correto da coluna
     def obter_coluna_real(nome_padrao):
         # Verifica se a coluna existe exatamente como foi especificada
         if nome_padrao in df.columns:
@@ -131,7 +130,7 @@ def criar_mapeamento_colunas(df):
         # Se não encontrar, retorna o nome original
         return nome_padrao
 
-    # Carrega o mapeamento do arquivo JSON (se falhar, st.stop() será chamado na função)
+    # Carrega o mapeamento do arquivo JSON (se falhar, st.stop() será chamado)
     mapeamento_base = carregar_mapeamento_colunas()
 
     # Ajusta os nomes das colunas
@@ -150,29 +149,18 @@ def criar_mapeamento_colunas(df):
             mapeamento_ajustado[etapa]["subetapas"][subetapa] = obter_coluna_real(coluna)
 
         # Ajusta séries
-        for subetapa, series_dict in config.get("series", {}).items():
-            if subetapa not in mapeamento_ajustado[etapa]["series"]:
-                mapeamento_ajustado[etapa]["series"][subetapa] = {}
-
-            for serie, coluna in series_dict.items():
-                mapeamento_ajustado[etapa]["series"][subetapa][serie] = obter_coluna_real(coluna)
+        for sub, series_dict in config.get("series", {}).items():
+            if sub not in mapeamento_ajustado[etapa]["series"]:
+                mapeamento_ajustado[etapa]["series"][sub] = {}
+            for serie, col_serie in series_dict.items():
+                mapeamento_ajustado[etapa]["series"][sub][serie] = obter_coluna_real(col_serie)
 
     return mapeamento_ajustado
 
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     """
     Determina a coluna de dados com base na etapa, subetapa e série selecionadas.
-
-    Parâmetros:
-    etapa (str): Etapa de ensino selecionada
-    subetapa (str): Subetapa selecionada ("Todas" ou nome específico)
-    serie (str): Série selecionada ("Todas" ou nome específico)
-    mapeamento (dict): Mapeamento de colunas
-
-    Retorna:
-    str: Nome da coluna de dados
     """
-    # Verificar se a etapa existe no mapeamento
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
         return ""
@@ -201,113 +189,70 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
 
 def verificar_coluna_existe(df, coluna_nome):
     """
-    Verifica se uma coluna existe no DataFrame, tentando encontrar uma correspondência
-    exata ou insensível a maiúsculas/minúsculas.
-
-    Parâmetros:
-    df (DataFrame): DataFrame a ser verificado
-    coluna_nome (str): Nome da coluna a procurar
-
-    Retorna:
-    tuple: (coluna_existe, coluna_real)
-        coluna_existe (bool): Indica se a coluna foi encontrada.
-        coluna_real (str): Nome real da coluna encontrada ou nome original
+    Verifica se uma coluna existe no DataFrame (exato ou case-insensitive).
+    Retorna (coluna_existe, coluna_real).
     """
     if not coluna_nome:
         return False, ""
 
-    # Verifica se a coluna existe exatamente como especificada
     if coluna_nome in df.columns:
         return True, coluna_nome
 
-    # Verifica se existe uma versão case-insensitive
     coluna_normalizada = coluna_nome.lower().strip()
     colunas_normalizadas = {col.lower().strip(): col for col in df.columns}
-
     if coluna_normalizada in colunas_normalizadas:
         return True, colunas_normalizadas[coluna_normalizada]
 
-    # Não encontrou a coluna
     return False, coluna_nome
-
 
 def adicionar_linha_totais(df, coluna_dados):
     """
-    Adiciona uma linha de totais ao DataFrame.
-
-    Parâmetros:
-    df (DataFrame): DataFrame a ser processado
-    coluna_dados (str): Nome da coluna de dados numéricos
-
-    Retorna:
-    DataFrame: DataFrame com a linha de totais adicionada
+    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
     """
     if df.empty:
         return df
 
-    # Verificar se TOTAL já existe no dataframe
     if 'TOTAL' in df.index or (df.iloc[:, 0] == 'TOTAL').any():
         return df
 
-    # Criar uma linha de totais
     totais = {}
-
-    # Inicializar todas as colunas como vazias
     for col in df.columns:
         totais[col] = ""
 
-    # Primeira coluna como "TOTAL"
     if len(df.columns) > 0:
         totais[df.columns[0]] = "TOTAL"
 
-    # Calcular total para a coluna de dados
     if coluna_dados in df.columns:
-        # Usar sum() apenas em valores numéricos
         try:
             valor_total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
-            totais[coluna_dados] = valor_total  # Manter numérico para cálculos
-        except Exception:
+            totais[coluna_dados] = valor_total
+        except:
             totais[coluna_dados] = ""
 
-    # Definir percentual como 100%
     if '% do Total' in df.columns:
         totais['% do Total'] = 100.0
 
-    # Criar DataFrame com a linha de totais
     linha_totais = pd.DataFrame([totais], index=['TOTAL'])
-
-    # Concatenar com o DataFrame original
     return pd.concat([df, linha_totais])
 
-# -----------------------------------------------------------------
-# 1. Função para centralizar ORDENAR e FORMATAR (CASO VOCÊ QUEIRA)
-# -----------------------------------------------------------------
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
-    Ordena o DataFrame base pela coluna_ordenacao (se existir), cria uma cópia
-    e formata as colunas numéricas e percentuais para exibição.
+    Ordena df_base pela coluna_ordenacao e formata colunas numéricas.
     Retorna (tabela_dados, tabela_exibicao).
     """
-    # Filtra só colunas que existem
     colunas_existentes = [c for c in colunas_para_exibir if c in df_base.columns]
     tabela_dados = df_base[colunas_existentes]
 
-    # Ordenar se a coluna principal existir
     if coluna_ordenacao in tabela_dados.columns:
         tabela_dados = tabela_dados.sort_values(by=coluna_ordenacao, ascending=False)
 
-    # Cria cópia para exibir (formatar sem mexer nos dados brutos)
     tabela_exibicao = tabela_dados.copy()
 
-    # Aplicando formatações
     with pd.option_context('mode.chained_assignment', None):
-        # Formata a coluna principal
         if coluna_ordenacao in tabela_exibicao.columns:
             tabela_exibicao[coluna_ordenacao] = tabela_exibicao[coluna_ordenacao].apply(
                 lambda x: formatar_numero(x) if pd.notnull(x) else "-"
             )
-
-        # Formata '% do Total'
         if '% do Total' in tabela_exibicao.columns:
             tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
                 lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
@@ -316,7 +261,9 @@ def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao
     return tabela_dados, tabela_exibicao
 
 def converter_df_para_csv(df):
-    """Converte DataFrame para formato CSV, incluindo tratamento para DataFrame vazio."""
+    """
+    Converte DataFrame para CSV, retorna bytes.
+    """
     if df is None or df.empty:
         return "Não há dados para exportar.".encode('utf-8')
     try:
@@ -326,9 +273,10 @@ def converter_df_para_csv(df):
         return "Erro na conversão".encode('utf-8')
 
 def converter_df_para_excel(df):
-    """Converte DataFrame para formato Excel, incluindo tratamento para DataFrame vazio."""
+    """
+    Converte DataFrame para Excel, retorna bytes.
+    """
     if df is None or df.empty:
-        # Retorna um arquivo Excel válido mas com uma aba vazia
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             pd.DataFrame({"Sem dados": []}).to_excel(writer, index=False, sheet_name='Sem_Dados')
@@ -343,15 +291,10 @@ def converter_df_para_excel(df):
         output = io.BytesIO()
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
-# --------------------------------------------------------
-# 2. (Opcional) Função para centralizar NAVEGAÇÃO no AgGrid
-# --------------------------------------------------------
+
 def navegar_tabela(label_botao, key_botao, posicao='top'):
     """
-    Cria um botão que, quando clicado, rola a tabela AgGrid para o topo ou para o final.
-    :param label_botao: Texto que aparece no botão (ex: "⏫ Primeira Linha").
-    :param key_botao: Chave única para o botão.
-    :param posicao: 'top' ou 'bottom' -- define a direção da rolagem.
+    Botão que, ao clicar, rola a tabela do AgGrid ao topo ou final (bottom).
     """
     if st.button(label_botao, key=key_botao):
         scroll_script = f"""
@@ -378,40 +321,27 @@ def navegar_tabela(label_botao, key_botao, posicao='top'):
         """
         st.markdown(scroll_script, unsafe_allow_html=True)
 
-# Função para exibir a tabela com AgGrid - implementação corrigida
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """
-    Exibe uma tabela aprimorada usando AgGrid com todas as melhorias implementadas
-    corretamente e otimizações de robustez.
-
-    Args:
-        df_para_exibir (DataFrame): Dados a serem exibidos
-        altura (int): Altura da tabela em pixels
-        coluna_dados (str): Nome da coluna principal de dados numéricos
-
-    Returns:
-        dict: Resposta do grid contendo dados filtrados/ordenados
+    Exibe DataFrame no AgGrid com paginação, barra de status e seleções de célula.
     """
-    # Validar entrada
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
         return {"data": pd.DataFrame()}
 
-    # Verificar o tamanho dos dados para otimizações - sem copiar o dataframe
     is_large_dataset = len(df_para_exibir) > 5000
     is_very_large_dataset = len(df_para_exibir) > 10000
 
-    # Para grandes datasets, mostrar aviso e opção de limitar
     if is_very_large_dataset:
         st.warning(
-            f"O conjunto de dados tem {formatar_numero(len(df_para_exibir))} linhas, o que pode causar lentidão na visualização.")
+            f"O conjunto de dados tem {formatar_numero(len(df_para_exibir))} linhas, "
+            "o que pode causar lentidão na visualização."
+        )
         mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
         if not mostrar_tudo:
-            # Verificar se há linha TOTAL usando método eficiente
             tem_total = False
             total_rows = []
 
-            # Verificar em cada coluna, não apenas na primeira
             for col in df_para_exibir.columns:
                 mask = df_para_exibir[col].astype(str).str.contains('TOTAL', case=False, na=False)
                 if mask.any():
@@ -419,7 +349,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                     total_rows.extend(total_indices.tolist())
                     tem_total = True
 
-            # Também verificar no índice
             if isinstance(df_para_exibir.index, pd.Index):
                 mask = df_para_exibir.index.astype(str).str.contains('TOTAL', case=False, na=False)
                 if mask.any():
@@ -427,137 +356,71 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                     total_rows.extend(total_indices.tolist())
                     tem_total = True
 
-            # Criar uma lista com os índices que queremos manter
             indices_para_manter = df_para_exibir.index[:5000].tolist()
-
-            # Adicionar linhas de totais se existirem
             if tem_total:
-                # Eliminar duplicatas e preservar ordem
                 total_rows = list(dict.fromkeys(total_rows))
                 indices_para_manter.extend(total_rows)
-
-            # Usar loc para criar view
             df_para_exibir = df_para_exibir.loc[indices_para_manter]
-            st.info(f"Mostrando amostra de 5.000 registros (de um total maior)")
+            st.info("Mostrando amostra de 5.000 registros (de um total maior)")
 
-    # Preparar strings de JavaScript seguros para uso no AgGrid
-
-    # 1. LINHA DE TOTAIS - implementação mais segura para detectar TOTAL
-    js_total_row = JsCode("""
-    function(params) {
-        try {
-            // Verifica se há dados na linha
-            if (!params.data) {
-                return null;
-            }
-
-            // Verifica qualquer coluna com TOTAL (case insensitive)
-            let isTotal = false;
-            for (const key in params.data) {
-                if (params.data[key] !== null && 
-                    params.data[key] !== undefined &&
-                    params.data[key].toString().toUpperCase().includes('TOTAL')) {
-                    isTotal = true;
-                    break;
-                }
-            }
-
-            // Verifica se é a última linha (para totais calculados dinamicamente)
-            if (isTotal || 
-                (params.node && params.api && 
-                params.node.rowIndex === (params.api.getDisplayedRowCount() - 1))) {
-                return {
-                    'font-weight': 'bold',
-                    'background-color': '#e6f2ff',
-                    'border-top': '2px solid #b3d9ff',
-                    'color': '#0066cc'
-                };
-            }
-            return null;
-        } catch (error) {
-            console.error('Erro ao estilizar linha:', error);
-            return null;
-        }
-    }
-    """)
-
-    # 5. ESTATÍSTICAS - implementação mais robusta
-    js_agg_functions = JsCode("""
-    function(params) {
-        try {
-            // Obter coluna de dados principal
-            const dataColumn = "%s";
+    js_agg_functions = JsCode(f"""
+    function(params) {{
+        try {{
+            const dataColumn = "{coluna_dados if coluna_dados else ''}";
             if (!dataColumn) return 'Coluna de dados não definida';
 
-            // Coletar todos os valores visíveis
             const values = [];
             let totalSum = 0;
             let count = 0;
 
-            params.api.forEachNodeAfterFilter(node => {
+            params.api.forEachNodeAfterFilter(node => {{
                 if (!node.data) return;
 
-                // Verifica se não é linha de TOTAL
                 let isTotal = false;
-                for (const key in node.data) {
+                for (const key in node.data) {{
                     if (node.data[key] && 
-                        node.data[key].toString().toUpperCase().includes('TOTAL')) {
+                        node.data[key].toString().toUpperCase().includes('TOTAL')) {{
                         isTotal = true;
                         break;
-                    }
-                }
+                    }}
+                }}
                 if (isTotal) return;
 
-                // Extrai o valor como número
                 const cellValue = node.data[dataColumn];
-                if (cellValue !== null && cellValue !== undefined) {
+                if (cellValue !== null && cellValue !== undefined) {{
                     const numValue = Number(cellValue.toString().replace(/[^0-9.,]/g, '').replace(',', '.'));
-                    if (!isNaN(numValue)) {
+                    if (!isNaN(numValue)) {{
                         values.push(numValue);
                         totalSum += numValue;
                         count++;
-                    }
-                }
-            });
-            // Formatar para exibição amigável
-            const formatNum = function(num) {
-                // Primeiro formatar usando Intl.NumberFormat
-                let formatted = new Intl.NumberFormat('pt-BR', { 
-                    maximumFractionDigits: 2 
-                }).format(num);
-
-                // Depois converter para usar ponto como separador
-                // Substituir pontos por underscores temporariamente
+                    }}
+                }}
+            }});
+            const formatNum = function(num) {{
+                let formatted = new Intl.NumberFormat('pt-BR', {{ maximumFractionDigits: 2 }}).format(num);
                 formatted = formatted.replace(/\\./g, '_');
-                // Substituir vírgulas por pontos
                 formatted = formatted.replace(/,/g, '.');
-                // Substituir underscores de volta para pontos
                 formatted = formatted.replace(/_/g, '.');
                 return formatted;
-            };
-            // Calcular estatísticas
-            if (values.length === 0) {
+            }};
+            if (values.length === 0) {{
                 return 'Não há dados numéricos';
-            }
+            }}
             const avg = totalSum / count;
             values.sort((a, b) => a - b);
             const min = values[0];
             const max = values[values.length - 1];
-            // Mensagem formatada
-            return `Total: ${formatNum(totalSum)} | Média: ${formatNum(avg)} | Mín: ${formatNum(min)} | Máx: ${formatNum(max)}`;
-        } catch (error) {
+            return `Total: ${{formatNum(totalSum)}} | Média: ${{formatNum(avg)}} | Mín: ${{formatNum(min)}} | Máx: ${{formatNum(max)}}`;
+        }} catch (error) {{
             console.error('Erro ao calcular estatísticas:', error);
             return 'Erro ao calcular estatísticas';
-        }
-    }
-    """ % (coluna_dados if coluna_dados else ''))
+        }}
+    }}
+    """)
 
-    # Configurar o construtor de opções do grid
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
-    # 1. Adicione um objeto de localização personalizado para PT-BR
     localeText = {
-        # Textos dos filtros
         "contains": "Contém",
         "notContains": "Não contém",
         "equals": "Igual a",
@@ -566,37 +429,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "endsWith": "Termina com",
         "blank": "Em branco",
         "notBlank": "Não em branco",
-
-        # Configure essa função personalizada para formatar números
         "thousandSeparator": ".",
         "decimalSeparator": ",",
-
-        # Botões dos filtros
         "applyFilter": "Aplicar",
         "resetFilter": "Limpar",
         "clearFilter": "Limpar",
         "cancelFilter": "Cancelar",
-
-        # Rótulos de comparação numérica
         "lessThan": "Menor que",
         "greaterThan": "Maior que",
         "lessThanOrEqual": "Menor ou igual a",
         "greaterThanOrEqual": "Maior ou igual a",
         "inRange": "No intervalo",
-
-        # Textos da barra de status
         "filterOoo": "Filtrado",
         "noRowsToShow": "Sem dados para exibir",
         "enabled": "Habilitado",
-
-        # Outras opções comuns
         "search": "Buscar",
         "selectAll": "Selecionar todos",
         "searchOoo": "Buscar...",
         "blanks": "Em branco",
         "noMatches": "Sem correspondência",
-
-        # Textos do painel de colunas/filtros
         "columns": "Colunas",
         "filters": "Filtros",
         "rowGroupColumns": "Agrupar por",
@@ -609,10 +460,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "valueColumnsEmptyMessage": "Arraste aqui para agregar",
         "pivotColumnsEmptyMessage": "Arraste aqui para definir pivô",
         "toolPanelButton": "Painéis",
-
-        # Outros rótulos da UI
         "loadingOoo": "Carregando...",
         "page": "Página",
+        "pageSize": "Tamanho da Página",
         "next": "Próximo",
         "last": "Último",
         "first": "Primeiro",
@@ -621,14 +471,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "to": "até",
         "rows": "linhas",
         "loading": "Carregando...",
-
-        # Statuses da barra de status
         "totalRows": "Total de linhas",
         "totalAndFilteredRows": "Linhas",
         "selectedRows": "Selecionadas",
         "filteredRows": "Filtradas",
-
-        # Textos de agregação
         "sum": "Soma",
         "min": "Mínimo",
         "max": "Máximo",
@@ -636,7 +482,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         "count": "Contagem"
     }
 
-    # 2. CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
     gb.configure_default_column(
         groupable=True,
         editable=False,
@@ -656,47 +501,41 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         autoHeaderHeight=True
     )
 
-    # Configurar larguras específicas para colunas selecionadas
+    # Exemplos de ajuste de largura:
     if "ANO" in df_para_exibir.columns:
         gb.configure_column("ANO", width=80, headerWrapText=True, autoHeaderHeight=True)
-
     if "CODIGO DO MUNICIPIO" in df_para_exibir.columns:
         gb.configure_column("CODIGO DO MUNICIPIO", width=160, headerWrapText=True, autoHeaderHeight=True)
-
     if "NOME DO MUNICIPIO" in df_para_exibir.columns:
         gb.configure_column("NOME DO MUNICIPIO", width=220, headerWrapText=True, autoHeaderHeight=True)
-
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
         gb.configure_column("CODIGO DA ESCOLA", width=140, headerWrapText=True, autoHeaderHeight=True)
-
     if "NOME DA ESCOLA" in df_para_exibir.columns:
         gb.configure_column("NOME DA ESCOLA", width=250, headerWrapText=True, autoHeaderHeight=True)
-
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
         gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
-    # Adicionar barra de pesquisa rápida e estilo para linha de totais
-    # Configurar seleção de células e funcionalidades de clipboard
+    # Configurar seleção de células, clipboard e paginação
     gb.configure_grid_options(
-        # Desativar completamente a seleção de linhas
         rowSelection='none',
         suppressRowDeselection=True,
         suppressRowClickSelection=True,
-
-        # Habilitar apenas seleção de células
         enableRangeSelection=True,
         enableRangeHandle=True,
-
-        # Configurações de clipboard
         clipboardDelimiter='\t',
-        suppressCopyRowsToClipboard=True,  # Importante: impede a cópia de linhas inteiras
+        suppressCopyRowsToClipboard=True,
         copyHeadersToClipboard=True,
+        ensureDomOrder=True,
 
-        # Outras configurações para melhorar a experiência
-        ensureDomOrder=True
+        pagination=True,
+        paginationAutoPageSize=False,
+        paginationPageSize=25,
+        paginationSizeSelector=[5, 10, 25, 50, 100],
+
+        localeText=localeText
     )
 
-    # Configurar colunas numéricas específicas
+    # Se tiver coluna de dados numéricos, configurar como numericColumn
     if coluna_dados and coluna_dados in df_para_exibir.columns:
         gb.configure_column(
             coluna_dados,
@@ -712,7 +551,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             cellClass="numeric-cell"
         )
 
-    # 4. OTIMIZAÇÃO PARA GRANDES DATASETS
+    # Otimizações para grandes datasets
     if is_large_dataset:
         gb.configure_grid_options(
             rowBuffer=100,
@@ -722,79 +561,48 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             enableCellTextSelection=True,
             enableBrowserTooltips=True
         )
-        if is_very_large_dataset and mostrar_tudo:
-            gb.configure_grid_options(
-                rowModelType='clientSide',
-                cacheBlockSize=100,
-                maxBlocksInCache=10
-            )
 
-    # 5. ESTATÍSTICAS
+    # Barra de status personalizada
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
-                {
-                    'statusPanel': 'agTotalRowCountComponent',
-                    'align': 'left'
-                },
-                {
-                    'statusPanel': 'agFilteredRowCountComponent',
-                    'align': 'left'
-                },
+                {'statusPanel': 'agTotalRowCountComponent', 'align': 'left'},
+                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'left'},
                 {
                     'statusPanel': 'agCustomStatsToolPanel',
                     'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions
+                        'aggStatFunc': js_agg_functions.js_code
                     }
                 }
             ]
         }
     )
 
-    # Barra lateral e configuração avançada de seleção
+    # Barra lateral e configs avançadas
     gb.configure_side_bar()
 
-    # IMPORTANTE: Não usar configure_selection pois queremos controle fino
-    # gb.configure_selection(False)
-
-    # Configurar comportamento de seleção de forma precisa
+    # Ajustes finais de seleção e foco
     gb.configure_grid_options(
-        # 1. Desativar completamente a seleção de linhas
-        rowSelection=False,  # Desativa completamente
-        suppressRowClickSelection=True,  # Impede seleção de linha ao clicar
-
-        # 2. Configurar especificamente a seleção de células
-        cellSelection=True,  # Habilitar seleção de células
-
-        # 3. Configurações de seleção de células avançadas
-        enableRangeSelection=True,  # Permitir seleção de intervalo
-        enableRangeHandle=True,  # Mostrar alças para arrastar seleção
-        suppressMultiRangeSelection=False,  # Permitir selecionar múltiplas áreas
-
-        # 4. Configurações de foco
-        suppressCellFocus=False,  # Manter o foco nas células
-        tabToNextHeader=False,  # Não navegar entre cabeçalhos com tab
-
-        # 5. Configurações de clipboard
-        enableCellTextSelection=False,  # Permitir selecionar texto das células
-        copyHeadersToClipboard=True,  # Incluir cabeçalhos ao copiar
-        clipboardDelimiter='\t',  # Usar tab como delimitador
-
-        # 6. Impedir comportamentos de seleção de linha
-        suppressMenuHide=True,  # Não esconder menus ao selecionar
-        suppressMovableColumns=False,  # Manter colunas movíveis
-        suppressRowHoverHighlight=True,  # Desativar destaque ao passar mouse
-
-        # 7. Configuração crucial: não usar seleção de caixa
+        rowSelection=False,
+        suppressRowClickSelection=True,
+        cellSelection=True,
+        enableRangeSelection=True,
+        enableRangeHandle=True,
+        suppressMultiRangeSelection=False,
+        suppressCellFocus=False,
+        tabToNextHeader=False,
+        enableCellTextSelection=False,
+        copyHeadersToClipboard=True,
+        clipboardDelimiter='\t',
+        suppressMenuHide=True,
+        suppressMovableColumns=False,
+        suppressRowHoverHighlight=True,
         suppressRowDeselection=True
     )
 
-    # Construir as opções finais do grid
     grid_options = gb.build()
 
-    # Interface para controles de navegação
     st.write("### Navegação da tabela")
-
     st.markdown("""
         <style>
         .nav-panel {
@@ -825,17 +633,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         </style>
     """, unsafe_allow_html=True)
 
-    # Botões de navegação acima
     col_nav_top1, col_nav_top2 = st.columns([1, 1])
     with col_nav_top1:
         navegar_tabela(ROTULO_BTN_PRIMEIRA_LINHA, "btn_top_1", posicao='top')
     with col_nav_top2:
         navegar_tabela(ROTULO_BTN_ULTIMA_LINHA, "btn_bottom_1", posicao='bottom')
 
-    # Dicas de navegação
     st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
 
-    # Renderizar o grid
     grid_return = AgGrid(
         df_para_exibir,
         gridOptions=grid_options,
@@ -843,8 +648,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         custom_css="""
             .ag-row-selected { background-color: transparent !important; }
             .numeric-cell { text-align: right; }
-       
-            /* Nova regra para células selecionadas */
+
             .ag-cell.ag-cell-range-selected,
             .ag-cell.ag-cell-range-selected-1,
             .ag-cell.ag-cell-range-selected-2,
@@ -853,8 +657,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 background-color: #e6f2ff !important; 
                 color: #000 !important; 
             }
-            
-            /* Forçar remoção de destacamento para linhas */
             .ag-row {
                 background-color: inherit !important;
             }
@@ -866,8 +668,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 background-color: transparent !important;
                 border: none !important;
             }
-            
-            /* Estilos aprimorados para cabeçalhos com quebra de texto */
             .ag-header-cell-text { 
                 font-weight: bold !important;
                 white-space: normal !important;
@@ -875,7 +675,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 overflow: visible !important;
                 font-size: 12px !important;
             }
-
             .ag-header-cell {
                 padding: 4px !important;
                 height: auto !important;
@@ -883,11 +682,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 display: flex !important;
                 align-items: center !important;
             }
-
             .ag-header-row {
                 height: auto !important;
             }
-
             .ag-cell { 
                 overflow: hidden; 
                 text-overflow: ellipsis; 
@@ -901,50 +698,40 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         key=f"aggrid_{id(df_para_exibir)}"
     )
 
-    # JavaScript para melhorar comportamento de seleção e cópia
     js_clipboard_helper = """
     <script>
         setTimeout(function() {
             try {
-                // Encontrar a instância do grid
                 const gridDiv = document.querySelector('.ag-root-wrapper');
                 if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
                     const api = gridDiv.gridOptions.api;
-
-                // Adicionar eventos de teclado para comportamento estilo Excel
-                document.addEventListener('keydown', function(e) {
-                    // Verifica se Ctrl+C foi pressionado
-                    if (e.ctrlKey && e.key === 'c') {
-                        // Copia a seleção para o clipboard
-                        api.copySelectedRangeToClipboard(true);
-                    }
-                
-                    // Ctrl+A para selecionar todas as células
-                    if (e.ctrlKey && e.key === 'a') {
-                        e.preventDefault();
-                        // Seleciona todas as células
-                        const allColumns = api.getColumns();
-                        if (allColumns.length > 0) {
-                            const range = {
-                                startRow: 0,
-                                endRow: api.getDisplayedRowCount() - 1,
-                                startColumn: allColumns[0],
-                                endColumn: allColumns[allColumns.length - 1]
-                            };
-                            api.addCellRange(range);
+                    document.addEventListener('keydown', function(e) {
+                        if (e.ctrlKey && e.key === 'c') {
+                            api.copySelectedRangeToClipboard(true);
                         }
-                    }
-                });
+                        if (e.ctrlKey && e.key === 'a') {
+                            e.preventDefault();
+                            const allColumns = api.getColumns();
+                            if (allColumns.length > 0) {
+                                const range = {
+                                    startRow: 0,
+                                    endRow: api.getDisplayedRowCount() - 1,
+                                    startColumn: allColumns[0],
+                                    endColumn: allColumns[allColumns.length - 1]
+                                };
+                                api.addCellRange(range);
+                            }
+                        }
+                    });
                 }
-            } catch(e) { 
-                console.error('Erro ao configurar clipboard:', e); 
+            } catch(e) {
+                console.error('Erro ao configurar clipboard:', e);
             }
         }, 800);
     </script>
     """
     st.markdown(js_clipboard_helper, unsafe_allow_html=True)
 
-    # JavaScript para garantir que a altura dos cabeçalhos seja ajustada corretamente
     js_fix_headers = """
     <script>
         setTimeout(function() {
@@ -954,7 +741,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                     div.style.height = 'auto';
                     div.style.minHeight = '50px';
                 });
-
                 const headerCells = document.querySelectorAll('.ag-header-cell-text');
                 headerCells.forEach(function(cell) {
                     cell.style.whiteSpace = 'normal';
@@ -966,17 +752,18 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """
     st.markdown(js_fix_headers, unsafe_allow_html=True)
 
-    # Botões de navegação abaixo
     col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
     with col_nav_bot1:
         navegar_tabela("⏫ Primeira Linha", "btn_top_2", posicao='top')
     with col_nav_bot2:
         navegar_tabela("⏬ Última Linha", "btn_bottom_2", posicao='bottom')
 
-    # Feedback sobre filtros aplicados
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
-        st.info(f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} de {formatar_numero(len(df_para_exibir))} registros.")
+        st.info(
+            f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} "
+            f"de {formatar_numero(len(df_para_exibir))} registros."
+        )
 
     return grid_return
 
@@ -1001,7 +788,7 @@ tipo_visualizacao = st.sidebar.radio(
     ["Escola", "Município", "Estado"]
 )
 
-# Seleção do DataFrame conforme o nível escolhido
+# Escolha do DataFrame
 if tipo_visualizacao == "Escola":
     df = escolas_df
 elif tipo_visualizacao == "Município":
@@ -1009,7 +796,7 @@ elif tipo_visualizacao == "Município":
 else:
     df = estado_df
 
-# Agora crie o mapeamento de colunas usando o DataFrame selecionado
+# Mapeamento de colunas para a seleção de etapas
 mapeamento_colunas = criar_mapeamento_colunas(df)
 
 # Filtro do Ano
@@ -1021,7 +808,7 @@ else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
 
-# Filtro da DEPENDENCIA ADMINISTRATIVA
+# Filtro de Dependência Administrativa
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
     dependencia_selecionada = st.sidebar.multiselect(
@@ -1034,19 +821,18 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
 else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
-# Filtro da Etapa de Ensino
+# Filtro de Etapa de Ensino
 etapas_disponiveis = list(mapeamento_colunas.keys())
 etapa_selecionada = st.sidebar.selectbox(
     "Etapa de Ensino:",
     etapas_disponiveis
 )
 
-# Verificação se a etapa está no mapeamento
 if etapa_selecionada not in mapeamento_colunas:
     st.error(f"A etapa '{etapa_selecionada}' não foi encontrada no mapeamento de colunas.")
     st.stop()
 
-# Filtro da Subetapa
+# Filtro de Subetapa
 if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[etapa_selecionada]["subetapas"]:
     subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
     subetapa_selecionada = st.sidebar.selectbox(
@@ -1056,11 +842,11 @@ if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[e
 else:
     subetapa_selecionada = "Todas"
 
-# Filtro para a Série, se aplicável
+# Filtro de Série
 series_disponiveis = []
-if (subetapa_selecionada != "Todas" and
-        "series" in mapeamento_colunas[etapa_selecionada] and
-        subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]):
+if (subetapa_selecionada != "Todas"
+        and "series" in mapeamento_colunas[etapa_selecionada]
+        and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]):
     series_disponiveis = list(mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada].keys())
     serie_selecionada = st.sidebar.selectbox(
         "Série:",
@@ -1069,12 +855,9 @@ if (subetapa_selecionada != "Todas" and
 else:
     serie_selecionada = "Todas"
 
-# -------------------------------
-# Determinação da Coluna de Dados
-# -------------------------------
+# Determinar a coluna de dados
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
 
-# Verifica se a coluna existe no DataFrame
 coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
 if coluna_existe:
     coluna_dados = coluna_real
@@ -1082,7 +865,6 @@ else:
     st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
     coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
     coluna_existe, coluna_principal_real = verificar_coluna_existe(df_filtrado, coluna_principal)
-
     if coluna_existe:
         coluna_dados = coluna_principal_real
         st.info(f"Usando '{coluna_dados}' como alternativa")
@@ -1169,13 +951,29 @@ if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
 
 if tipo_visualizacao == "Escola":
-    colunas_adicionais = ["CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
-                          "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_adicionais = [
+        "CODIGO DA ESCOLA",
+        "NOME DA ESCOLA",
+        "CODIGO DO MUNICIPIO",
+        "NOME DO MUNICIPIO",
+        "CODIGO DA UF",
+        "NOME DA UF",
+        "DEPENDENCIA ADMINISTRATIVA"
+    ]
 elif tipo_visualizacao == "Município":
-    colunas_adicionais = ["CODIGO DO MUNICIPIO", "NOME DO MUNICIPIO",
-                          "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_adicionais = [
+        "CODIGO DO MUNICIPIO",
+        "NOME DO MUNICIPIO",
+        "CODIGO DA UF",
+        "NOME DA UF",
+        "DEPENDENCIA ADMINISTRATIVA"
+    ]
 else:
-    colunas_adicionais = ["CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+    colunas_adicionais = [
+        "CODIGO DA UF",
+        "NOME DA UF",
+        "DEPENDENCIA ADMINISTRATIVA"
+    ]
 
 for col in colunas_adicionais:
     if col in df_filtrado.columns:
@@ -1184,7 +982,7 @@ for col in colunas_adicionais:
 if coluna_dados in df_filtrado.columns:
     colunas_tabela.append(coluna_dados)
 
-colunas_existentes = [col for col in colunas_tabela if col in df_filtrado.columns]
+colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
 colunas_tabela = colunas_existentes
 
 if coluna_dados in df_filtrado.columns:
