@@ -744,12 +744,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
     # Barra lateral e seleção avançada
     gb.configure_side_bar()
-    # Removemos a seleção de linhas individuais para permitir seleção de células
-    # gb.configure_selection('single')
 
     # Configurar seleção de células e funcionalidades de clipboard
     gb.configure_grid_options(
         # Permitir seleção de células
+        rowSelection='none',  # Nenhum tipo de seleção de linha
         enableRangeSelection=True,
         enableRangeHandle=True,
         ensureDomOrder=True,
@@ -768,9 +767,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         suppressRowClickSelection=True,
         suppressDragLeaveHidesColumns=True,
 
-        # Permitir multi-seleção com teclado/mouse
-        rowSelection='multiple',
-        rowMultiSelectWithClick=True
     )
 
     # Construir as opções finais do grid
