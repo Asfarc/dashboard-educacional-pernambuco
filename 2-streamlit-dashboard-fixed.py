@@ -675,36 +675,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
         gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
+    # Adicionar barra de pesquisa rápida e estilo para linha de totais
     # Configurar seleção de células e funcionalidades de clipboard
     gb.configure_grid_options(
-        # Desativar completamente qualquer seleção de linhas
-        rowSelection=False,
-        suppressRowClickSelection=True,
+        # Desativar completamente a seleção de linhas
+        rowSelection='none',
         suppressRowDeselection=True,
-        suppressCellSelection=False,
+        suppressRowClickSelection=True,
 
-        # Habilitar apenas seleção de células específicas
+        # Habilitar apenas seleção de células
         enableRangeSelection=True,
         enableRangeHandle=True,
 
-        # Configurações que afetam o comportamento de clique
-        suppressClickEdit=False,
-
         # Configurações de clipboard
         clipboardDelimiter='\t',
-        suppressCopyRowsToClipboard=True,
+        suppressCopyRowsToClipboard=True,  # Importante: impede a cópia de linhas inteiras
         copyHeadersToClipboard=True,
 
-        # Desabilitar menus de contexto que podem afetar a seleção
-        suppressContextMenu=True,
-        suppressMenuHide=True,
-
-        # Estilos de interação
-        rowStyle={'background-color': 'white'},
-        rowClass='custom-row',
-        rowClassRules={
-            'ag-row-selected': 'false',  # Forçar classe de seleção a nunca ser aplicada
-        }
+        # Outras configurações para melhorar a experiência
+        ensureDomOrder=True
     )
 
     # Configurar colunas numéricas específicas
@@ -762,16 +751,42 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }
     )
 
-    # Desabilitar completamente a seleção de linhas
+    # Barra lateral e configuração avançada de seleção
     gb.configure_side_bar()
-    gb.configure_selection(False)  # Desativa qualquer tipo de seleção gerenciada pelo GridOptions
 
-    # Configurar seleção de células e funcionalidades de clipboard
+    # IMPORTANTE: Não usar configure_selection pois queremos controle fino
+    # gb.configure_selection(False)
+
+    # Configurar comportamento de seleção de forma precisa
     gb.configure_grid_options(
-        rowSelection='none',  # OK
-        enableRangeSelection=True,  # OK
-        suppressRowClickSelection=True,  # OK
-        copyHeadersToClipboard=True,  # OK
+        # 1. Desativar completamente a seleção de linhas
+        rowSelection=False,  # Desativa completamente
+        suppressRowClickSelection=True,  # Impede seleção de linha ao clicar
+
+        # 2. Configurar especificamente a seleção de células
+        cellSelection=True,  # Habilitar seleção de células
+
+        # 3. Configurações de seleção de células avançadas
+        enableRangeSelection=True,  # Permitir seleção de intervalo
+        enableRangeHandle=True,  # Mostrar alças para arrastar seleção
+        suppressMultiRangeSelection=False,  # Permitir selecionar múltiplas áreas
+
+        # 4. Configurações de foco
+        suppressCellFocus=False,  # Manter o foco nas células
+        tabToNextHeader=False,  # Não navegar entre cabeçalhos com tab
+
+        # 5. Configurações de clipboard
+        enableCellTextSelection=False,  # Permitir selecionar texto das células
+        copyHeadersToClipboard=True,  # Incluir cabeçalhos ao copiar
+        clipboardDelimiter='\t',  # Usar tab como delimitador
+
+        # 6. Impedir comportamentos de seleção de linha
+        suppressMenuHide=True,  # Não esconder menus ao selecionar
+        suppressMovableColumns=False,  # Manter colunas movíveis
+        suppressRowHoverHighlight=True,  # Desativar destaque ao passar mouse
+
+        # 7. Configuração crucial: não usar seleção de caixa
+        suppressRowDeselection=True
     )
 
     # Construir as opções finais do grid
@@ -950,79 +965,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     </script>
     """
     st.markdown(js_fix_headers, unsafe_allow_html=True)
-
-    # JavaScript para desativar completamente a seleção de linhas
-    js_disable_row_selection = """
-    <script>
-        // Abordagem radical para desativar seleção de linhas
-        setTimeout(function() {
-            try {
-                // 1. Encontrar o grid
-                const gridDiv = document.querySelector('.ag-root-wrapper');
-                if (!gridDiv) return;
-
-                // 2. Forçar override no CSS para linhas selecionadas
-                const styleElement = document.createElement('style');
-                styleElement.textContent = `
-                    .ag-theme-streamlit .ag-row-selected,
-                    .ag-theme-streamlit .ag-row.ag-row-selected,
-                    .ag-theme-streamlit .ag-row.ag-row-selected::before,
-                    .ag-theme-streamlit .ag-row.ag-row-selected::after,
-                    .ag-theme-streamlit .ag-row:hover,
-                    .ag-theme-streamlit .ag-row-selected:hover {
-                        background-color: white !important;
-                        border: none !important;
-                        color: inherit !important;
-                    }
-                `;
-                document.head.appendChild(styleElement);
-
-                // 3. Desativar eventos de clique nas linhas
-                const rows = document.querySelectorAll('.ag-row');
-                rows.forEach(row => {
-                    row.classList.remove('ag-row-selected');
-
-                    // Prevenir a propagação de eventos de clique
-                    row.addEventListener('click', function(e) {
-                        // Verificar se o clique foi na linha (não em uma célula específica)
-                        if (e.target === this) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                        }
-                    }, true);
-                });
-
-                // 4. Adicionar um observador de mutação para continuar 
-                // removendo a classe 'ag-row-selected' quando for adicionada
-                const observer = new MutationObserver(function(mutations) {
-                    mutations.forEach(function(mutation) {
-                        if (mutation.type === 'attributes' && 
-                            mutation.attributeName === 'class' &&
-                            mutation.target.classList.contains('ag-row')) {
-
-                            if (mutation.target.classList.contains('ag-row-selected')) {
-                                mutation.target.classList.remove('ag-row-selected');
-                            }
-                        }
-                    });
-                });
-
-                // Observar todas as linhas atuais e futuras
-                document.querySelectorAll('.ag-row').forEach(row => {
-                    observer.observe(row, { attributes: true });
-                });
-
-                // Observar também a adição de novas linhas
-                observer.observe(document.querySelector('.ag-body-viewport'), 
-                                { childList: true, subtree: true });
-
-            } catch(e) {
-                console.error('Erro ao desativar seleção de linhas:', e);
-            }
-        }, 1000);  // Atraso maior para garantir que o grid esteja completamente renderizado
-    </script>
-    """
-    st.markdown(js_disable_row_selection, unsafe_allow_html=True)
 
     # Botões de navegação abaixo
     col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
