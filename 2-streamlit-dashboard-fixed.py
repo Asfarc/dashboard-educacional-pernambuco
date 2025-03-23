@@ -826,17 +826,18 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 background-color: #e6f2ff !important; 
                 color: #000 !important; 
             }
-        
-            .ag-cell.ag-cell-range-selected * {
-                color: inherit !important;
+            
+            /* Forçar remoção de destacamento para linhas */
+            .ag-row {
+                background-color: inherit !important;
             }
-
-            /* Mas permitir a seleção para copiar, porém sem a cor de fundo */
-            .ag-cell {
-                user-select: text !important;
-                -webkit-user-select: text !important;
-                -moz-user-select: text !important;
-                -ms-user-select: text !important;
+            .ag-row:hover {
+                background-color: inherit !important;
+            }
+            .ag-row-selected,
+            .ag-row-selected:hover {
+                background-color: transparent !important;
+                border: none !important;
             }
             
             /* Estilos aprimorados para cabeçalhos com quebra de texto */
