@@ -829,14 +829,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             .numeric-cell { text-align: right; }
 
             /* Remover preenchimento azul da seleção */
-            .ag-theme-streamlit ::selection {
-                background-color: transparent !important;
-                color: inherit !important;
+            .ag-cell ::selection {
+                background: transparent !important;
+                color: #000 !important;
             }
             /* Para Firefox */
-            .ag-theme-streamlit ::-moz-selection {
-                background-color: transparent !important;
-                color: inherit !important;
+            .ag-cell ::-moz-selection {
+                background: transparent !important;
+                color: #000 !important;
             }
         
             /* Forçar texto em células selecionadas a manter cor original */
