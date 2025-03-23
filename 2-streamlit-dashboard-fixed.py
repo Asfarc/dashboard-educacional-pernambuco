@@ -809,22 +809,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         </style>
     """, unsafe_allow_html=True)
 
-    # Estilização global para remover o destaque de seleção em todo o aplicativo
-    st.markdown("""
-    <style>
-    ::selection {
-        background-color: transparent !important;
-        color: inherit !important;
-        text-shadow: none !important;
-    }
-    ::-moz-selection {
-        background-color: transparent !important;
-        color: inherit !important;
-        text-shadow: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
     # Botões de navegação acima
     col_nav_top1, col_nav_top2 = st.columns([1, 1])
     with col_nav_top1:
@@ -844,38 +828,27 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             .ag-row-selected { background-color: #eff7ff !important; }
             .numeric-cell { text-align: right; }
 
-            /* Remover preenchimento azul da seleção - versão agressiva */
-            ::selection {
-                background-color: transparent !important;
-                color: inherit !important;
-                text-shadow: none !important;
-            }
-            ::-moz-selection {
-                background-color: transparent !important;
-                color: inherit !important;
-                text-shadow: none !important;
-            }
+            /* Remover preenchimento azul da seleção */
             .ag-theme-streamlit ::selection {
                 background-color: transparent !important;
                 color: inherit !important;
-                text-shadow: none !important;
             }
+            /* Para Firefox */
             .ag-theme-streamlit ::-moz-selection {
                 background-color: transparent !important;
                 color: inherit !important;
-                text-shadow: none !important;
             }
-
+        
             /* Forçar texto em células selecionadas a manter cor original */
-            .ag-cell.ag-cell-range-selected *,
-            .ag-cell.ag-cell-range-selected-1 *,
-            .ag-cell.ag-cell-range-selected-2 *,
-            .ag-cell.ag-cell-range-selected-3 *,
-            .ag-cell.ag-cell-range-selected-4 * {
-                background-color: transparent !important;
+            .ag-cell.ag-cell-range-selected,
+            .ag-cell.ag-cell-range-selected-1,
+            .ag-cell.ag-cell-range-selected-2,
+            .ag-cell.ag-cell-range-selected-3,
+            .ag-cell.ag-cell-range-selected-4 {
+                background-color: #eff7ff !important;  /* azul claro, como você desejou */
                 color: inherit !important;
             }
-
+            
             /* Desativar seleção de texto padrão do navegador dentro da tabela */
             .ag-root-wrapper {
                 user-select: none !important;
@@ -891,15 +864,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 -moz-user-select: text !important;
                 -ms-user-select: text !important;
             }
-
-            /* Prevenir destaque de texto dentro das células */
-            .ag-cell span,
-            .ag-cell div,
-            .ag-cell p {
-                background-color: transparent !important;
-                color: inherit !important;
-            }
-
+            
             /* Estilos aprimorados para cabeçalhos com quebra de texto */
             .ag-header-cell-text { 
                 font-weight: bold !important;
@@ -968,72 +933,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                             }
                         }
                     });
-
-                    // Manipulador para desativar o destaque visual do texto selecionado
-                    document.addEventListener('selectionchange', function() {
-                        try {
-                            // Força a remoção do destaque de seleção de texto
-                            const selection = window.getSelection();
-                            if (selection && selection.rangeCount > 0) {
-                                // Obter o elemento raiz da seleção
-                                const range = selection.getRangeAt(0);
-                                const container = range.commonAncestorContainer;
-
-                                // Verificar se a seleção está dentro da tabela
-                                let isInGrid = false;
-                                let current = container;
-                                while (current && current !== document.body) {
-                                    if (current.classList && 
-                                        (current.classList.contains('ag-root-wrapper') || 
-                                         current.classList.contains('ag-cell'))) {
-                                        isInGrid = true;
-                                        break;
-                                    }
-                                    current = current.parentNode;
-                                }
-
-                                // Se estiver na tabela, aplicar estilo personalizado
-                                if (isInGrid) {
-                                    // Aplicar estilo através do DOM
-                                    const style = document.createElement('style');
-                                    style.textContent = `
-                                        ::selection { 
-                                            background-color: transparent !important; 
-                                            color: inherit !important;
-                                        }
-                                    `;
-                                    document.head.appendChild(style);
-
-                                    // Remover o estilo após um curto período para não afetar o resto da página
-                                    setTimeout(() => {
-                                        if (document.head.contains(style)) {
-                                            document.head.removeChild(style);
-                                        }
-                                    }, 100);
-                                }
-                            }
-                        } catch (e) {
-                            console.error('Erro ao manipular seleção de texto:', e);
-                        }
-                    });
-
-                    // Manipulador adicional para capturar eventos de seleção com o mouse
-                    document.addEventListener('mouseup', function() {
-                        try {
-                            // Aplicar override de estilo para células da tabela
-                            const cells = document.querySelectorAll('.ag-cell');
-                            cells.forEach(cell => {
-                                // Importante: forçar a cor do texto a permanecer a original
-                                const textNodes = Array.from(cell.querySelectorAll('*'));
-                                textNodes.forEach(node => {
-                                    node.style.backgroundColor = 'transparent';
-                                    node.style.color = '';  // Manter a cor original
-                                });
-                            });
-                        } catch(e) {
-                            console.error('Erro ao ajustar células após seleção:', e);
-                        }
-                    }, true);
                 }
             } catch(e) { 
                 console.error('Erro ao configurar clipboard:', e); 
