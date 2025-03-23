@@ -839,19 +839,18 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 color: #000 !important;
             }
         
-            /* Forçar texto em células selecionadas a manter cor original */
-            .ag-cell.ag-cell-range-selected span,
-            .ag-cell.ag-cell-range-selected div,
-            .ag-cell.ag-cell-range-selected-1 span,
-            .ag-cell.ag-cell-range-selected-1 div,
-            .ag-cell.ag-cell-range-selected-2 span,
-            .ag-cell.ag-cell-range-selected-2 div,
-            .ag-cell.ag-cell-range-selected-3 span,
-            .ag-cell.ag-cell-range-selected-3 div,
-            .ag-cell.ag-cell-range-selected-4 span,
-            .ag-cell.ag-cell-range-selected-4 div {
-                color: #000 !important;
-                background-color: transparent !important;
+            /* Nova regra para células selecionadas */
+            .ag-cell.ag-cell-range-selected,
+            .ag-cell.ag-cell-range-selected-1,
+            .ag-cell.ag-cell-range-selected-2,
+            .ag-cell.ag-cell-range-selected-3,
+            .ag-cell.ag-cell-range-selected-4 {
+                background-color: #e6f2ff !important; 
+                color: #000 !important; 
+            }
+        
+            .ag-cell.ag-cell-range-selected * {
+                color: inherit !important;
             }
             
             /* Desativar seleção de texto padrão do navegador dentro da tabela */
