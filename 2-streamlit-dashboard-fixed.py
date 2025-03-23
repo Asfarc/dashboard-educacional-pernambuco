@@ -751,8 +751,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }
     )
 
-    # Barra lateral e seleção avançada
+    # Desabilitar completamente a seleção de linhas
     gb.configure_side_bar()
+    gb.configure_selection(False)  # Desativa qualquer tipo de seleção gerenciada pelo GridOptions
 
     # Configurar seleção de células e funcionalidades de clipboard
     gb.configure_grid_options(
@@ -938,6 +939,79 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     </script>
     """
     st.markdown(js_fix_headers, unsafe_allow_html=True)
+
+    # JavaScript para desativar completamente a seleção de linhas
+    js_disable_row_selection = """
+    <script>
+        // Abordagem radical para desativar seleção de linhas
+        setTimeout(function() {
+            try {
+                // 1. Encontrar o grid
+                const gridDiv = document.querySelector('.ag-root-wrapper');
+                if (!gridDiv) return;
+
+                // 2. Forçar override no CSS para linhas selecionadas
+                const styleElement = document.createElement('style');
+                styleElement.textContent = `
+                    .ag-theme-streamlit .ag-row-selected,
+                    .ag-theme-streamlit .ag-row.ag-row-selected,
+                    .ag-theme-streamlit .ag-row.ag-row-selected::before,
+                    .ag-theme-streamlit .ag-row.ag-row-selected::after,
+                    .ag-theme-streamlit .ag-row:hover,
+                    .ag-theme-streamlit .ag-row-selected:hover {
+                        background-color: white !important;
+                        border: none !important;
+                        color: inherit !important;
+                    }
+                `;
+                document.head.appendChild(styleElement);
+
+                // 3. Desativar eventos de clique nas linhas
+                const rows = document.querySelectorAll('.ag-row');
+                rows.forEach(row => {
+                    row.classList.remove('ag-row-selected');
+
+                    // Prevenir a propagação de eventos de clique
+                    row.addEventListener('click', function(e) {
+                        // Verificar se o clique foi na linha (não em uma célula específica)
+                        if (e.target === this) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                        }
+                    }, true);
+                });
+
+                // 4. Adicionar um observador de mutação para continuar 
+                // removendo a classe 'ag-row-selected' quando for adicionada
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && 
+                            mutation.attributeName === 'class' &&
+                            mutation.target.classList.contains('ag-row')) {
+
+                            if (mutation.target.classList.contains('ag-row-selected')) {
+                                mutation.target.classList.remove('ag-row-selected');
+                            }
+                        }
+                    });
+                });
+
+                // Observar todas as linhas atuais e futuras
+                document.querySelectorAll('.ag-row').forEach(row => {
+                    observer.observe(row, { attributes: true });
+                });
+
+                // Observar também a adição de novas linhas
+                observer.observe(document.querySelector('.ag-body-viewport'), 
+                                { childList: true, subtree: true });
+
+            } catch(e) {
+                console.error('Erro ao desativar seleção de linhas:', e);
+            }
+        }, 1000);  // Atraso maior para garantir que o grid esteja completamente renderizado
+    </script>
+    """
+    st.markdown(js_disable_row_selection, unsafe_allow_html=True)
 
     # Botões de navegação abaixo
     col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
