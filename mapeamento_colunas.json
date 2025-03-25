@@ -1,4 +1,10 @@
 {
+  "Educação Básica": {
+    "coluna_principal": "Número de Matrículas da Educação Básica",
+    "subetapas": {},
+    "series": {}
+  },
+
   "Educação Infantil": {
     "coluna_principal": "Número de Matrículas da Educação Infantil",
     "subetapas": {
