@@ -730,6 +730,8 @@ except Exception as e:
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
 
+st.sidebar.title("Filtros")
+
 # Seleção do nível de agregação
 tipo_visualizacao = st.sidebar.radio(
     "Nível de Agregação:",
