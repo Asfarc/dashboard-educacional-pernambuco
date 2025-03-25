@@ -39,6 +39,19 @@ css_sidebar = """
         padding: 1rem;
     }
 
+    /* Cor dos checkboxes selecionados */
+    div.filtro-azul div[role="listbox"] div[aria-selected="true"] {
+        background-color: #4a6572 !important;
+        border-color: #f0ad4e !important;
+        color: white !important;
+    }
+
+    /* Cor do texto selecionado */
+    div.filtro-azul div[role="option"]:has(input:checked) {
+        color: #ffd700 !important;
+        font-weight: bold;
+    }    
+    
     /* Garante que os controles fiquem visíveis acima do overlay */
     [data-testid="stSidebar"] > div {
         position: relative;
@@ -61,6 +74,7 @@ css_sidebar = """
     [data-testid="stSidebar"] [data-baseweb="select"] div {
         color: black !important;
     }
+    
 </style>
 """
 
