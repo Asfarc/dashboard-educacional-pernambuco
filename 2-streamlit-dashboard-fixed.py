@@ -104,7 +104,7 @@ css_pills = """
     /* Botões selecionados */
     [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] {
         background-color: white !important;
-        color: #364b60 !important;
+        color: #black !important;
         border-color: white !important;
     }
 </style>
