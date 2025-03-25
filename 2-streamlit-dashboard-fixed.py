@@ -111,7 +111,7 @@ css_pills = """
     
     /* Caso precise estilizar o <p> lá dentro (texto em si) */
     button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
-        color: #e37777 !important;
+        color: white !important;
         font-weight: bold; /* Exemplo extra */
     }
 </style>
