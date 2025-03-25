@@ -38,7 +38,7 @@ css_sidebar = """
         margin: 1rem;
         padding: 1rem;
     }
-    
+
     /* Garante que os controles fiquem visíveis acima do overlay */
     [data-testid="stSidebar"] > div {
         position: relative;
@@ -61,7 +61,16 @@ css_sidebar = """
     [data-testid="stSidebar"] [data-baseweb="select"] div {
         color: black !important;
     }
-    
+
+    /* ------ NOVAS REGRAS ------ */
+    .stMultiSelect [aria-selected="true"] {
+        background-color: #364b60 !important;
+        color: white !important;
+    }
+
+    .stMultiSelect [aria-selected="true"]:hover {
+        background-color: #2a3a4d !important;
+    }
 </style>
 """
 
