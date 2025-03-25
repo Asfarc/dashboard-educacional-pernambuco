@@ -292,35 +292,6 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-def navegar_tabela(label_botao, key_botao, posicao='top'):
-    """
-    Botão que, ao clicar, rola a tabela do AgGrid ao topo ou final (bottom).
-    """
-    if st.button(label_botao, key=key_botao):
-        scroll_script = f"""
-            <script>
-                setTimeout(function() {{
-                    try {{
-                        const gridDiv = document.querySelector('.ag-root-wrapper');
-                        if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {{
-                            const api = gridDiv.gridOptions.api;
-                            if ('{posicao}' === 'top') {{
-                                api.ensureIndexVisible(0);
-                                api.setFocusedCell(0, api.getColumnDefs()[0].field);
-                            }} else {{
-                                const lastIndex = api.getDisplayedRowCount() - 1;
-                                if (lastIndex >= 0) {{
-                                    api.ensureIndexVisible(lastIndex);
-                                    api.setFocusedCell(lastIndex, api.getColumnDefs()[0].field);
-                                }}
-                            }}
-                        }}
-                    }} catch(e) {{ console.error(e); }}
-                }}, 300);
-            </script>
-        """
-        st.markdown(scroll_script, unsafe_allow_html=True)
-
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """
     Exibe DataFrame no AgGrid com paginação, barra de status e seleções de célula.
@@ -558,7 +529,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
     grid_options = gb.build()
 
-    st.write("### Navegação da tabela")
     st.markdown("""
         <style>
         .nav-panel {
@@ -588,14 +558,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }
         </style>
     """, unsafe_allow_html=True)
-
-    col_nav_top1, col_nav_top2 = st.columns([1, 1])
-    with col_nav_top1:
-        navegar_tabela(ROTULO_BTN_PRIMEIRA_LINHA, "btn_top_1", posicao='top')
-    with col_nav_top2:
-        navegar_tabela(ROTULO_BTN_ULTIMA_LINHA, "btn_bottom_1", posicao='bottom')
-
-    st.markdown(DICAS_NAVEGACAO, unsafe_allow_html=True)
 
     grid_return = AgGrid(
         df_para_exibir,
@@ -708,12 +670,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """
     st.markdown(js_fix_headers, unsafe_allow_html=True)
 
-    col_nav_bot1, col_nav_bot2 = st.columns([1, 1])
-    with col_nav_bot1:
-        navegar_tabela("⏫ Primeira Linha", "btn_top_2", posicao='top')
-    with col_nav_bot2:
-        navegar_tabela("⏬ Última Linha", "btn_bottom_2", posicao='bottom')
-
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
         st.info(
@@ -817,6 +773,8 @@ coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie
 coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
 if coluna_existe:
     coluna_dados = coluna_real
+    # Filtrar valores > 0
+    df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
 else:
     st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
     coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
@@ -824,6 +782,8 @@ else:
     if coluna_existe:
         coluna_dados = coluna_principal_real
         st.info(f"Usando '{coluna_dados}' como alternativa")
+        # Filtrar valores > 0 para a coluna alternativa
+        df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
