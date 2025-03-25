@@ -96,15 +96,15 @@ css_pills = """
     button[kind="pills"][data-testid="stBaseButton-pills"] {
         background-color: transparent !important;
         color: black !important;
-        border: 1px solid #ccc !important;
+        border: 1px solid #e37777 !important;
         border-radius: 20px !important;
         /* etc. */
     }
 
     /* Botões selecionados (kind="pillsActive") */
     button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
-        background-color: #eee !important; /* Cor de fundo para o selecionado */
-        color: black !important;          /* Cor do texto para o selecionado */
+        background-color: #e37777 !important; /* Cor de fundo para o selecionado */
+        color: white !important;          /* Cor do texto para o selecionado */
         border: none !important;
         /* etc. */
     }
