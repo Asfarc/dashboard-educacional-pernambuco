@@ -1,10 +1,7 @@
 [theme]
 base="light"
 # Cor principal para elementos interativos
-primaryColor = "#7792E3"
-
-# Cor de fundo para a área principal do conteúdo
-backgroundColor = "#e37777"
+primaryColor = "#e37777"
 
 # Cor usada para quase todos os textos
 textColor = "#FFFFFF"
