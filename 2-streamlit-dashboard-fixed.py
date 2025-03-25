@@ -62,14 +62,23 @@ css_sidebar = """
         color: black !important;
     }
 
-    /* ------ NOVAS REGRAS ------ */
-    .stMultiSelect [aria-selected="true"] {
+    /* ------ REGRAS ATUALIZADAS ------ */
+    /* Altera TODOS os itens selecionados na sidebar */
+    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
         background-color: #364b60 !important;
         color: white !important;
+        border-radius: 4px !important;
     }
 
-    .stMultiSelect [aria-selected="true"]:hover {
+    /* Altera o hover */
+    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
         background-color: #2a3a4d !important;
+        cursor: pointer;
+    }
+
+    /* Remove a cor azul padrão do Streamlit */
+    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
+        box-shadow: none !important;
     }
 </style>
 """
