@@ -4,13 +4,8 @@ base="light"
 primaryColor = "#7792E3"
 
 # Cor de fundo para a área principal do conteúdo
-backgroundColor = "#273346"
-
-# Cor de fundo para a barra lateral e a maioria dos widgets interativos
-secondaryBackgroundColor = "#B9F1C0"
+backgroundColor = "#e37777"
 
 # Cor usada para quase todos os textos
 textColor = "#FFFFFF"
 
-# Família de fontes para todos os textos no app, exceto blocos de código
-font = "sans serif"
