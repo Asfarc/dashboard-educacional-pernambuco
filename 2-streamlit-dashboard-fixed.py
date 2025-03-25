@@ -34,7 +34,7 @@ css_sidebar = """
         height: 100%;
         background-color: #364b60;
         z-index: -1;
-        border-radius: 8px;
+        border-radius: 1px;
         margin: 1rem;
         padding: 1rem;
     }
@@ -67,7 +67,7 @@ css_sidebar = """
     [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
         background-color: #364b60 !important;
         color: white !important;
-        border-radius: 4px !important;
+        border-radius: 1px !important;
     }
 
     /* Altera o hover */
@@ -97,7 +97,7 @@ css_pills = """
         background-color: transparent !important;
         color: white !important;
         border: 1px solid #e37777 !important;
-        border-radius: 0px !important;
+        border-radius: 1px !important;
         /* etc. */
     }
 
