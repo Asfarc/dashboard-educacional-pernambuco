@@ -24,32 +24,33 @@ st.set_page_config(
 
 css_sidebar = """
 <style>
-    /* Criar um fundo para toda a sidebar */
-    [data-testid="stSidebar"] .css-1d391kg {
+    /* Cria um overlay para toda a sidebar */
+    [data-testid="stSidebar"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background-color: #364b60;
-        padding: 1rem;
-        border-radius: 8px;
-    }
-
-    /* Ou alternativamente, este seletor pode funcionar */
-    [data-testid="stSidebar"] > div:first-child > div:first-child > div:nth-child(2) {
-        background-color: #364b60;
+        z-index: -1;
         border-radius: 8px;
         margin: 1rem;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
+        padding: 1rem;
     }
 
-    /* Texto branco para todos os elementos na sidebar */
+    /* Garante que os controles fiquem visíveis acima do overlay */
+    [data-testid="stSidebar"] > div {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Texto branco para todos os elementos */
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] p {
-        color: white !important;
-    }
-
-    /* Ajustes específicos para controles */
+    [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
         color: white !important;
     }
