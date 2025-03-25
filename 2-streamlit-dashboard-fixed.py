@@ -912,7 +912,8 @@ else:
 # Cabeçalho e Informações Iniciais
 # -------------------------------
 st.title(TITULO_DASHBOARD)
-st.markdown(f"**Visualização por {tipo_visualizacao} - Ano: {ano_selecionado}**")
+anos_texto = ", ".join(map(str, anos_selecionados))
+st.markdown(f"**Visualização por {tipo_visualizacao} - Anos: {anos_texto}**")
 
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
 if subetapa_selecionada != "Todas":
@@ -1142,7 +1143,7 @@ with tab1:
             st.download_button(
                 label=ROTULO_BTN_DOWNLOAD_CSV,
                 data=csv_data,
-                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.csv',
+                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.csv',
                 mime='text/csv',
             )
         except Exception as e:
@@ -1154,7 +1155,7 @@ with tab1:
             st.download_button(
                 label=ROTULO_BTN_DOWNLOAD_EXCEL,
                 data=excel_data,
-                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{ano_selecionado}.xlsx',
+                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{anos_selecionados}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             )
         except Exception as e:
