@@ -1076,15 +1076,6 @@ with tab1:
         tabela_com_totais = tabela_filtrada
 
     altura_tabela = altura_manual
-    try:
-        # Preparar a tabela com totais antes das configurações
-        tabela_com_totais = adicionar_linha_totais(tabela_exibicao.copy(), coluna_dados)
-        # Exibir a tabela sem esperar pelas configurações
-        altura_default = 600
-        grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_default, coluna_dados=coluna_dados)
-    except Exception as e:
-        st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
-        st.dataframe(tabela_com_totais, height=altura_default)
 
     col1, col2 = st.columns(2)
     with col1:
