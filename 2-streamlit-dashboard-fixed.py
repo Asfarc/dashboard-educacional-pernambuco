@@ -104,8 +104,19 @@ css_pills = """
     /* Botões selecionados */
     [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] {
         background-color: white !important;
-        color: #black !important;
+        color: black !important;
         border-color: white !important;
+    }
+    
+    /* Seletor adicional com maior especificidade */
+    [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] * {
+        color: black !important;
+    }
+    
+    /* Forçar cor preta para qualquer elemento dentro de pills selecionados */
+    [data-testid="stSidebar"] div[data-testid="stPills"] button[aria-selected="true"] span,
+    [data-testid="stSidebar"] div[data-testid="stPills"] button[aria-selected="true"] div {
+        color: black !important;
     }
 </style>
 """
