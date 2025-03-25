@@ -25,15 +25,17 @@ st.set_page_config(
 # CSS personalizado para estilizar a sidebar
 css_sidebar = """
 <style>
-    /* Estilo para o container dos filtros ocupando toda a sidebar */
+    /* Deixa a sidebar com o fundo branco padrão */
+    /* NÃO definimos background-color para o container principal */
+
+    /* Estilo para o container dos filtros - apenas na área dos controles */
     .filtros-container {
         background-color: #364b60;
         padding: 20px;
+        margin-top: 20px;  /* Espaço branco no topo */
+        margin-bottom: 20px;  /* Espaço branco na parte inferior */
+        border-radius: 8px;
         color: white;
-        min-height: 100vh; /* Faz o container ocupar toda a altura */
-        width: 100%; /* Ocupa toda a largura */
-        margin: 0; /* Remove as margens */
-        border-radius: 0; /* Remove os cantos arredondados */
     }
 
     /* Estilo específico para todos os labels dentro do container de filtros */
