@@ -22,44 +22,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado para estilizar a sidebar
 css_sidebar = """
 <style>
-    /* Deixa a sidebar com o fundo branco padrão */
-    /* NÃO definimos background-color para o container principal */
-
-    /* Estilo para o container dos filtros - apenas na área dos controles */
-    .filtros-container {
+    /* Estilo para o fundo azul da área de filtros */
+    div.filtro-azul {
         background-color: #364b60;
-        padding: 20px;
-        margin-top: 20px;  /* Espaço branco no topo */
-        margin-bottom: 20px;  /* Espaço branco na parte inferior */
+        padding: 15px;
         border-radius: 8px;
+        color: white;
+        margin: 15px 0;
+    }
+
+    /* Cor branca para todos os textos dentro da área azul */
+    div.filtro-azul * {
         color: white;
     }
 
-    /* Estilo específico para todos os labels dentro do container de filtros */
-    .filtros-container label, 
-    .filtros-container .stRadio label,
-    .filtros-container .stSelectbox label,
-    .filtros-container .stMultiSelect label {
-        color: white !important;
-        font-weight: 500;
-    }
-
-    /* Estilo para os títulos dentro do container */
-    .filtros-container h1, 
-    .filtros-container h2, 
-    .filtros-container h3 {
-        color: white !important;
-        margin-top: 5px;
-    }
-
-    /* Mantém o texto das opções na cor original */
-    .filtros-container option,
-    .filtros-container select,
-    .filtros-container .stMultiSelect span div, 
-    .filtros-container .stSelectbox span div {
+    /* Mantém o texto das opções de seleção na cor preta */
+    div.filtro-azul select,
+    div.filtro-azul option,
+    div.filtro-azul span[data-baseweb="select"] div {
         color: black !important;
     }
 </style>
@@ -742,10 +724,9 @@ except Exception as e:
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
 # Adicione o CSS e as funções auxiliares
-st.sidebar.markdown(css_sidebar, unsafe_allow_html=True)
-
-iniciar_secao_filtros()
+st.sidebar.markdown('<div class="filtro-azul">', unsafe_allow_html=True)
 st.sidebar.title("Filtros")
+
 
 # Seleção do nível de agregação
 tipo_visualizacao = st.sidebar.radio(
@@ -841,6 +822,8 @@ else:
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
+
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
