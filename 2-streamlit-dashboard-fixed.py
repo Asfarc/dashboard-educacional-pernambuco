@@ -24,29 +24,52 @@ st.set_page_config(
 
 css_sidebar = """
 <style>
+    /* Container azul principal da sidebar */
+    [data-testid="stSidebar"] {
+        background-color: white;
+    }
+
     /* Estilo para todos os componentes na sidebar */
     [data-testid="stSidebar"] .stRadio,
     [data-testid="stSidebar"] .stSelectbox,
     [data-testid="stSidebar"] .stMultiSelect {
         background-color: #364b60;
-        color: white !important;
         padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 10px;
+        margin-bottom: 0 !important; /* Removendo espaços entre componentes */
     }
 
-    /* Estilo para o título da sidebar */
+    /* Estilo para o título na sidebar */
     [data-testid="stSidebar"] h1 {
         background-color: #364b60;
         color: white !important;
         padding: 15px 10px;
-        border-radius: 5px;
-        margin-top: 10px;
+        margin-bottom: 0 !important;
+    }
+
+    /* Bloco contínuo para a sidebar */
+    [data-testid="stSidebar"] > div:first-child > div:first-child > div:nth-child(2) {
+        background-color: #364b60;
+        color: white;
+        padding: 0;
+        border-radius: 8px;
+        margin: 10px;
     }
 
     /* Estilo para os rótulos */
-    [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] .stRadio label {
+    [data-testid="stSidebar"] .stRadio label,
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stMultiSelect label {
+        color: white !important;
+    }
+
+    /* Corrigindo a cor dos Radio Buttons */
+    [data-testid="stSidebar"] .stRadio input, 
+    [data-testid="stSidebar"] .stRadio span[role="radio"] {
+        color: #2196F3 !important; /* Cor padrão para radio buttons */
+    }
+
+    /* Texto do radio button em branco */
+    [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
         color: white !important;
     }
 
