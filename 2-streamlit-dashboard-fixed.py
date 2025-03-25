@@ -782,19 +782,6 @@ else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
 
-# Filtro de Dependência Administrativa
-if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
-    dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
-    dependencia_selecionada = st.sidebar.multiselect(
-        "DEPENDENCIA ADMINISTRATIVA:",
-        dependencias_disponiveis,
-        default=dependencias_disponiveis
-    )
-    if dependencia_selecionada:
-        df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
-else:
-    st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
-
 # Filtro de Etapa de Ensino
 etapas_disponiveis = list(mapeamento_colunas.keys())
 etapa_selecionada = st.sidebar.selectbox(
@@ -828,6 +815,19 @@ if (subetapa_selecionada != "Todas"
     )
 else:
     serie_selecionada = "Todas"
+
+# Filtro de Dependência Administrativa
+if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
+    dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
+    dependencia_selecionada = st.sidebar.multiselect(
+        "DEPENDENCIA ADMINISTRATIVA:",
+        dependencias_disponiveis,
+        default=dependencias_disponiveis
+    )
+    if dependencia_selecionada:
+        df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
+else:
+    st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
 # Determinar a coluna de dados
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
