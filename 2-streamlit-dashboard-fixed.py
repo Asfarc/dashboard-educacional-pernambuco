@@ -92,31 +92,27 @@ css_pills = """
         margin-top: 8px;
     }
 
-    /* Botões normais (não selecionados) */
-    [data-testid="stSidebar"] div[data-testid="stPills"] button {
+    /* Botões não selecionados (kind="pills") */
+    button[kind="pills"][data-testid="stBaseButton-pills"] {
         background-color: transparent !important;
-        border: 1px solid white !important;
         color: black !important;
+        border: 1px solid #ccc !important;
         border-radius: 20px !important;
-        margin: 2px !important;
+        /* etc. */
     }
 
-    /* Botões selecionados */
-    [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: white !important;
-        color: black !important;
-        border-color: white !important;
+    /* Botões selecionados (kind="pillsActive") */
+    button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
+        background-color: #eee !important; /* Cor de fundo para o selecionado */
+        color: black !important;          /* Cor do texto para o selecionado */
+        border: none !important;
+        /* etc. */
     }
     
-    /* Seletor adicional com maior especificidade */
-    [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] * {
+    /* Caso precise estilizar o <p> lá dentro (texto em si) */
+    button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
         color: black !important;
-    }
-    
-    /* Forçar cor preta para qualquer elemento dentro de pills selecionados */
-    [data-testid="stSidebar"] div[data-testid="stPills"] button[aria-selected="true"] span,
-    [data-testid="stSidebar"] div[data-testid="stPills"] button[aria-selected="true"] div {
-        color: black !important;
+        font-weight: bold; /* Exemplo extra */
     }
 </style>
 """
