@@ -103,7 +103,7 @@ css_pills = """
 
     /* Botões selecionados (kind="pillsActive") */
     button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
-        background-color: #e37777 !important; /* Cor de fundo para o selecionado */
+        background-color: #e54c4c !important; /* Cor de fundo para o selecionado */
         color: white !important;          /* Cor do texto para o selecionado */
         border: none !important;
         /* etc. */
