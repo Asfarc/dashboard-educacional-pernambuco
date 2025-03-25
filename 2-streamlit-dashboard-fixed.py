@@ -979,7 +979,26 @@ else:
     tabela_dados = df_filtrado[colunas_existentes].copy()
     tabela_exibicao = tabela_dados.copy()
 
-tab1, tab2 = st.tabs(["Visão Tabular", "Resumo Estatístico"])
+# Preparar a tabela para exibição imediata
+tabela_filtrada = tabela_exibicao.copy()
+
+# Adicionar linha de totais
+try:
+    tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+except Exception as e:
+    st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
+    tabela_com_totais = tabela_filtrada
+
+# Exibir a tabela imediatamente
+altura_tabela = 600  # Altura padrão fixa
+try:
+    grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
+except Exception as e:
+    st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
+    st.dataframe(tabela_com_totais, height=altura_tabela)
+
+# Mostrar configurações APÓS a tabela
+tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
 
 with tab1:
     st.write("### Configurações de exibição")
@@ -989,10 +1008,10 @@ with tab1:
         altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
             altura_manual = st.slider("Altura da tabela (pixels)",
-                                      min_value=200,
-                                      max_value=1000,
-                                      value=600,
-                                      step=50)
+                                    min_value=200,
+                                    max_value=1000,
+                                    value=600,
+                                    step=50)
         else:
             altura_manual = 600
 
@@ -1058,10 +1077,14 @@ with tab1:
 
     altura_tabela = altura_manual
     try:
-        grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
+        # Preparar a tabela com totais antes das configurações
+        tabela_com_totais = adicionar_linha_totais(tabela_exibicao.copy(), coluna_dados)
+        # Exibir a tabela sem esperar pelas configurações
+        altura_default = 600
+        grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_default, coluna_dados=coluna_dados)
     except Exception as e:
         st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
-        st.dataframe(tabela_com_totais, height=altura_tabela)
+        st.dataframe(tabela_com_totais, height=altura_default)
 
     col1, col2 = st.columns(2)
     with col1:
