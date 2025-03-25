@@ -95,7 +95,7 @@ css_pills = """
     /* Botões não selecionados (kind="pills") */
     button[kind="pills"][data-testid="stBaseButton-pills"] {
         background-color: transparent !important;
-        color: black !important;
+        color: white !important;
         border: 1px solid #e37777 !important;
         border-radius: 20px !important;
         /* etc. */
