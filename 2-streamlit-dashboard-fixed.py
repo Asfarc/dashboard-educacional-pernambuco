@@ -50,7 +50,7 @@ css_sidebar = """
 st.markdown(css_sidebar, unsafe_allow_html=True)
 
 def iniciar_secao_filtros():
-    return st.sidebar.markdown('<div class="filtros-container">', unsafe_allow_html=True)
+    return st.sidebar.markdown('<div class="filtro-azul">', unsafe_allow_html=True)
 
 def finalizar_secao_filtros():
     return st.sidebar.markdown('</div>', unsafe_allow_html=True)
