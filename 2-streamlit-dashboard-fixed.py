@@ -22,6 +22,61 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# CSS personalizado para estilizar a sidebar
+css_sidebar = """
+<style>
+    /* Estilo para a área da sidebar */
+    [data-testid="stSidebar"] {
+        background-color: white;
+        padding: 10px;
+    }
+
+    /* Container personalizado para os filtros com a cor desejada */
+    .sidebar-filters {
+        background-color: #364b60;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        color: white;
+    }
+
+    /* Estilo para os rótulos das caixas de seleção */
+    .sidebar-filters label {
+        color: white !important;
+        font-weight: 500;
+    }
+
+    /* Estilo para os títulos dentro do container de filtros */
+    .sidebar-filters h1, .sidebar-filters h2, .sidebar-filters h3 {
+        color: white !important;
+    }
+
+    /* Mantém o texto das opções na cor original */
+    .sidebar-filters select, .sidebar-filters input, 
+    .sidebar-filters .stMultiSelect span, .sidebar-filters .stSelectbox span {
+        color: black !important;
+    }
+
+    /* Ajuste para os widgets de multiselect */
+    .sidebar-filters [data-baseweb="select"] {
+        background-color: white;
+        border-radius: 4px;
+    }
+
+    /* Ajuste para as caixas de opções (dropdown) */
+    .sidebar-filters [data-baseweb="popover"] {
+        color: black;
+    }
+
+    /* Ajuste para botões e elementos interativos */
+    .sidebar-filters button {
+        border: 1px solid white;
+    }
+</style>
+"""
+
+st.markdown(css_sidebar, unsafe_allow_html=True)
+
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
@@ -692,6 +747,7 @@ except Exception as e:
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
 
+st.sidebar.markdown('<div class="sidebar-filters">', unsafe_allow_html=True)
 st.sidebar.title("Filtros")
 
 # Seleção do nível de agregação
@@ -766,6 +822,7 @@ if (subetapa_selecionada != "Todas"
     )
 else:
     serie_selecionada = "Todas"
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # Determinar a coluna de dados
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
