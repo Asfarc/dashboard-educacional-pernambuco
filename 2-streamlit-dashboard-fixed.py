@@ -22,6 +22,132 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Adicione este CSS ao início do seu código
+css_toggle_buttons = """
+<style>
+    /* Container para os botões */
+    .toggle-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 5px;
+    }
+
+    /* Estilo dos botões de toggle */
+    .toggle-button {
+        background-color: transparent;
+        color: white;
+        border: 1px solid white;
+        border-radius: 20px;
+        padding: 5px 12px;
+        margin: 2px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    /* Estilo dos botões quando selecionados */
+    .toggle-button.selected {
+        background-color: white;
+        color: #364b60;
+    }
+
+    /* Hover */
+    .toggle-button:hover {
+        opacity: 0.9;
+    }
+</style>
+"""
+
+st.markdown(css_toggle_buttons, unsafe_allow_html=True)
+
+
+# Depois, adicione esta função para criar os botões de toggle
+def create_toggle_buttons(options, key_prefix, default_all=True):
+    """
+    Cria botões de toggle para seleção múltipla
+
+    Args:
+        options: Lista de opções
+        key_prefix: Prefixo para as chaves de session_state
+        default_all: Se True, todas as opções são selecionadas por padrão
+
+    Returns:
+        Lista de opções selecionadas
+    """
+    # Inicializar o estado
+    for option in options:
+        if f"{key_prefix}_{option}" not in st.session_state:
+            st.session_state[f"{key_prefix}_{option}"] = default_all
+
+    # Botões para selecionar/limpar todos
+    col1, col2 = st.columns(2)
+    if col1.button("Selecionar Todos", key=f"{key_prefix}_select_all"):
+        for option in options:
+            st.session_state[f"{key_prefix}_{option}"] = True
+        st.rerun()
+
+    if col2.button("Limpar Todos", key=f"{key_prefix}_clear_all"):
+        for option in options:
+            st.session_state[f"{key_prefix}_{option}"] = False
+        st.rerun()
+
+    # Criar HTML para os botões de toggle
+    buttons_html = '<div class="toggle-container">'
+
+    for option in options:
+        selected = "selected" if st.session_state[f"{key_prefix}_{option}"] else ""
+        buttons_html += f"""
+        <button 
+            id="btn_{key_prefix}_{option}" 
+            class="toggle-button {selected}" 
+            onclick="this.classList.toggle('selected'); 
+                     document.getElementById('update_{key_prefix}').click();">
+            {option}
+        </button>
+        """
+
+    buttons_html += '</div>'
+
+    # Renderizar os botões
+    st.markdown(buttons_html, unsafe_allow_html=True)
+
+    # Botão oculto para atualizar estado
+    if st.button("Atualizar", key=f"update_{key_prefix}", help="Este botão é acionado automaticamente",
+                 style={"display": "none"}):
+        pass
+
+    # JavaScript para atualizar o estado ao clicar nos botões
+    js_code = f"""
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {{
+            const buttons = document.querySelectorAll('.toggle-button');
+            buttons.forEach(button => {{
+                button.addEventListener('click', function() {{
+                    // A classe será alternada pelo onclick
+                    // E o botão de atualização será clicado
+                }});
+            }});
+        }});
+    </script>
+    """
+    st.markdown(js_code, unsafe_allow_html=True)
+
+    # Retornar as opções selecionadas
+    selected_options = [option for option in options
+                        if st.session_state.get(f"{key_prefix}_{option}", False)]
+
+    # Mostrar seleções atuais como texto
+    if selected_options:
+        if len(selected_options) <= 3:
+            st.caption(f"Selecionados: {', '.join(selected_options)}")
+        else:
+            st.caption(f"Selecionados: {len(selected_options)} de {len(options)}")
+    else:
+        st.caption("Nenhuma opção selecionada")
+
+    return selected_options
+
 css_sidebar = """
 <style>
     /* Cria um overlay para toda a sidebar */
@@ -82,35 +208,6 @@ css_sidebar = """
     }
 </style>
 """
-
-st.markdown(css_sidebar, unsafe_allow_html=True)
-
-css_pills = """
-<style>
-    /* Estilo específico para os pills na barra lateral */
-    [data-testid="stSidebar"] div[data-testid="stPills"] {
-        margin-top: 8px;
-    }
-
-    /* Botões normais (não selecionados) */
-    [data-testid="stSidebar"] div[data-testid="stPills"] button {
-        background-color: transparent !important;
-        border: 1px solid white !important;
-        color: white !important;
-        border-radius: 20px !important;
-        margin: 2px !important;
-    }
-
-    /* Botões selecionados */
-    [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: white !important;
-        color: #364b60 !important;
-        border-color: white !important;
-    }
-</style>
-"""
-
-st.markdown(css_pills, unsafe_allow_html=True)
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
@@ -842,27 +939,17 @@ if (subetapa_selecionada != "Todas"
 else:
     serie_selecionada = "Todas"
 
-# Filtro de Dependência Administrativa com st.pills()
+# Filtro de Dependência Administrativa
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
-
-    # Inicializar o estado para manter a seleção
-    if "dep_admin_selected" not in st.session_state:
-        st.session_state.dep_admin_selected = dependencias_disponiveis
-
-    # Usando st.pills com os parâmetros corretos
     st.sidebar.markdown("**DEPENDENCIA ADMINISTRATIVA:**")
-    dependencia_selecionada = st.sidebar.pills(
-        label="",  # Label vazio, pois já usamos o markdown acima
-        options=dependencias_disponiveis,
-        selection_mode="multi",
-        default=st.session_state.dep_admin_selected,
-        key="dependencia_admin_pills",
-        label_visibility="collapsed"  # Oculta o label
-    )
 
-    # Atualiza o estado com a seleção atual
-    st.session_state.dep_admin_selected = dependencia_selecionada
+    # Usar a função de botões de toggle
+    dependencia_selecionada = create_toggle_buttons(
+        dependencias_disponiveis,
+        key_prefix="dep_admin",
+        default_all=True
+    )
 
     # Aplicar filtro
     if dependencia_selecionada:
