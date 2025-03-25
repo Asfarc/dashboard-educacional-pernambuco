@@ -96,7 +96,7 @@ css_pills = """
     [data-testid="stSidebar"] div[data-testid="stPills"] button {
         background-color: transparent !important;
         border: 1px solid white !important;
-        color: white !important;
+        color: black !important;
         border-radius: 20px !important;
         margin: 2px !important;
     }
