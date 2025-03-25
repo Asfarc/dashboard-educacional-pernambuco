@@ -80,6 +80,33 @@ css_sidebar = """
     [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
         box-shadow: none !important;
     }
+
+    /* ------ ESTILOS PARA PILLS ------ */
+    /* Estilo geral para todos os pills na sidebar */
+    [data-testid="stSidebar"] [data-testid="stPills"] button {
+        border: 1px solid #d63031 !important;
+        color: white !important;
+        background-color: transparent !important;
+    }
+
+    /* Estilo para pills selecionados */
+    [data-testid="stSidebar"] [data-testid="stPills"] button[aria-selected="true"] {
+        background-color: white !important;
+        color: #364b60 !important;
+        border-color: white !important;
+    }
+
+    /* Estilo para pills não selecionados */
+    [data-testid="stSidebar"] [data-testid="stPills"] button:not([aria-selected="true"]) {
+        background-color: transparent !important;
+        color: white !important;
+        border: 1px solid white !important;
+    }
+
+    /* Hover em pills */
+    [data-testid="stSidebar"] [data-testid="stPills"] button:hover {
+        filter: brightness(90%) !important;
+    }
 </style>
 """
 
