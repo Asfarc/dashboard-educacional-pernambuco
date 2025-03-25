@@ -717,8 +717,7 @@ except Exception as e:
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
-# Adicione o CSS e as funções auxiliares
-iniciar_secao_filtros()
+st.sidebar.markdown('<div class="filtro-azul">', unsafe_allow_html=True)
 st.sidebar.title("Filtros")
 
 
@@ -816,7 +815,7 @@ else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
 
-finalizar_secao_filtros()
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
