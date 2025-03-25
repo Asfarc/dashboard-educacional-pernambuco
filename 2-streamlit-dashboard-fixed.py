@@ -24,56 +24,62 @@ st.set_page_config(
 
 css_sidebar = """
 <style>
-    /* Container azul principal da sidebar */
-    [data-testid="stSidebar"] {
-        background-color: white;
+    /* Estilo para elementos de container da sidebar */
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
     }
 
-    /* Estilo para todos os componentes na sidebar */
+    /* Estilo unificado para criar um único bloco azul */
     [data-testid="stSidebar"] .stRadio,
     [data-testid="stSidebar"] .stSelectbox,
-    [data-testid="stSidebar"] .stMultiSelect {
-        background-color: #364b60;
-        padding: 10px;
-        margin-bottom: 0 !important; /* Removendo espaços entre componentes */
-    }
-
-    /* Estilo para o título na sidebar */
-    [data-testid="stSidebar"] h1 {
+    [data-testid="stSidebar"] .stMultiSelect,
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] .stMarkdown p {
         background-color: #364b60;
         color: white !important;
-        padding: 15px 10px;
+        padding: 10px;
+        margin-top: 0 !important;
         margin-bottom: 0 !important;
     }
 
-    /* Bloco contínuo para a sidebar */
-    [data-testid="stSidebar"] > div:first-child > div:first-child > div:nth-child(2) {
-        background-color: #364b60;
-        color: white;
-        padding: 0;
-        border-radius: 8px;
-        margin: 10px;
+    /* Primeiro elemento com borda arredondada superior */
+    [data-testid="stSidebar"] h1:first-of-type {
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        padding-top: 15px;
     }
 
-    /* Estilo para os rótulos */
-    [data-testid="stSidebar"] .stRadio label,
-    [data-testid="stSidebar"] .stSelectbox label,
-    [data-testid="stSidebar"] .stMultiSelect label {
-        color: white !important;
+    /* Container para os elementos da sidebar */
+    [data-testid="stSidebar"] > div {
+        background-color: white !important;
     }
 
-    /* Corrigindo a cor dos Radio Buttons */
-    [data-testid="stSidebar"] .stRadio input, 
-    [data-testid="stSidebar"] .stRadio span[role="radio"] {
-        color: #2196F3 !important; /* Cor padrão para radio buttons */
+    /* Elimina margens verticais entre todos os elementos */
+    [data-testid="stSidebar"] > div > div > div > div {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
     }
 
-    /* Texto do radio button em branco */
+    /* Adiciona um pouco de espaço entre grupos funcionais, mas mantém background azul */
+    [data-testid="stSidebar"] .stSelectbox {
+        padding-top: 15px;
+        padding-bottom: 15px;
+    }
+
+    /* Cor para rótulos e textos */
+    [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
         color: white !important;
     }
 
-    /* Mantém texto de opções preto */
+    /* Mantém os botões de rádio com a cor correta */
+    [data-testid="stSidebar"] .stRadio input,
+    [data-testid="stSidebar"] .stRadio span[role="radio"] {
+        color: #2196F3 !important;
+    }
+
+    /* Mantém o texto das opções em preto */
     [data-testid="stSidebar"] option,
     [data-testid="stSidebar"] select,
     [data-testid="stSidebar"] [data-baseweb="select"] div {
