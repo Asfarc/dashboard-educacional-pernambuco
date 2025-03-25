@@ -800,7 +800,6 @@ if (subetapa_selecionada != "Todas"
     )
 else:
     serie_selecionada = "Todas"
-finalizar_secao_filtros()
 
 # Determinar a coluna de dados
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
