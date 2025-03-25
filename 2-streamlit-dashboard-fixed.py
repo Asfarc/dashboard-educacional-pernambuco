@@ -64,6 +64,23 @@ css_sidebar = """
 </style>
 """
 
+css_sidebar = """
+<style>
+    /* Cor dos checkboxes selecionados */
+    div.filtro-azul div[role="listbox"] div[aria-selected="true"] {
+        background-color: #4a6572 !important;
+        border-color: #f0ad4e !important;
+        color: white !important;
+    }
+
+    /* Cor do texto selecionado */
+    div.filtro-azul div[role="option"]:has(input:checked) {
+        color: #ffd700 !important;
+        font-weight: bold;
+    }
+</style>
+"""
+
 st.markdown(css_sidebar, unsafe_allow_html=True)
 
 # -------------------------------
