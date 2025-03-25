@@ -809,7 +809,7 @@ mapeamento_colunas = criar_mapeamento_colunas(df)
 
 # Filtro do Ano
 if "ANO" in df.columns:
-    anos_disponiveis = sorted(df["ANO"].unique())
+    anos_disponiveis = sorted(df["ANO"].unique(), reverse=True)
 
     # Substituir selectbox por multiselect
     anos_selecionados = st.sidebar.multiselect(
