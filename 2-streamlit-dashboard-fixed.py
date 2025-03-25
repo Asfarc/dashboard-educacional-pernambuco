@@ -810,8 +810,22 @@ mapeamento_colunas = criar_mapeamento_colunas(df)
 # Filtro do Ano
 if "ANO" in df.columns:
     anos_disponiveis = sorted(df["ANO"].unique())
-    ano_selecionado = st.sidebar.multiselect("Ano do Censo:", anos_disponiveis)
-    df_filtrado = df[df["ANO"] == ano_selecionado]
+
+    # Substituir selectbox por multiselect
+    anos_selecionados = st.sidebar.multiselect(
+        "Ano do Censo:",
+        options=anos_disponiveis,
+        default=[anos_disponiveis[-1]],  # Seleciona o ano mais recente por padrão
+        key="anos_multiselect"
+    )
+
+    # Verificar se pelo menos um ano foi selecionado
+    if not anos_selecionados:
+        st.warning("Por favor, selecione pelo menos um ano.")
+        st.stop()
+
+    # Filtrar o DataFrame para incluir todos os anos selecionados
+    df_filtrado = df[df["ANO"].isin(anos_selecionados)]
 else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
