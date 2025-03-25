@@ -25,62 +25,65 @@ st.set_page_config(
 # CSS personalizado para estilizar a sidebar
 css_sidebar = """
 <style>
-    /* Estilo para a área da sidebar */
-    [data-testid="stSidebar"] {
+    /* Estilo para a barra lateral em geral */
+    section[data-testid="stSidebar"] > div {
         background-color: white;
-        padding: 10px;
     }
 
-    /* Container personalizado para os filtros com a cor desejada */
-    .sidebar-filters {
+    /* Classe personalizada para o container dos filtros */
+    .filtros-container {
         background-color: #364b60;
-        padding: 20px;
         border-radius: 8px;
-        margin-bottom: 20px;
+        padding: 20px;
+        margin: 10px;
         color: white;
     }
 
-    /* Estilo para os rótulos das caixas de seleção */
-    .sidebar-filters label {
+    /* Estilo específico para todos os labels dentro do container de filtros */
+    .filtros-container label, 
+    .filtros-container .stRadio label,
+    .filtros-container .stSelectbox label,
+    .filtros-container .stMultiSelect label {
         color: white !important;
         font-weight: 500;
     }
 
-    /* Estilo para os títulos dentro do container de filtros */
-    .sidebar-filters h1, .sidebar-filters h2, .sidebar-filters h3 {
+    /* Estilo para os títulos dentro do container */
+    .filtros-container h1, 
+    .filtros-container h2, 
+    .filtros-container h3 {
         color: white !important;
+        margin-top: 5px;
+    }
+
+    /* Estilo para os botões e elementos interativos */
+    .filtros-container .stButton button {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid white;
+        color: white;
     }
 
     /* Mantém o texto das opções na cor original */
-    .sidebar-filters select, .sidebar-filters input, 
-    .sidebar-filters .stMultiSelect span, .sidebar-filters .stSelectbox span {
+    .filtros-container option,
+    .filtros-container select,
+    .filtros-container .stMultiSelect span div, 
+    .filtros-container .stSelectbox span div {
         color: black !important;
-    }
-
-    /* Ajuste para os widgets de multiselect */
-    .sidebar-filters [data-baseweb="select"] {
-        background-color: white;
-        border-radius: 4px;
-    }
-
-    /* Ajuste para as caixas de opções (dropdown) */
-    .sidebar-filters [data-baseweb="popover"] {
-        color: black;
-    }
-
-    /* Ajuste para botões e elementos interativos */
-    .sidebar-filters button {
-        border: 1px solid white;
     }
 </style>
 """
 
 st.markdown(css_sidebar, unsafe_allow_html=True)
 
+def iniciar_secao_filtros():
+    return st.sidebar.markdown('<div class="filtros-container">', unsafe_allow_html=True)
+
+def finalizar_secao_filtros():
+    return st.sidebar.markdown('</div>', unsafe_allow_html=True)
+
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
-
 def formatar_numero(numero):
     """
     Formata números grandes adicionando separadores de milhar.
@@ -746,8 +749,10 @@ except Exception as e:
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
+# Adicione o CSS e as funções auxiliares
+st.sidebar.markdown(css_sidebar, unsafe_allow_html=True)
 
-st.sidebar.markdown('<div class="sidebar-filters">', unsafe_allow_html=True)
+iniciar_secao_filtros()
 st.sidebar.title("Filtros")
 
 # Seleção do nível de agregação
@@ -822,7 +827,7 @@ if (subetapa_selecionada != "Todas"
     )
 else:
     serie_selecionada = "Todas"
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
+finalizar_secao_filtros()
 
 # Determinar a coluna de dados
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
