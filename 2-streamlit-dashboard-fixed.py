@@ -97,7 +97,7 @@ css_pills = """
         background-color: transparent !important;
         color: white !important;
         border: 1px solid #e37777 !important;
-        border-radius: 20px !important;
+        border-radius: 0px !important;
         /* etc. */
     }
 
