@@ -22,6 +22,69 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+css_sidebar = """
+<style>
+    /* Cria um overlay para toda a sidebar */
+    [data-testid="stSidebar"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #364b60;
+        z-index: -1;
+        border-radius: 8px;
+        margin: 1rem;
+        padding: 1rem;
+    }
+
+    /* Garante que os controles fiquem visíveis acima do overlay */
+    [data-testid="stSidebar"] > div {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Texto branco para todos os elementos */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
+        color: white !important;
+    }
+
+    /* Mantém o texto das opções em preto */
+    [data-testid="stSidebar"] option,
+    [data-testid="stSidebar"] select,
+    [data-testid="stSidebar"] [data-baseweb="select"] div {
+        color: black !important;
+    }
+
+    /* ------ REGRAS ATUALIZADAS ------ */
+    /* Altera TODOS os itens selecionados na sidebar */
+    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
+        background-color: #364b60 !important;
+        color: white !important;
+        border-radius: 4px !important;
+    }
+
+    /* Altera o hover */
+    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
+        background-color: #2a3a4d !important;
+        cursor: pointer;
+    }
+
+    /* Remove a cor azul padrão do Streamlit */
+    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
+        box-shadow: none !important;
+    }
+</style>
+"""
+
+st.markdown(css_sidebar, unsafe_allow_html=True)
+
 css_pills = """
 <style>
     /* Estilo específico para os pills na barra lateral */
@@ -48,8 +111,6 @@ css_pills = """
 """
 
 st.markdown(css_pills, unsafe_allow_html=True)
-
-
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
@@ -781,7 +842,7 @@ if (subetapa_selecionada != "Todas"
 else:
     serie_selecionada = "Todas"
 
-# Filtro de Dependência Administrativa
+# Filtro de Dependência Administrativa com st.pills()
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
 
@@ -800,6 +861,7 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
         label_visibility="collapsed"  # Oculta o label
     )
 
+    # Atualiza o estado com a seleção atual
     st.session_state.dep_admin_selected = dependencia_selecionada
 
     # Aplicar filtro
