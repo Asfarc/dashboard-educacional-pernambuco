@@ -22,95 +22,33 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-css_sidebar = """
+css_pills = """
 <style>
-    /* Cria um overlay para toda a sidebar */
-    [data-testid="stSidebar"]::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #364b60;
-        z-index: -1;
-        border-radius: 8px;
-        margin: 1rem;
-        padding: 1rem;
+    /* Estilo específico para os pills na barra lateral */
+    [data-testid="stSidebar"] div[data-testid="stPills"] {
+        margin-top: 8px;
     }
 
-    /* Garante que os controles fiquem visíveis acima do overlay */
-    [data-testid="stSidebar"] > div {
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Texto branco para todos os elementos */
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
-        color: white !important;
-    }
-
-    /* Mantém o texto das opções em preto */
-    [data-testid="stSidebar"] option,
-    [data-testid="stSidebar"] select,
-    [data-testid="stSidebar"] [data-baseweb="select"] div {
-        color: black !important;
-    }
-
-    /* ------ REGRAS ATUALIZADAS ------ */
-    /* Altera TODOS os itens selecionados na sidebar */
-    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
-        background-color: #364b60 !important;
-        color: white !important;
-        border-radius: 4px !important;
-    }
-
-    /* Altera o hover */
-    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
-        background-color: #2a3a4d !important;
-        cursor: pointer;
-    }
-
-    /* Remove a cor azul padrão do Streamlit */
-    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
-        box-shadow: none !important;
-    }
-
-    /* ------ ESTILOS PARA PILLS ------ */
-    /* Estilo geral para todos os pills na sidebar */
-    [data-testid="stSidebar"] [data-testid="stPills"] button {
-        border: 1px solid #d63031 !important;
-        color: white !important;
+    /* Botões normais (não selecionados) */
+    [data-testid="stSidebar"] div[data-testid="stPills"] button {
         background-color: transparent !important;
+        border: 1px solid white !important;
+        color: white !important;
+        border-radius: 20px !important;
+        margin: 2px !important;
     }
 
-    /* Estilo para pills selecionados */
-    [data-testid="stSidebar"] [data-testid="stPills"] button[aria-selected="true"] {
+    /* Botões selecionados */
+    [data-testid="stSidebar"] div[data-testid="stPills"] button[data-baseweb="tab"][aria-selected="true"] {
         background-color: white !important;
         color: #364b60 !important;
         border-color: white !important;
     }
-
-    /* Estilo para pills não selecionados */
-    [data-testid="stSidebar"] [data-testid="stPills"] button:not([aria-selected="true"]) {
-        background-color: transparent !important;
-        color: white !important;
-        border: 1px solid white !important;
-    }
-
-    /* Hover em pills */
-    [data-testid="stSidebar"] [data-testid="stPills"] button:hover {
-        filter: brightness(90%) !important;
-    }
 </style>
 """
 
-st.markdown(css_sidebar, unsafe_allow_html=True)
+st.markdown(css_pills, unsafe_allow_html=True)
+
 
 # -------------------------------
 # Funções Auxiliares
@@ -847,20 +785,28 @@ else:
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
 
-    # Usa o componente nativo st.pills
+    # Inicializar o estado para manter a seleção
+    if "dep_admin_selected" not in st.session_state:
+        st.session_state.dep_admin_selected = dependencias_disponiveis
+
+    # Usando st.pills com os parâmetros corretos
+    st.sidebar.markdown("**DEPENDENCIA ADMINISTRATIVA:**")
     dependencia_selecionada = st.sidebar.pills(
-        "DEPENDENCIA ADMINISTRATIVA:",
+        label="",  # Label vazio, pois já usamos o markdown acima
         options=dependencias_disponiveis,
-        default=dependencias_disponiveis,  # Todas selecionadas por padrão
-        selection_mode="multi",  # Permite selecionar várias opções
-        label_visibility="visible"
+        selection_mode="multi",
+        default=st.session_state.dep_admin_selected,
+        key="dependencia_admin_pills",
+        label_visibility="collapsed"  # Oculta o label
     )
+
+    st.session_state.dep_admin_selected = dependencia_selecionada
 
     # Aplicar filtro
     if dependencia_selecionada:
         df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
     else:
-        # DataFrame vazio se nenhuma opção selecionada
+        # DataFrame vazio se nenhuma opção estiver selecionada
         df_filtrado = df_filtrado[0:0]
 else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
