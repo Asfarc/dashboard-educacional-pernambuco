@@ -24,59 +24,34 @@ st.set_page_config(
 
 css_sidebar = """
 <style>
-    /* Estilo para elementos de container da sidebar */
-    [data-testid="stSidebar"] .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-    }
-
-    /* Estilo unificado para criar um único bloco azul */
-    [data-testid="stSidebar"] .stRadio,
-    [data-testid="stSidebar"] .stSelectbox,
-    [data-testid="stSidebar"] .stMultiSelect,
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] .stMarkdown p {
+    /* Criar um fundo para toda a sidebar */
+    [data-testid="stSidebar"] .css-1d391kg {
         background-color: #364b60;
-        color: white !important;
-        padding: 10px;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
+        padding: 1rem;
+        border-radius: 8px;
     }
 
-    /* Primeiro elemento com borda arredondada superior */
-    [data-testid="stSidebar"] h1:first-of-type {
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
-        padding-top: 15px;
+    /* Ou alternativamente, este seletor pode funcionar */
+    [data-testid="stSidebar"] > div:first-child > div:first-child > div:nth-child(2) {
+        background-color: #364b60;
+        border-radius: 8px;
+        margin: 1rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
     }
 
-    /* Container para os elementos da sidebar */
-    [data-testid="stSidebar"] > div {
-        background-color: white !important;
-    }
-
-    /* Elimina margens verticais entre todos os elementos */
-    [data-testid="stSidebar"] > div > div > div > div {
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-    }
-
-    /* Adiciona um pouco de espaço entre grupos funcionais, mas mantém background azul */
-    [data-testid="stSidebar"] .stSelectbox {
-        padding-top: 15px;
-        padding-bottom: 15px;
-    }
-
-    /* Cor para rótulos e textos */
+    /* Texto branco para todos os elementos na sidebar */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p {
+        color: white !important;
+    }
+
+    /* Ajustes específicos para controles */
     [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
         color: white !important;
-    }
-
-    /* Mantém os botões de rádio com a cor correta */
-    [data-testid="stSidebar"] .stRadio input,
-    [data-testid="stSidebar"] .stRadio span[role="radio"] {
-        color: #2196F3 !important;
     }
 
     /* Mantém o texto das opções em preto */
