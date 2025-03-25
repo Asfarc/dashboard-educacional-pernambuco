@@ -3,6 +3,5 @@ base="light"
 # Cor principal para elementos interativos
 primaryColor = "#e37777"
 
-# Cor usada para quase todos os textos
-textColor = "#FFFFFF"
+
 
