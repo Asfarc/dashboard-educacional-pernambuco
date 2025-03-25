@@ -31,8 +31,8 @@ css_sidebar = """
         background-color: #364b60;
         color: white !important;
         padding: 10px;
-        margin-bottom: 5px;
-        border-radius: 5px;
+        margin-bottom: 10px;
+        border-radius: 10px;
     }
 
     /* Estilo para o título da sidebar */
