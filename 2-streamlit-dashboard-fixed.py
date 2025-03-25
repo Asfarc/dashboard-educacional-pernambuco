@@ -819,13 +819,22 @@ else:
 # Filtro de Dependência Administrativa
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
-    dependencia_selecionada = st.sidebar.multiselect(
+
+    # Usa o componente nativo st.pills
+    dependencia_selecionada = st.sidebar.pills(
         "DEPENDENCIA ADMINISTRATIVA:",
-        dependencias_disponiveis,
-        default=dependencias_disponiveis
+        options=dependencias_disponiveis,
+        default=dependencias_disponiveis,  # Todas selecionadas por padrão
+        selection_mode="multi",  # Permite selecionar várias opções
+        label_visibility="visible"
     )
+
+    # Aplicar filtro
     if dependencia_selecionada:
         df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
+    else:
+        # DataFrame vazio se nenhuma opção selecionada
+        df_filtrado = df_filtrado[0:0]
 else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
