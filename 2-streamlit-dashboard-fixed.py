@@ -25,18 +25,15 @@ st.set_page_config(
 # CSS personalizado para estilizar a sidebar
 css_sidebar = """
 <style>
-    /* Estilo para a barra lateral em geral */
-    section[data-testid="stSidebar"] > div {
-        background-color: white;
-    }
-
-    /* Classe personalizada para o container dos filtros */
+    /* Estilo para o container dos filtros ocupando toda a sidebar */
     .filtros-container {
         background-color: #364b60;
-        border-radius: 8px;
         padding: 20px;
-        margin: 10px;
         color: white;
+        min-height: 100vh; /* Faz o container ocupar toda a altura */
+        width: 100%; /* Ocupa toda a largura */
+        margin: 0; /* Remove as margens */
+        border-radius: 0; /* Remove os cantos arredondados */
     }
 
     /* Estilo específico para todos os labels dentro do container de filtros */
@@ -54,13 +51,6 @@ css_sidebar = """
     .filtros-container h3 {
         color: white !important;
         margin-top: 5px;
-    }
-
-    /* Estilo para os botões e elementos interativos */
-    .filtros-container .stButton button {
-        background-color: rgba(255, 255, 255, 0.2);
-        border: 1px solid white;
-        color: white;
     }
 
     /* Mantém o texto das opções na cor original */
