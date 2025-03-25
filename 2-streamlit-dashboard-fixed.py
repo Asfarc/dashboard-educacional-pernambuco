@@ -24,24 +24,36 @@ st.set_page_config(
 
 css_sidebar = """
 <style>
-    /* Estilo para o fundo azul da área de filtros */
-    div.filtro-azul {
+    /* Estilo para todos os componentes na sidebar */
+    [data-testid="stSidebar"] .stRadio,
+    [data-testid="stSidebar"] .stSelectbox,
+    [data-testid="stSidebar"] .stMultiSelect {
         background-color: #364b60;
-        padding: 15px;
-        border-radius: 8px;
-        color: white;
-        margin: 15px 0;
+        color: white !important;
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
     }
 
-    /* Cor branca para todos os textos dentro da área azul */
-    div.filtro-azul * {
-        color: white;
+    /* Estilo para o título da sidebar */
+    [data-testid="stSidebar"] h1 {
+        background-color: #364b60;
+        color: white !important;
+        padding: 15px 10px;
+        border-radius: 5px;
+        margin-top: 10px;
     }
 
-    /* Mantém o texto das opções de seleção na cor preta */
-    div.filtro-azul select,
-    div.filtro-azul option,
-    div.filtro-azul span[data-baseweb="select"] div {
+    /* Estilo para os rótulos */
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] .stRadio label {
+        color: white !important;
+    }
+
+    /* Mantém texto de opções preto */
+    [data-testid="stSidebar"] option,
+    [data-testid="stSidebar"] select,
+    [data-testid="stSidebar"] [data-baseweb="select"] div {
         color: black !important;
     }
 </style>
@@ -717,9 +729,6 @@ except Exception as e:
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
-st.sidebar.markdown('<div class="filtro-azul">', unsafe_allow_html=True)
-st.sidebar.title("Filtros")
-
 
 # Seleção do nível de agregação
 tipo_visualizacao = st.sidebar.radio(
@@ -814,8 +823,6 @@ else:
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
-
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
