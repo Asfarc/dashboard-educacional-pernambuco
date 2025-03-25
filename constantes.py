@@ -37,7 +37,7 @@ AVISO_USANDO_MAPEAMENTO_INTERNO = "Usando mapeamento interno devido a erro: {}"
 # ==============================================
 # TÍTULOS E SUBTÍTULOS
 # ==============================================
-TITULO_DASHBOARD = "Dashboard de Matrículas - Inep"
+TITULO_DASHBOARD = "Painel de Educação GEDU1 - Dados Inep"
 TITULO_DADOS_DETALHADOS = "Dados Detalhados"
 TITULO_ESTATISTICAS = "Estatísticas"
 TITULO_TOP5 = "Top 5 Valores"
