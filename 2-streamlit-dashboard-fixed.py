@@ -1068,10 +1068,19 @@ else:
 colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
 colunas_tabela = colunas_existentes
 
-if coluna_dados in df_filtrado.columns:
+if coluna_dados and (coluna_dados in df_filtrado.columns):
+    # Verifica se a coluna está presente nas colunas da tabela
+    if coluna_dados not in colunas_tabela:
+        colunas_tabela.append(coluna_dados)  # Adiciona se faltar
+
+    # Cria a tabela de dados e converte para numérico
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
-        df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
+        if coluna_dados in df_filtrado_tabela.columns:  # Verificação extra
+            df_filtrado_tabela[coluna_dados] = pd.to_numeric(
+                df_filtrado_tabela[coluna_dados],
+                errors='coerce'
+            )
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
