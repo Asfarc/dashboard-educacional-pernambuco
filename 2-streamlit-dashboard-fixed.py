@@ -315,6 +315,10 @@ def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
 
     # Configurar grid sem linha de totais
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
+
+    # Suas configurações de grid existentes...
+    # (incluir configurações de locale, colunas, etc.)
+
     # Configurações para a barra de status personalizada
     js_agg_functions = JsCode(f"""
     function(params) {{
@@ -383,6 +387,7 @@ def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
         df_para_exibir,
         gridOptions=grid_options,
         height=altura,
+        # Suas configurações existentes...
     )
 
     # Retornar o resultado do grid e as estatísticas
@@ -563,7 +568,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                       average="Média", count="Contagem")
 
     gb.configure_default_column(
-        groupable=False,
+        groupable=True,
         editable=False,
         wrapText=True,
         autoHeight=False,
@@ -685,8 +690,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 "applyButton": True,
                 "clearButton": True
             },
-            #aggFunc="sum",
-            #enableValue=True,
+            aggFunc="sum",
+            enableValue=True,
             cellClass="numeric-cell"
         )
 
