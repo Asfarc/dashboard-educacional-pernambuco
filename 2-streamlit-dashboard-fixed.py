@@ -304,62 +304,67 @@ def verificar_coluna_existe(df, coluna_nome):
 
 def adicionar_linha_totais(df, coluna_dados):
     """
-    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados,
-    com tratamento melhorado e identificação para estilização.
+    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
+    Versão corrigida que não adiciona coluna extra e formata números corretamente.
     """
     if df.empty:
         return df
 
-    # Verificar se já existe uma linha de totais
-    if 'TOTAL' in df.index or df.apply(lambda x: x.astype(str).str.contains('TOTAL').any(), axis=1).any():
+    # Verificar se já existe uma linha de totais para evitar duplicação
+    if 'TOTAL' in df.index or (df.iloc[:, 0] == 'TOTAL').any():
         return df
 
-    # Criar dicionário de totais com strings vazias
-    totais = {col: "" for col in df.columns}
+    # Criar um dicionário para a linha de totais (inicialmente vazio)
+    totais = {}
+    for col in df.columns:
+        totais[col] = ""
 
     # Definir "TOTAL" na primeira coluna
     if len(df.columns) > 0:
         totais[df.columns[0]] = "TOTAL"
 
-    # Calcular total para a coluna de dados
+    # Calcular o total apenas para a coluna de dados especificada
     if coluna_dados in df.columns:
         try:
-            total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
-            totais[coluna_dados] = total
+            # Converter para numérico, ignorando valores não numéricos
+            valores = pd.to_numeric(df[coluna_dados], errors='coerce')
+            # Calcular o total
+            valor_total = valores.sum()
+
+            # Formatar o número como string com separadores de milhar
+            # usando a função de formatação existente
+            totais[coluna_dados] = valor_total  # Guardar como número para formatação posterior
         except Exception as e:
             print(f"Erro ao calcular total para {coluna_dados}: {e}")
             totais[coluna_dados] = ""
 
-    # Processar outras colunas numéricas automaticamente
-    for col in df.columns:
-        if col != coluna_dados and col not in [df.columns[0]]:
-            try:
-                # Tenta converter para numérico e verificar se há valores
-                valores = pd.to_numeric(df[col], errors='coerce')
-                if valores.notna().any() and not any(palavra in col.upper() for palavra in ['CODIGO', 'ID']):
-                    totais[col] = valores.sum()
-            except:
-                pass
-
-    # Tratamento para coluna de percentual
+    # Tratar a coluna % do Total, se existir
     if '% do Total' in df.columns:
         totais['% do Total'] = 100.0
 
-    # Adicionar coluna marcadora para identificação no AG Grid
-    totais['_is_total_row'] = True
-
-    # Garantir que o DataFrame original também tenha a coluna marcadora
-    df_com_marcador = df.copy()
-    df_com_marcador['_is_total_row'] = False
-
-    # Criar DataFrame para a linha de totais
-    linha_totais = pd.DataFrame([totais])
+    # Criar DataFrame com a linha de totais
+    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
 
     # Concatenar com o DataFrame original
-    resultado = pd.concat([df_com_marcador, linha_totais], ignore_index=True)
+    resultado = pd.concat([df, linha_totais])
+
+    # Formatar os valores numéricos depois da concatenação
+    with pd.option_context('mode.chained_assignment', None):
+        if coluna_dados in resultado.columns:
+            # Manter os valores originais (não formatados) para todas as linhas exceto a última
+            resultado.loc[resultado.index != 'TOTAL', coluna_dados] = df[coluna_dados]
+
+            # Formatar apenas o valor da linha TOTAL usando a função de formatação existente
+            if isinstance(resultado.index, pd.MultiIndex):
+                idx = resultado.index.get_level_values(0) == 'TOTAL'
+            else:
+                idx = resultado.index == 'TOTAL'
+
+            if idx.any() and pd.notnull(resultado.loc[idx, coluna_dados].iloc[0]):
+                valor = resultado.loc[idx, coluna_dados].iloc[0]
+                resultado.loc[idx, coluna_dados] = formatar_numero(valor)
 
     return resultado
-
 
 # Adicione esta função para configurar a exibição da linha de totais no AG Grid
 def configurar_estilo_linha_totais(gb, coluna_dados):
