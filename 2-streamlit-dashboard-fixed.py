@@ -419,19 +419,18 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             type=["numericColumn", "numberColumnFilter"],
             filter="agNumberColumnFilter",
             filterParams={"inRangeInclusive": True, "applyButton": True, "clearButton": True},
-            aggFunc="sum",  # Mantenha apenas aqui
+            aggFunc="sum",  # Habilita a soma automática
             enableValue=True,
             cellClass="numeric-cell"
         )
 
     # Configurar a linha de total global
     gb.configure_grid_options(
-        pivotMode=True,  # <--- ADICIONE ESTA LINHA
-        groupIncludeTotalRow=True,
+        groupIncludeTotalRow=True,    # Ativa totais
         groupDisplayType="singleColumn",
         suppressAggFuncInHeader=True,
         autoGroupColumnDef={
-            "headerName": "TOTAL",
+            "headerName": "TOTAL",  # Nome da linha de total
             "cellRendererParams": {"suppressCount": True}
         }
     )
@@ -620,6 +619,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
         localeText=localeText
     )
+
 
     # Otimizações para grandes datasets
     if is_large_dataset:
@@ -1035,7 +1035,6 @@ colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
 
-# Definir colunas adicionais com base no nível de agregação
 if tipo_visualizacao == "Escola":
     colunas_adicionais = [
         "CODIGO DA ESCOLA",
@@ -1061,35 +1060,18 @@ else:
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
-# --- ADICIONE A PARTE CRÍTICA AQUI (PARA TODOS OS NÍVEIS) ---
-# 1. Garante que a coluna_dados está na lista de colunas
-if coluna_dados and (coluna_dados not in colunas_adicionais):
-    colunas_adicionais.append(coluna_dados)
-
-# 2. Adiciona colunas à lista principal (apenas se existirem no DataFrame)
-for col in colunas_adicionais:
-    if col in df_filtrado.columns:
-        colunas_tabela.append(col)
-
-# 3. Converte coluna_dados para numérico (APÓS incluir na lista)
-if coluna_dados and (coluna_dados in df_filtrado.columns):
     df_filtrado[coluna_dados] = pd.to_numeric(
         df_filtrado[coluna_dados],
-        errors='coerce'
+        errors='coerce'  # Converte valores inválidos para NaN
     )
 
-# 4. Filtra colunas existentes
 colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
 colunas_tabela = colunas_existentes
 
-# Preparar dados para exibição
 if coluna_dados in df_filtrado.columns:
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
-        df_filtrado_tabela[coluna_dados] = pd.to_numeric(
-            df_filtrado_tabela[coluna_dados],
-            errors='coerce'
-        )
+        df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
