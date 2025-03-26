@@ -109,7 +109,7 @@ css_pills = """
         border-radius: 1px !important;  /* Adicionando esta linha */
         /* etc. */
     }
-    
+
     /* Caso precise estilizar o <p> lá dentro (texto em si) */
     button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
         color: white !important;
@@ -119,6 +119,8 @@ css_pills = """
 """
 
 st.markdown(css_pills, unsafe_allow_html=True)
+
+
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
@@ -137,6 +139,7 @@ def formatar_numero(numero):
             return f"{float(numero):,.2f}".replace(",", ".")
         except (ValueError, TypeError):
             return str(numero)
+
 
 @st.cache_data
 def carregar_dados():
@@ -182,6 +185,7 @@ def carregar_dados():
         st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
 
+
 @st.cache_data
 def carregar_mapeamento_colunas():
     """
@@ -203,6 +207,7 @@ def carregar_mapeamento_colunas():
     except Exception as e:
         st.error(f"Erro ao carregar o mapeamento de colunas: {e}")
         st.stop()  # Para a execução se não conseguir carregar o arquivo
+
 
 def criar_mapeamento_colunas(df):
     """
@@ -253,6 +258,7 @@ def criar_mapeamento_colunas(df):
 
     return mapeamento_ajustado
 
+
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     """
     Determina a coluna de dados com base na etapa, subetapa e série selecionadas.
@@ -283,6 +289,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     # Caso 3: Série específica selecionada
     return series_subetapa[serie]
 
+
 def verificar_coluna_existe(df, coluna_nome):
     """
     Verifica se uma coluna existe no DataFrame (exato ou case-insensitive).
@@ -302,193 +309,36 @@ def verificar_coluna_existe(df, coluna_nome):
     return False, coluna_nome
 
 
-# Solução 2: Remover totais da tabela e mostrar como estatísticas externas
-
-def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
+def adicionar_linha_totais(df, coluna_dados):
     """
-    Exibe tabela sem linha de totais e mostra estatísticas em um componente separado.
+    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
     """
-    # Verificar se há dados para exibir
-    if df_para_exibir is None or df_para_exibir.empty:
-        st.warning("Não há dados para exibir na tabela.")
-        return {"data": pd.DataFrame()}, None
+    if df.empty:
+        return df
 
-    # Configurar grid sem linha de totais
-    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
+    if 'TOTAL' in df.index or (df.iloc[:, 0] == 'TOTAL').any():
+        return df
 
-    # Suas configurações de grid existentes...
-    # (incluir configurações de locale, colunas, etc.)
+    totais = {}
+    for col in df.columns:
+        totais[col] = ""
 
-    # Configurações para a barra de status personalizada
-    js_agg_functions = JsCode(f"""
-    function(params) {{
-        try {{
-            const dataColumn = "{coluna_dados if coluna_dados else ''}";
-            if (!dataColumn) return 'Coluna de dados não definida';
+    if len(df.columns) > 0:
+        totais[df.columns[0]] = "TOTAL"
 
-            const values = [];
-            let totalSum = 0;
-            let count = 0;
+    if coluna_dados in df.columns:
+        try:
+            valor_total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
+            totais[coluna_dados] = valor_total
+        except:
+            totais[coluna_dados] = ""
 
-            params.api.forEachNodeAfterFilter(node => {{
-                if (!node.data) return;
+    if '% do Total' in df.columns:
+        totais['% do Total'] = 100.0
 
-                const cellValue = node.data[dataColumn];
-                if (cellValue !== null && cellValue !== undefined) {{
-                    const numValue = Number(cellValue.toString().replace(/[^0-9.,]/g, '').replace(',', '.'));
-                    if (!isNaN(numValue)) {{
-                        values.push(numValue);
-                        totalSum += numValue;
-                        count++;
-                    }}
-                }}
-            }});
+    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
+    return pd.concat([df, linha_totais])
 
-            const formatNum = function(num) {{
-                return new Intl.NumberFormat('pt-BR').format(num);
-            }};
-
-            if (values.length === 0) {{
-                return 'Não há dados numéricos';
-            }}
-
-            const avg = totalSum / count;
-            values.sort((a, b) => a - b);
-            const min = values[0];
-            const max = values[values.length - 1];
-
-            return `Total: ${{formatNum(totalSum)}} | Média: ${{formatNum(avg)}} | Mín: ${{formatNum(min)}} | Máx: ${{formatNum(max)}}`;
-        }} catch (error) {{
-            console.error('Erro ao calcular estatísticas:', error);
-            return 'Erro ao calcular estatísticas';
-        }}
-    }}
-    """)
-
-    # Barra de status personalizada
-    gb.configure_grid_options(
-        statusBar={
-            'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'left'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'left'},
-                {
-                    'statusPanel': 'agCustomStatsToolPanel',
-                    'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions.js_code
-                    }
-                }
-            ]
-        }
-    )
-
-    # Construir e renderizar o grid
-    grid_options = gb.build()
-    grid_return = AgGrid(
-        df_para_exibir,
-        gridOptions=grid_options,
-        height=altura,
-        # Suas configurações existentes...
-    )
-
-    # Retornar o resultado do grid e as estatísticas
-    return grid_return
-
-# Adicione esta função para configurar a exibição da linha de totais no AG Grid
-def configurar_estilo_linha_totais(gb, coluna_dados):
-    """
-    Configura o AG Grid para destacar visualmente a linha de totais.
-    """
-    # CSS para destacar a linha de totais
-    css_totais = """
-    <style>
-        .ag-row.total-row {
-            font-weight: bold !important;
-            background-color: #f0f5ff !important;
-            border-top: 2px solid #aaa !important;
-            border-bottom: 2px solid #aaa !important;
-        }
-
-        .ag-row.total-row .ag-cell {
-            color: #000066 !important;
-        }
-
-        .ag-theme-streamlit .total-cell {
-            font-weight: bold !important;
-        }
-
-        /* Destaque para o valor total principal */
-        .ag-row.total-row [col-id="{}"] {{
-            font-weight: bold !important;
-            color: #000066 !important;
-            background-color: #e6f0ff !important;
-        }}
-    </style>
-    """.format(coluna_dados)
-
-    st.markdown(css_totais, unsafe_allow_html=True)
-
-    # Configurar classe de linha baseada na coluna marcadora
-    js_row_class = JsCode("""
-    function(params) {
-        if (!params.data) return '';
-        if (params.data._is_total_row === true) return 'total-row';
-        for (const key in params.data) {
-            if (params.data[key] && 
-                params.data[key].toString && 
-                params.data[key].toString().toUpperCase() === 'TOTAL') {
-                return 'total-row';
-            }
-        }
-        return '';
-    }
-    """)
-
-    # Configurar classe de célula para destacar valores
-    js_cell_style = JsCode("""
-    function(params) {
-        if (!params.node || !params.data) return null;
-
-        // Verifica se é a linha de totais
-        let isTotalRow = false;
-        if (params.data._is_total_row === true) {
-            isTotalRow = true;
-        } else {
-            for (const key in params.data) {
-                if (params.data[key] && 
-                    params.data[key].toString && 
-                    params.data[key].toString().toUpperCase() === 'TOTAL') {
-                    isTotalRow = true;
-                    break;
-                }
-            }
-        }
-
-        if (isTotalRow) {
-            if (params.column.colId === '""" + coluna_dados + """') {
-                return {
-                    'font-weight': 'bold',
-                    'color': '#000066',
-                    'background-color': '#e6f0ff'
-                };
-            }
-            return {
-                'font-weight': 'bold'
-            };
-        }
-        return null;
-    }
-    """)
-
-    # Aplicar configurações ao grid
-    gb.configure_grid_options(
-        getRowClass=js_row_class,
-        getRowStyle=js_cell_style
-    )
-
-    # Ocultar a coluna marcadora
-    gb.configure_column('_is_total_row', hide=True)
-
-    return gb
 
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
@@ -515,6 +365,7 @@ def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao
 
     return tabela_dados, tabela_exibicao
 
+
 def converter_df_para_csv(df):
     """
     Converte DataFrame para CSV, retorna bytes.
@@ -526,6 +377,7 @@ def converter_df_para_csv(df):
     except Exception as e:
         st.error(f"Erro ao converter para CSV: {str(e)}")
         return "Erro na conversão".encode('utf-8')
+
 
 def converter_df_para_excel(df):
     """
@@ -546,6 +398,7 @@ def converter_df_para_excel(df):
         output = io.BytesIO()
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
+
 
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """
@@ -984,7 +837,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     """
     st.markdown(js_fix_headers, unsafe_allow_html=True)
 
-    # Exibir mensagem informativa se há filtros aplicados
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
         st.info(
@@ -992,8 +844,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             f"de {formatar_numero(len(df_para_exibir))} registros."
         )
 
-    # Retornar resultado do grid e estatísticas
     return grid_return
+
 
 # -------------------------------
 # Carregamento de Dados
@@ -1084,7 +936,6 @@ if (subetapa_selecionada != "Todas"
     )
 else:
     serie_selecionada = "Todas"
-
 
 # Filtro de Dependência Administrativa
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
@@ -1259,22 +1110,23 @@ else:
     tabela_dados = df_filtrado[colunas_existentes].copy()
     tabela_exibicao = tabela_dados.copy()
 
-# Preparar a tabela para exibição (sem adicionar linha de totais)
+# Preparar a tabela para exibição imediata
 tabela_filtrada = tabela_exibicao.copy()
 
-# Exibir a tabela sem linha de totais e obter estatísticas
-altura_tabela = 600  # Altura padrão fixa
-
-
+# Adicionar linha de totais
 try:
-    # Substituição da função de exibição da tabela
-    grid_result = exibir_tabela_sem_totais(tabela_filtrada, coluna_dados, altura=altura_tabela)
-
-    # Dados filtrados disponíveis para uso posterior, se necessário
-    dados_filtrados = grid_result['data']
+    tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
 except Exception as e:
-    st.error(f"Erro ao exibir tabela e estatísticas: {str(e)}")
-    st.dataframe(tabela_filtrada, height=altura_tabela)
+    st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
+    tabela_com_totais = tabela_filtrada
+
+# Exibir a tabela imediatamente
+altura_tabela = 600  # Altura padrão fixa
+try:
+    grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
+except Exception as e:
+    st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
+    st.dataframe(tabela_com_totais, height=altura_tabela)
 
 # Mostrar configurações APÓS a tabela
 tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
@@ -1287,10 +1139,10 @@ with tab1:
         altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
             altura_manual = st.slider("Altura da tabela (pixels)",
-                                    min_value=200,
-                                    max_value=1000,
-                                    value=600,
-                                    step=50)
+                                      min_value=200,
+                                      max_value=1000,
+                                      value=600,
+                                      step=50)
         else:
             altura_manual = 600
 
@@ -1339,15 +1191,20 @@ with tab1:
 
     tabela_filtrada = tabela_exibicao.copy()
 
-    # Lógica para conjuntos grandes
     if len(tabela_exibicao) > 1000:
         col_filtrar = st.columns([1])[0]
         with col_filtrar:
             aplicar_filtros = st.button("Aplicar Filtros", type="primary")
-        if not aplicar_filtros:
-            st.info("Clique em 'Aplicar Filtros' para visualizar os dados.")
-            # Interrompe o processamento para não exibir dados ainda
-            st.stop()
+        mostrar_dica = True
+    else:
+        aplicar_filtros = True
+        mostrar_dica = False
+
+    try:
+        tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+    except Exception as e:
+        st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
+        tabela_com_totais = tabela_filtrada
 
     altura_tabela = altura_manual
 
