@@ -308,36 +308,6 @@ def verificar_coluna_existe(df, coluna_nome):
 
     return False, coluna_nome
 
-def adicionar_linha_totais(df, coluna_dados):
-    """
-    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
-    """
-    if df.empty:
-        return df
-
-    if 'TOTAL' in df.index or (df.iloc[:, 0] == 'TOTAL').any():
-        return df
-
-    totais = {}
-    for col in df.columns:
-        totais[col] = ""
-
-    if len(df.columns) > 0:
-        totais[df.columns[0]] = "TOTAL"
-
-    if coluna_dados in df.columns:
-        try:
-            valor_total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
-            totais[coluna_dados] = valor_total
-        except:
-            totais[coluna_dados] = ""
-
-    if '% do Total' in df.columns:
-        totais['% do Total'] = 100.0
-
-    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
-    return pd.concat([df, linha_totais])
-
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
     Ordena df_base pela coluna_ordenacao e formata colunas numéricas.
@@ -1113,10 +1083,9 @@ tabela_filtrada = tabela_exibicao.copy()
 
 # Adicionar linha de totais
 try:
-    tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+    tabela_com_totais = tabela_filtrada
 except Exception as e:
     st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
-    tabela_com_totais = tabela_filtrada
 
 # Exibir a tabela imediatamente
 altura_tabela = 600  # Altura padrão fixa
@@ -1199,10 +1168,9 @@ with tab1:
         mostrar_dica = False
 
     try:
-        tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+        tabela_com_totais = tabela_filtrada
     except Exception as e:
         st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
-        tabela_com_totais = tabela_filtrada
 
     altura_tabela = altura_manual
 
