@@ -106,7 +106,7 @@ css_pills = """
         background-color: #e37777 !important; 
         color: white !important;          
         border: none !important;
-        border-radius: 1px !important;  /* Adicionando esta linha */
+        border-radius: 1px !important;
         /* etc. */
     }
 
@@ -120,25 +120,31 @@ css_pills = """
 
 st.markdown(css_pills, unsafe_allow_html=True)
 
-
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
 def formatar_numero(numero):
     """
-    Formata números grandes adicionando separadores de milhar.
+    Formata números grandes adicionando separadores de milhar em padrão BR:
+    Ex.: 1234567 -> '1.234.567'
+         1234.56 -> '1.234,56'
     Se o número for NaN ou '-', retorna '-'.
     """
     if pd.isna(numero) or numero == "-":
         return "-"
     try:
-        return f"{int(numero):,}".replace(",", ".")
+        # Exibe sem casas decimais se for inteiro
+        if float(numero).is_integer():
+            return f"{int(numero):,}".replace(",", ".")
+        else:
+            # 2 casas decimais
+            parte_inteira = int(float(numero))
+            parte_decimal = abs(float(numero) - parte_inteira)
+            inteiro_fmt = f"{parte_inteira:,}".replace(",", ".")
+            decimal_fmt = f"{parte_decimal:.2f}".replace("0.", "").replace(".", ",")
+            return f"{inteiro_fmt},{decimal_fmt}"
     except (ValueError, TypeError):
-        # Se não conseguir converter para inteiro, tenta formatar como float
-        try:
-            return f"{float(numero):,.2f}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(numero)
+        return str(numero)
 
 
 @st.cache_data
@@ -150,14 +156,9 @@ def carregar_dados():
     Em caso de erro, exibe uma mensagem e interrompe a execução.
     """
     try:
-        # Definir possíveis localizações dos arquivos
         diretorios_possiveis = [".", "data", "dados", os.path.join(os.path.dirname(__file__), "data")]
 
-        # Tentar encontrar os arquivos em diferentes localizações
-        escolas_df = None
-        estado_df = None
-        municipio_df = None
-
+        escolas_df = estado_df = municipio_df = None
         for diretorio in diretorios_possiveis:
             escolas_path = os.path.join(diretorio, "escolas.parquet")
             estado_path = os.path.join(diretorio, "estado.parquet")
@@ -172,7 +173,6 @@ def carregar_dados():
         if escolas_df is None or estado_df is None or municipio_df is None:
             raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
 
-        # Converter colunas numéricas para o tipo correto
         for df_ in [escolas_df, estado_df, municipio_df]:
             for col in df_.columns:
                 if col.startswith("Número de"):
@@ -192,7 +192,6 @@ def carregar_mapeamento_colunas():
     Carrega o mapeamento de colunas a partir do arquivo JSON.
     """
     try:
-        # Definir possíveis localizações do arquivo
         diretorios_possiveis = [".", "data", "dados", os.path.join(os.path.dirname(__file__), "data")]
 
         for diretorio in diretorios_possiveis:
@@ -201,43 +200,27 @@ def carregar_mapeamento_colunas():
                 with open(json_path, "r", encoding="utf-8") as f:
                     return json.load(f)
 
-        # Se não encontrou o arquivo em nenhum local
         raise FileNotFoundError("Arquivo mapeamento_colunas.json não encontrado")
 
     except Exception as e:
         st.error(f"Erro ao carregar o mapeamento de colunas: {e}")
-        st.stop()  # Para a execução se não conseguir carregar o arquivo
+        st.stop()
 
 
 def criar_mapeamento_colunas(df):
-    """
-    Cria um dicionário que mapeia as etapas de ensino para os nomes das colunas.
-    Esse mapeamento inclui a coluna principal, subetapas e séries, facilitando a seleção
-    dos dados conforme os filtros do usuário.
-    """
-    # Criar mapeamento de colunas (case-insensitive) apenas uma vez
     colunas_map = {col.lower().strip(): col for col in df.columns}
 
     def obter_coluna_real(nome_padrao):
-        # Verifica se a coluna existe exatamente como foi especificada
         if nome_padrao in df.columns:
             return nome_padrao
-
-        # Verifica se existe uma versão case-insensitive da coluna
         nome_normalizado = nome_padrao.lower().strip()
         if nome_normalizado in colunas_map:
             return colunas_map[nome_normalizado]
-
-        # Se não encontrar, retorna o nome original
         return nome_padrao
 
-    # Carrega o mapeamento do arquivo JSON (se falhar, st.stop() será chamado)
     mapeamento_base = carregar_mapeamento_colunas()
-
-    # Ajusta os nomes das colunas
     mapeamento_ajustado = {}
 
-    # Para cada etapa no mapeamento base
     for etapa, config in mapeamento_base.items():
         mapeamento_ajustado[etapa] = {
             "coluna_principal": obter_coluna_real(config.get("coluna_principal", "")),
@@ -245,11 +228,9 @@ def criar_mapeamento_colunas(df):
             "series": {}
         }
 
-        # Ajusta subetapas
         for subetapa, coluna in config.get("subetapas", {}).items():
             mapeamento_ajustado[etapa]["subetapas"][subetapa] = obter_coluna_real(coluna)
 
-        # Ajusta séries
         for sub, series_dict in config.get("series", {}).items():
             if sub not in mapeamento_ajustado[etapa]["series"]:
                 mapeamento_ajustado[etapa]["series"][sub] = {}
@@ -260,85 +241,41 @@ def criar_mapeamento_colunas(df):
 
 
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
-    """
-    Determina a coluna de dados com base na etapa, subetapa e série selecionadas.
-    """
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
         return ""
 
-    # Caso 1: Nenhuma subetapa selecionada, usa coluna principal da etapa
     if subetapa == "Todas":
         return mapeamento[etapa].get("coluna_principal", "")
 
-    # Verificar se a subetapa existe
     if "subetapas" not in mapeamento[etapa] or subetapa not in mapeamento[etapa]["subetapas"]:
         st.warning(ERRO_SUBETAPA_NAO_ENCONTRADA.format(subetapa, etapa))
         return mapeamento[etapa].get("coluna_principal", "")
 
-    # Caso 2: Nenhuma série específica selecionada, usa coluna da subetapa
     if serie == "Todas":
         return mapeamento[etapa]["subetapas"][subetapa]
 
-    # Verificar se a subetapa tem séries e se a série selecionada existe
     series_subetapa = mapeamento[etapa].get("series", {}).get(subetapa, {})
     if not series_subetapa or serie not in series_subetapa:
         st.warning(ERRO_SERIE_NAO_ENCONTRADA.format(serie, subetapa))
         return mapeamento[etapa]["subetapas"][subetapa]
 
-    # Caso 3: Série específica selecionada
     return series_subetapa[serie]
 
 
 def verificar_coluna_existe(df, coluna_nome):
-    """
-    Verifica se uma coluna existe no DataFrame (exato ou case-insensitive).
-    Retorna (coluna_existe, coluna_real).
-    """
     if not coluna_nome:
         return False, ""
-
     if coluna_nome in df.columns:
         return True, coluna_nome
-
     coluna_normalizada = coluna_nome.lower().strip()
     colunas_normalizadas = {col.lower().strip(): col for col in df.columns}
     if coluna_normalizada in colunas_normalizadas:
         return True, colunas_normalizadas[coluna_normalizada]
-
     return False, coluna_nome
 
 
-def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
-    """
-    Ordena df_base pela coluna_ordenacao e formata colunas numéricas.
-    Retorna (tabela_dados, tabela_exibicao).
-    """
-    colunas_existentes = [c for c in colunas_para_exibir if c in df_base.columns]
-    tabela_dados = df_base[colunas_existentes]
-
-    if coluna_ordenacao in tabela_dados.columns:
-        tabela_dados = tabela_dados.sort_values(by=coluna_ordenacao, ascending=False)
-
-    tabela_exibicao = tabela_dados.copy()
-
-    with pd.option_context('mode.chained_assignment', None):
-        if coluna_ordenacao in tabela_exibicao.columns:
-            tabela_exibicao[coluna_ordenacao] = tabela_exibicao[coluna_ordenacao].apply(
-                lambda x: formatar_numero(x) if pd.notnull(x) else "-"
-            )
-        if '% do Total' in tabela_exibicao.columns:
-            tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
-                lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
-            )
-
-    return tabela_dados, tabela_exibicao
-
-
 def converter_df_para_csv(df):
-    """
-    Converte DataFrame para CSV, retorna bytes.
-    """
     if df is None or df.empty:
         return "Não há dados para exportar.".encode('utf-8')
     try:
@@ -349,9 +286,6 @@ def converter_df_para_csv(df):
 
 
 def converter_df_para_excel(df):
-    """
-    Converte DataFrame para Excel, retorna bytes.
-    """
     if df is None or df.empty:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -371,9 +305,9 @@ def converter_df_para_excel(df):
 
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom"):
     """
-    Exibe DataFrame no AgGrid com paginação, barra de status e seleções de célula.
-    Também configura opcionalmente uma linha de totais fixada no topo ou rodapé,
-    de acordo com o parâmetro posicao_totais (“top”, “bottom” ou None).
+    Exibe DataFrame no AgGrid, com opções de:
+      - paginacão, range selection, status bar
+      - linha de totais fixada no topo ou rodapé (pinned row), se posicao_totais != None
     """
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
@@ -389,56 +323,34 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         )
         mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
         if not mostrar_tudo:
-            tem_total = False
-            total_rows = []
-
-            for col in df_para_exibir.columns:
-                mask = df_para_exibir[col].astype(str).str.contains('TOTAL', case=False, na=False)
-                if mask.any():
-                    total_indices = df_para_exibir.index[mask]
-                    total_rows.extend(total_indices.tolist())
-                    tem_total = True
-
-            if isinstance(df_para_exibir.index, pd.Index):
-                mask = df_para_exibir.index.astype(str).str.contains('TOTAL', case=False, na=False)
-                if mask.any():
-                    total_indices = df_para_exibir.index[mask]
-                    total_rows.extend(total_indices.tolist())
-                    tem_total = True
-
             indices_para_manter = df_para_exibir.index[:5000].tolist()
-            if tem_total:
-                total_rows = list(dict.fromkeys(total_rows))
-                indices_para_manter.extend(total_rows)
             df_para_exibir = df_para_exibir.loc[indices_para_manter]
             st.info("Mostrando amostra de 5.000 registros (de um total maior)")
 
+    # ----
+    # JS p/ calcular soma, média, min e max e exibir na status bar
+    # Corrigido: removemos as substituições que estragavam a formatação.
+    # ----
     js_agg_functions = JsCode(f"""
     function(params) {{
         try {{
             const dataColumn = "{coluna_dados if coluna_dados else ''}";
             if (!dataColumn) return 'Coluna de dados não definida';
 
-            const values = [];
+            let values = [];
             let totalSum = 0;
             let count = 0;
 
             params.api.forEachNodeAfterFilter(node => {{
                 if (!node.data) return;
-
-                let isTotal = false;
-                for (const key in node.data) {{
-                    if (node.data[key] && 
-                        node.data[key].toString().toUpperCase().includes('TOTAL')) {{
-                        isTotal = true;
-                        break;
-                    }}
-                }}
-                if (isTotal) return;
-
                 const cellValue = node.data[dataColumn];
                 if (cellValue !== null && cellValue !== undefined) {{
-                    const numValue = Number(cellValue.toString().replace(/[^0-9.,]/g, '').replace(',', '.'));
+                    // Tentar converter p/ número
+                    const numValue = parseFloat(
+                      (""+cellValue)
+                        .replaceAll('.', '')     // remove milhares
+                        .replaceAll(',', '.')   // troca vírgula decimal por ponto
+                    );
                     if (!isNaN(numValue)) {{
                         values.push(numValue);
                         totalSum += numValue;
@@ -446,21 +358,21 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     }}
                 }}
             }});
-            const formatNum = function(num) {{
-                let formatted = new Intl.NumberFormat('pt-BR', {{ maximumFractionDigits: 2 }}).format(num);
-                formatted = formatted.replace(/\\./g, '_');
-                formatted = formatted.replace(/,/g, '.');
-                formatted = formatted.replace(/_/g, '.');
-                return formatted;
-            }};
+
             if (values.length === 0) {{
-                return 'Não há dados numéricos';
+                return 'Não há dados';
             }}
+
             const avg = totalSum / count;
-            values.sort((a, b) => a - b);
-            const min = values[0];
-            const max = values[values.length - 1];
-            return `Total: ${{formatNum(totalSum)}} | Média: ${{formatNum(avg)}} | Mín: ${{formatNum(min)}} | Máx: ${{formatNum(max)}}`;
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+
+            // Agora formatamos no padrão PT-BR
+            const formatBR = num => new Intl.NumberFormat('pt-BR', {{ maximumFractionDigits: 2 }}).format(num);
+            return 'Total: ' + formatBR(totalSum)
+                 + ' | Média: ' + formatBR(avg)
+                 + ' | Mín: ' + formatBR(min)
+                 + ' | Máx: ' + formatBR(max);
         }} catch (error) {{
             console.error('Erro ao calcular estatísticas:', error);
             return 'Erro ao calcular estatísticas';
@@ -551,188 +463,48 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         autoHeaderHeight=True
     )
 
-    # Configuração otimizada para colunas específicas
-    if "ANO" in df_para_exibir.columns:
-        gb.configure_column(
-            "ANO",
-            width=80,
-            maxWidth=80,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "CODIGO DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column(
-            "CODIGO DO MUNICIPIO",
-            width=160,
-            maxWidth=160,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "NOME DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column(
-            "NOME DO MUNICIPIO",
-            width=220,
-            maxWidth=220,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "CODIGO DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column(
-            "CODIGO DA ESCOLA",
-            width=140,
-            maxWidth=140,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "NOME DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column(
-            "NOME DA ESCOLA",
-            width=150,
-            maxWidth=150,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
-        gb.configure_column(
-            "DEPENDENCIA ADMINISTRATIVA",
-            width=180,
-            maxWidth=180,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "CODIGO DA UF" in df_para_exibir.columns:
-        gb.configure_column(
-            "CODIGO DA UF",
-            width=100,
-            maxWidth=100,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    if "NOME DA UF" in df_para_exibir.columns:
-        gb.configure_column(
-            "NOME DA UF",
-            width=120,
-            maxWidth=120,
-            suppressSizeToFit=True,
-            wrapText=False,
-            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-            headerWrapText=True
-        )
-
-    # Determinar qual coluna de nome deve mostrar "TOTAL"
-    coluna_nome_principal = None
-    if "NOME DA ESCOLA" in df_para_exibir.columns:
-        coluna_nome_principal = "NOME DA ESCOLA"
-    elif "NOME DO MUNICIPIO" in df_para_exibir.columns:
-        coluna_nome_principal = "NOME DO MUNICIPIO"
-    elif "NOME DA UF" in df_para_exibir.columns:
-        coluna_nome_principal = "NOME DA UF"
-
-    # Configurar colunas para controle da linha de totais
-    colunas_sem_totais = [
-        "ANO",
-        "CODIGO DA ESCOLA",
-        "NOME DA ESCOLA",
-        "CODIGO DO MUNICIPIO",
-        "NOME DO MUNICIPIO",
-        "CODIGO DA UF",
-        "NOME DA UF"
-    ]
-
-    for coluna in df_para_exibir.columns:
-        if coluna in colunas_sem_totais:
-            if coluna == coluna_nome_principal:
-                gb.configure_column(
-                    coluna,
-                    aggFunc=None,
-                    cellRenderer=JsCode("""
-                    function(params) {
-                        if (params.node && params.node.rowPinned) {
-                            return '<b>TOTAL</b>';
-                        }
-                        return params.value;
-                    }
-                    """).js_code
-                )
-            else:
-                gb.configure_column(coluna, aggFunc=None)
-        elif coluna == "DEPENDENCIA ADMINISTRATIVA":
-            gb.configure_column(
-                coluna,
-                aggFunc=None,
-                cellRenderer=JsCode("""
-                function(params) {
-                    if (params.node && params.node.rowPinned) {
-                        return '<b>TODAS</b>';
-                    }
-                    return params.value;
-                }
-                """).js_code
-            )
-        elif coluna == coluna_dados or coluna.startswith("Número de"):
-            # Apenas somar a coluna de matrículas e colunas que começam com "Número de"
-            gb.configure_column(
-                coluna,
-                type=["numericColumn", "numberColumnFilter"],
-                filter="agNumberColumnFilter",
-                aggFunc="sum",
-                valueFormatter=JsCode("""
-                function(params) {
-                    if (params.value == null) return '';
-                    return new Intl.NumberFormat('pt-BR').format(params.value);
-                }
-                """).js_code
-            )
-        elif df_para_exibir[coluna].dtype.kind in 'ifc':
-            gb.configure_column(
-                coluna,
-                type=["numericColumn", "numberColumnFilter"],
-                filter="agNumberColumnFilter",
-                aggFunc="sum",
-                valueFormatter=JsCode("""
-                function(params) {
-                    if (params.value == null) return '';
-                    return new Intl.NumberFormat('pt-BR').format(params.value);
-                }
-                """).js_code
-            )
-
-    js_estilo_linha_totais = JsCode("""
-    function(params) {
-        // Verifique se é uma linha pinnada (total)
-        if (params.node && params.node.rowPinned) {
-            return {
-                'background-color': '#f0f2f7',
-                'font-weight': 'bold',
-                'border-top': '2px solid #ccc'
-            };
-        }
-        return null;
+    # Ajuste manual de algumas colunas
+    ajuste_colunas = {
+        "ANO": 80,
+        "CODIGO DO MUNICIPIO": 160,
+        "NOME DO MUNICIPIO": 220,
+        "CODIGO DA ESCOLA": 140,
+        "NOME DA ESCOLA": 150,
+        "DEPENDENCIA ADMINISTRATIVA": 180,
+        "CODIGO DA UF": 100,
+        "NOME DA UF": 120
     }
-    """)
+    for col, largura in ajuste_colunas.items():
+        if col in df_para_exibir.columns:
+            gb.configure_column(
+                col,
+                width=largura,
+                maxWidth=largura,
+                suppressSizeToFit=True,
+                wrapText=False,
+                cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                headerWrapText=True
+            )
 
-    # Configurar seleção de células, clipboard e paginação
+    # Para colunas numéricas
+    for coluna in df_para_exibir.columns:
+        # se a coluna for float/integer ou começar com 'Número de', ativar aggFunc = sum
+        if df_para_exibir[coluna].dtype.kind in 'ifc' or coluna.startswith("Número de"):
+            gb.configure_column(
+                coluna,
+                type=["numericColumn", "numberColumnFilter"],
+                filter="agNumberColumnFilter",
+                aggFunc="sum",
+                valueFormatter=JsCode("""
+                function(params) {
+                    if (params.value == null) return '';
+                    // Formatação PT-BR no front-end (JS)
+                    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(params.value);
+                }
+                """).js_code
+            )
+
+    # Configurações do grid
     gb.configure_grid_options(
         rowSelection='none',
         suppressRowDeselection=True,
@@ -743,57 +515,15 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         suppressCopyRowsToClipboard=True,
         copyHeadersToClipboard=True,
         ensureDomOrder=True,
-
         pagination=True,
         paginationAutoPageSize=False,
         paginationPageSize=25,
         paginationSizeSelector=[5, 10, 25, 50, 100],
         localeText=localeText,
-        # Removido grandTotalRow (não compatível com st_aggrid)
-        suppressAggFuncInHeader=True,  # Mantém apenas a supressão do texto de soma no header
-        # Define estilo da linha pinned (caso exista)
-        rowStyle=js_estilo_linha_totais.js_code
+        suppressAggFuncInHeader=True  # não exibir aggFunc no cabeçalho
     )
 
-    # Se tiver coluna de dados numéricos, configurar como numericColumn
-    if coluna_dados and coluna_dados in df_para_exibir.columns:
-        gb.configure_column(
-            coluna_dados,
-            type=["numericColumn", "numberColumnFilter"],
-            filter="agNumberColumnFilter",
-            aggFunc="sum",
-            enableValue=True,
-            valueFormatter=JsCode("""
-            function(params) {
-                if (params.value == null || params.value === undefined) return '';
-                return new Intl.NumberFormat('pt-BR').format(params.value);
-            }
-            """).js_code,
-            cellStyle=JsCode("""
-            function(params) {
-                if (params.node && params.node.rowPinned) {
-                    return {
-                        'font-weight': 'bold',
-                        'background-color': '#f0f2f7'
-                    };
-                }
-                return null;
-            }
-            """).js_code
-        )
-
-    # Otimizações para grandes datasets
-    if is_large_dataset:
-        gb.configure_grid_options(
-            rowBuffer=100,
-            animateRows=False,
-            suppressColumnVirtualisation=False,
-            suppressRowVirtualisation=False,
-            enableCellTextSelection=True,
-            enableBrowserTooltips=True
-        )
-
-    # Barra de status personalizada (mostra estatísticas de soma, média, min, max, etc.)
+    # Barra de status: soma, média, min, max
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
@@ -809,81 +539,38 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         }
     )
 
-    # Barra lateral e configs avançadas
+    # Barra lateral
     gb.configure_side_bar()
 
-    # Ajustes finais de seleção e foco
-    gb.configure_grid_options(
-        rowSelection=False,
-        suppressRowClickSelection=True,
-        cellSelection=True,
-        enableRangeSelection=True,
-        enableRangeHandle=True,
-        suppressMultiRangeSelection=False,
-        suppressCellFocus=False,
-        tabToNextHeader=False,
-        enableCellTextSelection=False,
-        copyHeadersToClipboard=True,
-        clipboardDelimiter='\t',
-        suppressMenuHide=True,
-        suppressMovableColumns=False,
-        suppressRowHoverHighlight=True,
-        suppressRowDeselection=True,
-    )
+    # Se for dataset grande
+    if is_large_dataset:
+        gb.configure_grid_options(
+            rowBuffer=100,
+            animateRows=False,
+            suppressColumnVirtualisation=False,
+            suppressRowVirtualisation=False,
+            enableCellTextSelection=True,
+            enableBrowserTooltips=True
+        )
 
-    # -------------------------------------------------------------------
-    # NOVO: Adicionar linha de totais fixada (pinned) no topo ou rodapé
-    # -------------------------------------------------------------------
+    # Se quisermos a linha de totais fixada e a coluna_dados existir
+    pinned_row_data = None
     if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
-        pinned_row = {}
-        # Valor total da coluna_dados
-        total_matriculas = df_para_exibir[coluna_dados].sum()
+        soma = df_para_exibir[coluna_dados].sum()
+        # Cria uma row só com o total nessa coluna
+        pinned_row_data = {coluna_dados: soma}
 
-        # Preenche o dicionário da pinned row
-        pinned_row[coluna_dados] = total_matriculas
-
-        # Exibe "TOTAL" em alguma coluna de nome (se existir)
-        if coluna_nome_principal:
-            pinned_row[coluna_nome_principal] = "TOTAL"
-
-        # Configura pinnedBottomRowData ou pinnedTopRowData
-        if posicao_totais == "bottom":
-            gb.configure_grid_options(pinnedBottomRowData=[pinned_row])
-        else:
-            gb.configure_grid_options(pinnedTopRowData=[pinned_row])
-
+    # Monta as opções
     grid_options = gb.build()
 
-    st.markdown("""
-        <style>
-        .nav-panel {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .nav-button {
-            background-color: #f0f2f6;
-            padding: 8px 15px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            color: #0066cc;
-            font-weight: bold;
-            text-align: center;
-            cursor: pointer;
-            margin: 0;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .nav-button:hover {
-            background-color: #e0e5f2;
-            transform: translateY(-1px);
-        }
-        .nav-button:active {
-            transform: translateY(1px);
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Se pinned_row_data existir
+    if pinned_row_data:
+        if posicao_totais == "bottom":
+            grid_options["pinnedBottomRowData"] = [pinned_row_data]
+        elif posicao_totais == "top":
+            grid_options["pinnedTopRowData"] = [pinned_row_data]
 
+    # Render AgGrid
     grid_return = AgGrid(
         df_para_exibir,
         gridOptions=grid_options,
@@ -941,6 +628,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         key=f"aggrid_{id(df_para_exibir)}"
     )
 
+    # Atalhos de teclado: Ctrl+C (copiar) e Ctrl+A (selecionar tudo)
     js_clipboard_helper = """
     <script>
         setTimeout(function() {
@@ -1017,16 +705,13 @@ except Exception as e:
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
 # ======================================
-
 st.sidebar.title("Filtros")
 
-# Seleção do nível de agregação
 tipo_visualizacao = st.sidebar.radio(
     "Nível de Agregação:",
     ["Escola", "Município", "Estado"]
 )
 
-# Escolha do DataFrame
 if tipo_visualizacao == "Escola":
     df = escolas_df
 elif tipo_visualizacao == "Município":
@@ -1034,34 +719,26 @@ elif tipo_visualizacao == "Município":
 else:
     df = estado_df
 
-# Mapeamento de colunas para a seleção de etapas
 mapeamento_colunas = criar_mapeamento_colunas(df)
 
 # Filtro do Ano
 if "ANO" in df.columns:
-    # Ordena em ordem decrescente (mais recente primeiro)
     anos_disponiveis = sorted(df["ANO"].unique(), reverse=True)
-
-    # Substituir selectbox por multiselect
     anos_selecionados = st.sidebar.multiselect(
         "Ano do Censo:",
         options=anos_disponiveis,
-        default=[anos_disponiveis[0]],  # Agora seleciona o ano mais recente (primeiro da lista)
+        default=[anos_disponiveis[0]],
         key="anos_multiselect"
     )
-
-    # Verificar se pelo menos um ano foi selecionado
     if not anos_selecionados:
         st.warning("Por favor, selecione pelo menos um ano.")
         st.stop()
 
-    # Filtrar o DataFrame para incluir todos os anos selecionados
     df_filtrado = df[df["ANO"].isin(anos_selecionados)]
 else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
 
-# Filtro de Etapa de Ensino
 etapas_disponiveis = list(mapeamento_colunas.keys())
 etapa_selecionada = st.sidebar.selectbox(
     "Etapa de Ensino:",
@@ -1095,35 +772,26 @@ if (subetapa_selecionada != "Todas"
 else:
     serie_selecionada = "Todas"
 
-# Filtro de Dependência Administrativa
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
-
-    # Usa o componente nativo st.pills
     dependencia_selecionada = st.sidebar.pills(
         "DEPENDENCIA ADMINISTRATIVA:",
         options=dependencias_disponiveis,
-        default=dependencias_disponiveis,  # Todas selecionadas por padrão
+        default=dependencias_disponiveis,
         selection_mode="multi",
         label_visibility="visible"
     )
-
-    # Aplicar filtro
     if dependencia_selecionada:
         df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
     else:
-        # DataFrame vazio se nenhuma opção selecionada
         df_filtrado = df_filtrado[0:0]
 else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
-# Determinar a coluna de dados
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
-
 coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
 if coluna_existe:
     coluna_dados = coluna_real
-    # Filtrar valores > 0
     df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
 else:
     st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
@@ -1258,7 +926,6 @@ if coluna_dados in df_filtrado.columns:
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
-
     with pd.option_context('mode.chained_assignment', None):
         tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
             lambda x: formatar_numero(x) if pd.notnull(x) else "-"
@@ -1267,21 +934,15 @@ else:
     tabela_dados = df_filtrado[colunas_existentes].copy()
     tabela_exibicao = tabela_dados.copy()
 
-# Preparar a tabela para exibição imediata
 tabela_filtrada = tabela_exibicao.copy()
 
-# Adicionar linha de totais
-try:
-    tabela_com_totais = tabela_filtrada
-except Exception as e:
-    st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
+# Por simplicidade, chamamos de 'tabela_com_totais'
+tabela_com_totais = tabela_filtrada
 
-# Exibir a tabela imediatamente
-altura_tabela = 600  # Altura padrão fixa
+altura_tabela = 600
 
-# Verificar se a posição dos totais foi definida
 if 'posicao_totais' not in locals():
-    posicao_totais = "Rodapé"  # Valor padrão
+    posicao_totais = "Rodapé"
 
 posicao_totais_map = {
     "Rodapé": "bottom",
@@ -1289,7 +950,6 @@ posicao_totais_map = {
     "Nenhum": None
 }
 
-# Garantir que os dados são numéricos antes de enviar ao AgGrid
 if coluna_dados and coluna_dados in tabela_com_totais.columns:
     with pd.option_context('mode.chained_assignment', None):
         tabela_com_totais[coluna_dados] = pd.to_numeric(tabela_com_totais[coluna_dados], errors='coerce')
@@ -1306,7 +966,6 @@ except Exception as e:
     st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
     st.dataframe(tabela_com_totais, height=altura_tabela)
 
-# Mostrar configurações APÓS a tabela
 tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
 
 with tab1:
@@ -1316,11 +975,7 @@ with tab1:
     with col4:
         altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
-            altura_manual = st.slider("Altura da tabela (pixels)",
-                                      min_value=200,
-                                      max_value=1000,
-                                      value=600,
-                                      step=50)
+            altura_manual = st.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
         else:
             altura_manual = 600
 
@@ -1331,19 +986,15 @@ with tab1:
         posicao_totais = st.radio(
             "Linha de totais:",
             ["Rodapé", "Topo", "Nenhum"],
-            index=0,  # Padrão: Rodapé
+            index=0,
             horizontal=True
         )
 
-    with col2:
-        st.write(" ")
     with col3:
-        modo_desempenho = st.checkbox(ROTULO_MODO_DESEMPENHO, value=True,
-                                      help=DICA_MODO_DESEMPENHO)
+        modo_desempenho = st.checkbox(ROTULO_MODO_DESEMPENHO, value=True, help=DICA_MODO_DESEMPENHO)
 
     st.write("### Incluir outras colunas na tabela")
     col5, col6 = st.columns([1, 5])
-
     with col5:
         st.write("**Colunas:**")
     with col6:
@@ -1375,7 +1026,6 @@ with tab1:
             st.write("Não há colunas adicionais disponíveis")
 
     tabela_filtrada = tabela_exibicao.copy()
-
     if len(tabela_exibicao) > 1000:
         col_filtrar = st.columns([1])[0]
         with col_filtrar:
@@ -1416,7 +1066,6 @@ with tab1:
             )
         except Exception as e:
             st.error(f"Erro ao preparar Excel para download: {str(e)}")
-
 
 # -------------------------------
 # Rodapé do Dashboard
