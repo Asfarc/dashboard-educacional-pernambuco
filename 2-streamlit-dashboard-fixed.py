@@ -301,35 +301,162 @@ def verificar_coluna_existe(df, coluna_nome):
 
     return False, coluna_nome
 
+
 def adicionar_linha_totais(df, coluna_dados):
     """
-    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
+    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados,
+    com tratamento melhorado e identificação para estilização.
     """
     if df.empty:
         return df
 
-    if 'TOTAL' in df.index or (df.iloc[:, 0] == 'TOTAL').any():
+    # Verificar se já existe uma linha de totais
+    if 'TOTAL' in df.index or df.apply(lambda x: x.astype(str).str.contains('TOTAL').any(), axis=1).any():
         return df
 
-    totais = {}
-    for col in df.columns:
-        totais[col] = ""
+    # Criar dicionário de totais com strings vazias
+    totais = {col: "" for col in df.columns}
 
+    # Definir "TOTAL" na primeira coluna
     if len(df.columns) > 0:
         totais[df.columns[0]] = "TOTAL"
 
+    # Calcular total para a coluna de dados
     if coluna_dados in df.columns:
         try:
-            valor_total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
-            totais[coluna_dados] = valor_total
-        except:
+            total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
+            totais[coluna_dados] = total
+        except Exception as e:
+            print(f"Erro ao calcular total para {coluna_dados}: {e}")
             totais[coluna_dados] = ""
 
+    # Processar outras colunas numéricas automaticamente
+    for col in df.columns:
+        if col != coluna_dados and col not in [df.columns[0]]:
+            try:
+                # Tenta converter para numérico e verificar se há valores
+                valores = pd.to_numeric(df[col], errors='coerce')
+                if valores.notna().any() and not any(palavra in col.upper() for palavra in ['CODIGO', 'ID']):
+                    totais[col] = valores.sum()
+            except:
+                pass
+
+    # Tratamento para coluna de percentual
     if '% do Total' in df.columns:
         totais['% do Total'] = 100.0
 
-    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
-    return pd.concat([df, linha_totais])
+    # Adicionar coluna marcadora para identificação no AG Grid
+    totais['_is_total_row'] = True
+
+    # Garantir que o DataFrame original também tenha a coluna marcadora
+    df_com_marcador = df.copy()
+    df_com_marcador['_is_total_row'] = False
+
+    # Criar DataFrame para a linha de totais
+    linha_totais = pd.DataFrame([totais])
+
+    # Concatenar com o DataFrame original
+    resultado = pd.concat([df_com_marcador, linha_totais], ignore_index=True)
+
+    return resultado
+
+
+# Adicione esta função para configurar a exibição da linha de totais no AG Grid
+def configurar_estilo_linha_totais(gb, coluna_dados):
+    """
+    Configura o AG Grid para destacar visualmente a linha de totais.
+    """
+    # CSS para destacar a linha de totais
+    css_totais = """
+    <style>
+        .ag-row.total-row {
+            font-weight: bold !important;
+            background-color: #f0f5ff !important;
+            border-top: 2px solid #aaa !important;
+            border-bottom: 2px solid #aaa !important;
+        }
+
+        .ag-row.total-row .ag-cell {
+            color: #000066 !important;
+        }
+
+        .ag-theme-streamlit .total-cell {
+            font-weight: bold !important;
+        }
+
+        /* Destaque para o valor total principal */
+        .ag-row.total-row [col-id="{}"] {{
+            font-weight: bold !important;
+            color: #000066 !important;
+            background-color: #e6f0ff !important;
+        }}
+    </style>
+    """.format(coluna_dados)
+
+    st.markdown(css_totais, unsafe_allow_html=True)
+
+    # Configurar classe de linha baseada na coluna marcadora
+    js_row_class = JsCode("""
+    function(params) {
+        if (!params.data) return '';
+        if (params.data._is_total_row === true) return 'total-row';
+        for (const key in params.data) {
+            if (params.data[key] && 
+                params.data[key].toString && 
+                params.data[key].toString().toUpperCase() === 'TOTAL') {
+                return 'total-row';
+            }
+        }
+        return '';
+    }
+    """)
+
+    # Configurar classe de célula para destacar valores
+    js_cell_style = JsCode("""
+    function(params) {
+        if (!params.node || !params.data) return null;
+
+        // Verifica se é a linha de totais
+        let isTotalRow = false;
+        if (params.data._is_total_row === true) {
+            isTotalRow = true;
+        } else {
+            for (const key in params.data) {
+                if (params.data[key] && 
+                    params.data[key].toString && 
+                    params.data[key].toString().toUpperCase() === 'TOTAL') {
+                    isTotalRow = true;
+                    break;
+                }
+            }
+        }
+
+        if (isTotalRow) {
+            if (params.column.colId === '""" + coluna_dados + """') {
+                return {
+                    'font-weight': 'bold',
+                    'color': '#000066',
+                    'background-color': '#e6f0ff'
+                };
+            }
+            return {
+                'font-weight': 'bold'
+            };
+        }
+        return null;
+    }
+    """)
+
+    # Aplicar configurações ao grid
+    gb.configure_grid_options(
+        getRowClass=js_row_class,
+        getRowStyle=js_cell_style
+    )
+
+    # Ocultar a coluna marcadora
+    gb.configure_column('_is_total_row', hide=True)
+
+    return gb
 
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
