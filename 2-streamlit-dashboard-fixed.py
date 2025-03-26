@@ -1113,14 +1113,6 @@ else:
 # Preparar a tabela para exibição imediata
 tabela_filtrada = tabela_exibicao.copy()
 
-# Exibir a tabela imediatamente
-altura_tabela = 600  # Altura padrão fixa
-try:
-    grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
-except Exception as e:
-    st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
-    st.dataframe(tabela_com_totais, height=altura_tabela)
-
 # Mostrar configurações APÓS a tabela
 tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
 
