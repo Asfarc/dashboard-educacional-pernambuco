@@ -486,22 +486,30 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 headerWrapText=True
             )
 
-    # Para colunas numéricas
     for coluna in df_para_exibir.columns:
-        # se a coluna for float/integer ou começar com 'Número de', ativar aggFunc = sum
-        if df_para_exibir[coluna].dtype.kind in 'ifc' or coluna.startswith("Número de"):
+
+        if coluna.startswith("Número de"):
+            # Colunas numéricas (inteiros) - sem casas decimais
             gb.configure_column(
                 coluna,
-                type=["numericColumn", "numberColumnFilter"],
+                type=["numericColumn", "numberColumnFilter"],  # AgGrid reconhece como número
                 filter="agNumberColumnFilter",
-                aggFunc="sum",
+                aggFunc="sum",  # se quiser somar no rodapé ou no status bar
                 valueFormatter=JsCode("""
-                function(params) {
-                    if (params.value == null) return '';
-                    // Formatação PT-BR no front-end (JS)
-                    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(params.value);
-                }
+                    function(params) {
+                        if (params.value == null) return '';
+                        // Formata sem decimais, em pt-BR
+                        return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
+                    }
                 """).js_code
+            )
+
+        else:
+            # Todas as demais colunas são texto
+            gb.configure_column(
+                coluna,
+                filter="agTextColumnFilter",
+                # pode configurar outras opções de texto se quiser
             )
 
     # Configurações do grid
