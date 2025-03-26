@@ -410,6 +410,31 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             df_para_exibir = df_para_exibir.loc[indices_para_manter]
             st.info("Mostrando amostra de 5.000 registros (de um total maior)")
 
+    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
+
+    # Configurar a coluna de dados para soma automática
+    if coluna_dados and coluna_dados in df_para_exibir.columns:
+        gb.configure_column(
+            coluna_dados,
+            type=["numericColumn", "numberColumnFilter"],
+            filter="agNumberColumnFilter",
+            filterParams={"inRangeInclusive": True, "applyButton": True, "clearButton": True},
+            aggFunc="sum",  # Habilita a soma automática
+            enableValue=True,
+            cellClass="numeric-cell"
+        )
+
+    # Configurar a linha de total global
+    gb.configure_grid_options(
+        groupIncludeTotalRow=True,    # Ativa totais
+        groupDisplayType="singleColumn",
+        suppressAggFuncInHeader=True,
+        autoGroupColumnDef={
+            "headerName": "TOTAL",  # Nome da linha de total
+            "cellRendererParams": {"suppressCount": True}
+        }
+    )
+
     js_agg_functions = JsCode(f"""
     function(params) {{
         try {{
@@ -464,8 +489,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }}
     }}
     """)
-
-    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
     localeText = dict(contains="Contém", notContains="Não contém", equals="Igual a", notEqual="Diferente de",
                       startsWith="Começa com", endsWith="Termina com", blank="Em branco", notBlank="Não em branco",
@@ -1052,12 +1075,10 @@ else:
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
-for col in colunas_adicionais:
-    if col in df_filtrado.columns:
-        colunas_tabela.append(col)
-
-if coluna_dados in df_filtrado.columns:
-    colunas_tabela.append(coluna_dados)
+    df_filtrado[coluna_dados] = pd.to_numeric(
+        df_filtrado[coluna_dados],
+        errors='coerce'  # Converte valores inválidos para NaN
+    )
 
 colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
 colunas_tabela = colunas_existentes
