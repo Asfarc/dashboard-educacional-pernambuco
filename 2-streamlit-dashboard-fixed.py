@@ -313,9 +313,6 @@ def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
         st.warning("Não há dados para exibir na tabela.")
         return {"data": pd.DataFrame()}, None
 
-    # Calcular totais e estatísticas antes de exibir a tabela
-    estatisticas = calcular_estatisticas(df_para_exibir, coluna_dados)
-
     # Configurar grid sem linha de totais
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
@@ -394,120 +391,7 @@ def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
     )
 
     # Retornar o resultado do grid e as estatísticas
-    return grid_return, estatisticas
-
-
-def calcular_estatisticas(df, coluna_dados):
-    """
-    Calcula estatísticas para a coluna de dados e retorna um dicionário formatado.
-    """
-    if coluna_dados not in df.columns:
-        return None
-
-    try:
-        # Converter para valores numéricos
-        valores = pd.to_numeric(df[coluna_dados], errors='coerce')
-
-        # Calcular estatísticas
-        total = valores.sum()
-        media = valores.mean()
-        mediana = valores.median()
-        minimo = valores.min()
-        maximo = valores.max()
-        desvio_padrao = valores.std()
-
-        # Formatar valores
-        estatisticas = {
-            'Total': formatar_numero(total),
-            'Média': formatar_numero(media),
-            'Mediana': formatar_numero(mediana),
-            'Mínimo': formatar_numero(minimo),
-            'Máximo': formatar_numero(maximo),
-            'Desvio Padrão': formatar_numero(desvio_padrao)
-        }
-
-        return estatisticas
-    except Exception as e:
-        print(f"Erro ao calcular estatísticas: {e}")
-        return None
-
-
-# Função auxiliar para criar um card de estatísticas
-def exibir_card_estatisticas(estatisticas, coluna_dados):
-    """
-    Exibe um card estilizado com as estatísticas calculadas.
-    """
-    if not estatisticas:
-        return
-
-    st.markdown(f"""
-    <style>
-    .stats-container {{
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        padding: 15px;
-        margin-bottom: 20px;
-        border: 1px solid #dee2e6;
-    }}
-    .stats-header {{
-        font-weight: bold;
-        margin-bottom: 10px;
-        font-size: 16px;
-        color: #333;
-    }}
-    .stats-grid {{
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 10px;
-    }}
-    .stat-item {{
-        background-color: white;
-        padding: 10px;
-        border-radius: 4px;
-        border: 1px solid #eee;
-        text-align: center;
-    }}
-    .stat-label {{
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 5px;
-    }}
-    .stat-value {{
-        font-weight: bold;
-        font-size: 16px;
-        color: #000066;
-    }}
-    .stat-total {{
-        background-color: #e6f0ff;
-    }}
-    </style>
-
-    <div class="stats-container">
-        <div class="stats-header">Estatísticas para {coluna_dados}</div>
-        <div class="stats-grid">
-            <div class="stat-item stat-total">
-                <div class="stat-label">Total</div>
-                <div class="stat-value">{estatisticas.get('Total', '-')}</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Média</div>
-                <div class="stat-value">{estatisticas.get('Média', '-')}</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Mediana</div>
-                <div class="stat-value">{estatisticas.get('Mediana', '-')}</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Mínimo</div>
-                <div class="stat-value">{estatisticas.get('Mínimo', '-')}</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Máximo</div>
-                <div class="stat-value">{estatisticas.get('Máximo', '-')}</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    return grid_return
 
 # Adicione esta função para configurar a exibição da linha de totais no AG Grid
 def configurar_estilo_linha_totais(gb, coluna_dados):
@@ -799,25 +683,78 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         autoHeaderHeight=True
     )
 
-    # Exemplos de ajuste de largura:
+    # Configuração otimizada para todas as colunas
     if "ANO" in df_para_exibir.columns:
-        gb.configure_column("ANO", width=80, headerWrapText=True, autoHeaderHeight=True)
+        gb.configure_column("ANO",
+                            width=80,
+                            maxWidth=80,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
+
     if "CODIGO DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DO MUNICIPIO", width=160, headerWrapText=True, autoHeaderHeight=True)
+        gb.configure_column("CODIGO DO MUNICIPIO",
+                            width=160,
+                            maxWidth=160,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
+
     if "NOME DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column("NOME DO MUNICIPIO", width=220, headerWrapText=True, autoHeaderHeight=True)
+        gb.configure_column("NOME DO MUNICIPIO",
+                            width=220,
+                            maxWidth=220,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
+
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DA ESCOLA", width=140, headerWrapText=True, autoHeaderHeight=True)
+        gb.configure_column("CODIGO DA ESCOLA",
+                            width=140,
+                            maxWidth=140,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
+
     if "NOME DA ESCOLA" in df_para_exibir.columns:
         gb.configure_column("NOME DA ESCOLA",
-                            width=150,  # Mantém a largura original
-                            maxWidth=150,  # Define uma largura máxima fixa
-                            suppressSizeToFit=True,  # Impede que a coluna seja redimensionada automaticamente
-                            wrapText=False,  # Não quebra texto na célula
+                            width=150,
+                            maxWidth=150,
+                            suppressSizeToFit=True,
+                            wrapText=False,
                             cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)  # Permite quebra de texto no cabeçalho
+                            headerWrapText=True)
+
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
-        gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
+        gb.configure_column("DEPENDENCIA ADMINISTRATIVA",
+                            width=180,
+                            maxWidth=180,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
+
+    if "CODIGO DA UF" in df_para_exibir.columns:
+        gb.configure_column("CODIGO DA UF",
+                            width=100,
+                            maxWidth=100,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
+
+    if "NOME DA UF" in df_para_exibir.columns:
+        gb.configure_column("NOME DA UF",
+                            width=120,
+                            maxWidth=120,
+                            suppressSizeToFit=True,
+                            wrapText=False,
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)
 
     # Configurar seleção de células, clipboard e paginação
     gb.configure_grid_options(
@@ -981,8 +918,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 height: auto !important;
             }
             .ag-cell { 
-                overflow: hidden; 
-                text-overflow: ellipsis; 
+                overflow: hidden !important; 
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                max-width: inherit !important;
             }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
@@ -1056,7 +995,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         )
 
     # Retornar resultado do grid e estatísticas
-    return grid_return, estatisticas
+    return grid_return
 
 # -------------------------------
 # Carregamento de Dados
@@ -1331,10 +1270,7 @@ altura_tabela = 600  # Altura padrão fixa
 
 try:
     # Substituição da função de exibição da tabela
-    grid_result, estatisticas = exibir_tabela_sem_totais(tabela_filtrada, coluna_dados, altura=altura_tabela)
-
-    # Exibir o card de estatísticas logo após a tabela
-    exibir_card_estatisticas(estatisticas, coluna_dados)
+    grid_result = exibir_tabela_sem_totais(tabela_filtrada, coluna_dados, altura=altura_tabela)
 
     # Dados filtrados disponíveis para uso posterior, se necessário
     dados_filtrados = grid_result['data']
