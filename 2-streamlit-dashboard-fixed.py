@@ -173,10 +173,10 @@ def carregar_dados():
             raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
 
         # Converter colunas numéricas para o tipo correto
-        for df in [escolas_df, estado_df, municipio_df]:
-            for col in df.columns:
+        for df_ in [escolas_df, estado_df, municipio_df]:
+            for col in df_.columns:
                 if col.startswith("Número de"):
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    df_[col] = pd.to_numeric(df_[col], errors='coerce')
 
         return escolas_df, estado_df, municipio_df
 
@@ -308,6 +308,7 @@ def verificar_coluna_existe(df, coluna_nome):
 
     return False, coluna_nome
 
+
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
     Ordena df_base pela coluna_ordenacao e formata colunas numéricas.
@@ -371,6 +372,8 @@ def converter_df_para_excel(df):
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom"):
     """
     Exibe DataFrame no AgGrid com paginação, barra de status e seleções de célula.
+    Também configura opcionalmente uma linha de totais fixada no topo ou rodapé,
+    de acordo com o parâmetro posicao_totais (“top”, “bottom” ou None).
     """
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
@@ -467,23 +470,67 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
-    localeText = dict(contains="Contém", notContains="Não contém", equals="Igual a", notEqual="Diferente de",
-                      startsWith="Começa com", endsWith="Termina com", blank="Em branco", notBlank="Não em branco",
-                      thousandSeparator=".", decimalSeparator=",", applyFilter="Aplicar", resetFilter="Limpar",
-                      clearFilter="Limpar", cancelFilter="Cancelar", lessThan="Menor que", greaterThan="Maior que",
-                      lessThanOrEqual="Menor ou igual a", greaterThanOrEqual="Maior ou igual a", inRange="No intervalo",
-                      filterOoo="Filtrado", noRowsToShow="Sem dados para exibir", enabled="Habilitado", search="Buscar",
-                      selectAll="Selecionar todos", searchOoo="Buscar...", blanks="Em branco",
-                      noMatches="Sem correspondência", columns="Colunas", filters="Filtros",
-                      rowGroupColumns="Agrupar por", rowGroupColumnsEmptyMessage="Arraste colunas aqui para agrupar",
-                      valueColumns="Valores", pivotMode="Modo Pivot", groups="Grupos", values="Valores", pivots="Pivôs",
-                      valueColumnsEmptyMessage="Arraste aqui para agregar",
-                      pivotColumnsEmptyMessage="Arraste aqui para definir pivô", toolPanelButton="Painéis",
-                      loadingOoo="Carregando...", page="Página", PageSize="Tamanho da Página", next="Próximo",
-                      last="Último", first="Primeiro", previous="Anterior", of="de", to="até", rows="linhas",
-                      loading="Carregando...", totalRows="Total de linhas", totalAndFilteredRows="Linhas",
-                      selectedRows="Selecionadas", filteredRows="Filtradas", sum="Soma", min="Mínimo", max="Máximo",
-                      average="Média", count="Contagem")
+    localeText = dict(
+        contains="Contém",
+        notContains="Não contém",
+        equals="Igual a",
+        notEqual="Diferente de",
+        startsWith="Começa com",
+        endsWith="Termina com",
+        blank="Em branco",
+        notBlank="Não em branco",
+        thousandSeparator=".",
+        decimalSeparator=",",
+        applyFilter="Aplicar",
+        resetFilter="Limpar",
+        clearFilter="Limpar",
+        cancelFilter="Cancelar",
+        lessThan="Menor que",
+        greaterThan="Maior que",
+        lessThanOrEqual="Menor ou igual a",
+        greaterThanOrEqual="Maior ou igual a",
+        inRange="No intervalo",
+        filterOoo="Filtrado",
+        noRowsToShow="Sem dados para exibir",
+        enabled="Habilitado",
+        search="Buscar",
+        selectAll="Selecionar todos",
+        searchOoo="Buscar...",
+        blanks="Em branco",
+        noMatches="Sem correspondência",
+        columns="Colunas",
+        filters="Filtros",
+        rowGroupColumns="Agrupar por",
+        rowGroupColumnsEmptyMessage="Arraste colunas aqui para agrupar",
+        valueColumns="Valores",
+        pivotMode="Modo Pivot",
+        groups="Grupos",
+        values="Valores",
+        pivots="Pivôs",
+        valueColumnsEmptyMessage="Arraste aqui para agregar",
+        pivotColumnsEmptyMessage="Arraste aqui para definir pivô",
+        toolPanelButton="Painéis",
+        loadingOoo="Carregando...",
+        page="Página",
+        PageSize="Tamanho da Página",
+        next="Próximo",
+        last="Último",
+        first="Primeiro",
+        previous="Anterior",
+        of="de",
+        to="até",
+        rows="linhas",
+        loading="Carregando...",
+        totalRows="Total de linhas",
+        totalAndFilteredRows="Linhas",
+        selectedRows="Selecionadas",
+        filteredRows="Filtradas",
+        sum="Soma",
+        min="Mínimo",
+        max="Máximo",
+        average="Média",
+        count="Contagem"
+    )
 
     gb.configure_default_column(
         groupable=True,
@@ -504,78 +551,94 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         autoHeaderHeight=True
     )
 
-    # Configuração otimizada para todas as colunas
+    # Configuração otimizada para colunas específicas
     if "ANO" in df_para_exibir.columns:
-        gb.configure_column("ANO",
-                            width=80,
-                            maxWidth=80,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "ANO",
+            width=80,
+            maxWidth=80,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "CODIGO DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DO MUNICIPIO",
-                            width=160,
-                            maxWidth=160,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "CODIGO DO MUNICIPIO",
+            width=160,
+            maxWidth=160,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "NOME DO MUNICIPIO" in df_para_exibir.columns:
-        gb.configure_column("NOME DO MUNICIPIO",
-                            width=220,
-                            maxWidth=220,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "NOME DO MUNICIPIO",
+            width=220,
+            maxWidth=220,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DA ESCOLA",
-                            width=140,
-                            maxWidth=140,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "CODIGO DA ESCOLA",
+            width=140,
+            maxWidth=140,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "NOME DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("NOME DA ESCOLA",
-                            width=150,
-                            maxWidth=150,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "NOME DA ESCOLA",
+            width=150,
+            maxWidth=150,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
-        gb.configure_column("DEPENDENCIA ADMINISTRATIVA",
-                            width=180,
-                            maxWidth=180,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "DEPENDENCIA ADMINISTRATIVA",
+            width=180,
+            maxWidth=180,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "CODIGO DA UF" in df_para_exibir.columns:
-        gb.configure_column("CODIGO DA UF",
-                            width=100,
-                            maxWidth=100,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "CODIGO DA UF",
+            width=100,
+            maxWidth=100,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     if "NOME DA UF" in df_para_exibir.columns:
-        gb.configure_column("NOME DA UF",
-                            width=120,
-                            maxWidth=120,
-                            suppressSizeToFit=True,
-                            wrapText=False,
-                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
-                            headerWrapText=True)
+        gb.configure_column(
+            "NOME DA UF",
+            width=120,
+            maxWidth=120,
+            suppressSizeToFit=True,
+            wrapText=False,
+            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+            headerWrapText=True
+        )
 
     # Determinar qual coluna de nome deve mostrar "TOTAL"
     coluna_nome_principal = None
@@ -613,10 +676,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     """).js_code
                 )
             else:
-                gb.configure_column(
-                    coluna,
-                    aggFunc=None
-                )
+                gb.configure_column(coluna, aggFunc=None)
         elif coluna == "DEPENDENCIA ADMINISTRATIVA":
             gb.configure_column(
                 coluna,
@@ -630,7 +690,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 }
                 """).js_code
             )
-
         elif coluna == coluna_dados or coluna.startswith("Número de"):
             # Apenas somar a coluna de matrículas e colunas que começam com "Número de"
             gb.configure_column(
@@ -690,10 +749,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         paginationPageSize=25,
         paginationSizeSelector=[5, 10, 25, 50, 100],
         localeText=localeText,
-        grandTotalRow=posicao_totais,
-        # Adicione esta configuração importante para garantir que os totais sejam calculados corretamente
-        suppressAggFuncInHeader=True,
-        # Defina explicitamente o estilo da linha de totais
+        # Removido grandTotalRow (não compatível com st_aggrid)
+        suppressAggFuncInHeader=True,  # Mantém apenas a supressão do texto de soma no header
+        # Define estilo da linha pinned (caso exista)
         rowStyle=js_estilo_linha_totais.js_code
     )
 
@@ -703,7 +761,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             coluna_dados,
             type=["numericColumn", "numberColumnFilter"],
             filter="agNumberColumnFilter",
-            aggFunc="sum",  # Certifique-se que isso está definido
+            aggFunc="sum",
             enableValue=True,
             valueFormatter=JsCode("""
             function(params) {
@@ -735,7 +793,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             enableBrowserTooltips=True
         )
 
-    # Barra de status personalizada
+    # Barra de status personalizada (mostra estatísticas de soma, média, min, max, etc.)
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
@@ -771,8 +829,28 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         suppressMovableColumns=False,
         suppressRowHoverHighlight=True,
         suppressRowDeselection=True,
-        getRowStyle=js_estilo_linha_totais.js_code
     )
+
+    # -------------------------------------------------------------------
+    # NOVO: Adicionar linha de totais fixada (pinned) no topo ou rodapé
+    # -------------------------------------------------------------------
+    if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
+        pinned_row = {}
+        # Valor total da coluna_dados
+        total_matriculas = df_para_exibir[coluna_dados].sum()
+
+        # Preenche o dicionário da pinned row
+        pinned_row[coluna_dados] = total_matriculas
+
+        # Exibe "TOTAL" em alguma coluna de nome (se existir)
+        if coluna_nome_principal:
+            pinned_row[coluna_nome_principal] = "TOTAL"
+
+        # Configura pinnedBottomRowData ou pinnedTopRowData
+        if posicao_totais == "bottom":
+            gb.configure_grid_options(pinnedBottomRowData=[pinned_row])
+        else:
+            gb.configure_grid_options(pinnedTopRowData=[pinned_row])
 
     grid_options = gb.build()
 
@@ -1026,7 +1104,7 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
         "DEPENDENCIA ADMINISTRATIVA:",
         options=dependencias_disponiveis,
         default=dependencias_disponiveis,  # Todas selecionadas por padrão
-        selection_mode="multi",  # Permite selecionar várias opções
+        selection_mode="multi",
         label_visibility="visible"
     )
 
@@ -1054,7 +1132,6 @@ else:
     if coluna_existe:
         coluna_dados = coluna_principal_real
         st.info(f"Usando '{coluna_dados}' como alternativa")
-        # Filtrar valores > 0 para a coluna alternativa
         df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
@@ -1215,9 +1292,7 @@ posicao_totais_map = {
 # Garantir que os dados são numéricos antes de enviar ao AgGrid
 if coluna_dados and coluna_dados in tabela_com_totais.columns:
     with pd.option_context('mode.chained_assignment', None):
-        # Converte para numérico, substituindo valores não-numéricos por NaN
         tabela_com_totais[coluna_dados] = pd.to_numeric(tabela_com_totais[coluna_dados], errors='coerce')
-        # Preenche NaN com 0 para evitar problemas na agregação
         tabela_com_totais[coluna_dados] = tabela_com_totais[coluna_dados].fillna(0)
 
 try:
@@ -1242,10 +1317,10 @@ with tab1:
         altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
             altura_manual = st.slider("Altura da tabela (pixels)",
-                                    min_value=200,
-                                    max_value=1000,
-                                    value=600,
-                                    step=50)
+                                      min_value=200,
+                                      max_value=1000,
+                                      value=600,
+                                      step=50)
         else:
             altura_manual = 600
 
@@ -1253,7 +1328,6 @@ with tab1:
         total_registros = len(tabela_exibicao)
         mostrar_todos = st.checkbox(ROTULO_MOSTRAR_REGISTROS, value=True)
 
-        # NOVO - Opção para linha de totais
         posicao_totais = st.radio(
             "Linha de totais:",
             ["Rodapé", "Topo", "Nenhum"],
