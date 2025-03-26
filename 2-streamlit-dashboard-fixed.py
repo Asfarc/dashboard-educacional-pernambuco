@@ -368,9 +368,17 @@ def converter_df_para_excel(df):
         return output.getvalue()
 
 
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
+                             estilo_totais="Padrão"):
     """
-    Exibe DataFrame no AgGrid com paginação, barra de status e seleções de célula.
+    Exibe DataFrame no AgGrid com paginação, barra de status, linha de totais e seleções de célula.
+
+    Parâmetros:
+    - df_para_exibir: DataFrame a ser exibido
+    - altura: Altura da tabela em pixels
+    - coluna_dados: Nome da coluna principal com dados numéricos
+    - posicao_totais: Posição da linha de totais ('top', 'bottom', None)
+    - estilo_totais: Estilo visual da linha de totais ('Padrão', 'Destacado', 'Sutil')
     """
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
@@ -409,6 +417,79 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 indices_para_manter.extend(total_rows)
             df_para_exibir = df_para_exibir.loc[indices_para_manter]
             st.info("Mostrando amostra de 5.000 registros (de um total maior)")
+
+    # CSS personalizado para a linha de totais com base no estilo escolhido
+    estilo_css_mapa = {
+        "Padrão": """
+            .ag-row.ag-row-pinned {
+                font-weight: bold;
+                background-color: #f0f2f7 !important;
+                border-top: 2px solid #ccc !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell {
+                color: #364b60 !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell.total-label {
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell.numeric-cell {
+                font-size: 14px;
+                color: #e37777 !important;
+            }
+        """,
+        "Destacado": """
+            .ag-row.ag-row-pinned {
+                font-weight: bold;
+                background-color: #364b60 !important;
+                color: white !important;
+                border-top: 2px solid #ccc !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell {
+                color: white !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell.total-label {
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell.numeric-cell {
+                font-size: 14px;
+                color: #ffd700 !important;
+            }
+        """,
+        "Sutil": """
+            .ag-row.ag-row-pinned {
+                font-weight: normal;
+                background-color: #ffffff !important;
+                border-top: 1px solid #eee !important;
+                border-bottom: 1px solid #eee !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell {
+                color: #666 !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell.total-label {
+                font-weight: bold;
+                color: #364b60 !important;
+            }
+
+            .ag-row.ag-row-pinned .ag-cell.numeric-cell {
+                font-weight: bold;
+                color: #364b60 !important;
+            }
+        """
+    }
+
+    css_linha_totais = estilo_css_mapa.get(estilo_totais, estilo_css_mapa["Padrão"])
 
     js_agg_functions = JsCode(f"""
     function(params) {{
@@ -483,7 +564,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                       last="Último", first="Primeiro", previous="Anterior", of="de", to="até", rows="linhas",
                       loading="Carregando...", totalRows="Total de linhas", totalAndFilteredRows="Linhas",
                       selectedRows="Selecionadas", filteredRows="Filtradas", sum="Soma", min="Mínimo", max="Máximo",
-                      average="Média", count="Contagem")
+                      average="Média", count="Contagem", total="Total")
 
     gb.configure_default_column(
         groupable=True,
@@ -577,6 +658,73 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                             cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
                             headerWrapText=True)
 
+    # Função JavaScript para personalizar a primeira coluna com o texto "TOTAL"
+    js_customizar_celula_total = JsCode("""
+    function(params) {
+        // Se for uma célula na linha de totais e for a primeira coluna não-numérica
+        if (params.node.rowPinned) {
+            const cellValue = params.value;
+            const colId = params.column.getColId();
+
+            // Identificar a primeira coluna não numérica
+            const colunasPrincipais = ['NOME DA ESCOLA', 'NOME DO MUNICIPIO', 'NOME DA UF', 'DEPENDENCIA ADMINISTRATIVA'];
+            const primeiraColunaTexto = colunasPrincipais.find(col => params.api.getColumnDef(col));
+
+            if (colId === primeiraColunaTexto) {
+                // Adicionar a classe CSS especial
+                params.node.setDataValue(colId, 'TOTAL');
+                return {
+                    cellClass: 'total-label'
+                };
+            }
+
+            // Para células numéricas na linha de totais
+            if (params.column.getColDef().type && 
+                params.column.getColDef().type.includes('numericColumn')) {
+                return {
+                    cellClass: 'numeric-cell'
+                };
+            }
+        }
+        return null;
+    }
+    """)
+
+    # Configuração para o estilo da linha de totais
+    js_total_style = JsCode("""
+    function(params) {
+        if (params.node.rowPinned) {
+            return {
+                'font-weight': 'bold'
+            };
+        }
+        return null;
+    }
+    """)
+
+    # Personalização do texto e formatação da célula na linha de totais
+    js_total_value_formatter = JsCode("""
+    function(params) {
+        if (params.node && params.node.rowPinned) {
+            // É uma linha de totais
+            if (params.colDef.field === '" + next(iter([c for c in df_para_exibir.columns if c not in [coluna_dados] and c in df_para_exibir.columns]), "NOME") + "') {
+                // Primeira coluna não numérica - coloca o texto 'TOTAL'
+                return '<b>TOTAL</b>';
+            }
+            else if (typeof params.value === 'number') {
+                // Formata o valor numérico com separadores de milhar
+                return '<b>' + new Intl.NumberFormat('pt-BR').format(params.value) + '</b>';
+            }
+            return params.value;
+        }
+        // Para células normais, retorna o valor sem alteração
+        if (typeof params.value === 'number' && params.colDef.field === '" + coluna_dados + "') {
+            return new Intl.NumberFormat('pt-BR').format(params.value);
+        }
+        return params.value;
+    }
+    """)
+
     # Configurar seleção de células, clipboard e paginação
     gb.configure_grid_options(
         rowSelection='none',
@@ -594,24 +742,64 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         paginationPageSize=25,
         paginationSizeSelector=[5, 10, 25, 50, 100],
 
-        localeText=localeText
+        localeText=localeText,
+
+        # Configure grandTotalRow com base no parâmetro posicao_totais
+        grandTotalRow=posicao_totais if posicao_totais else None,
+
+        # Configurações para personalização da linha de totais
+        getRowStyle=js_total_style.js_code,
+        getCellStyle=js_customizar_celula_total.js_code,
+        processCellForClipboard=js_total_value_formatter.js_code,
+        processCellFromClipboard=js_total_value_formatter.js_code
     )
 
-    # Se tiver coluna de dados numéricos, configurar como numericColumn
-    if coluna_dados and coluna_dados in df_para_exibir.columns:
-        gb.configure_column(
-            coluna_dados,
-            type=["numericColumn", "numberColumnFilter"],
-            filter="agNumberColumnFilter",
-            filterParams={
-                "inRangeInclusive": True,
-                "applyButton": True,
-                "clearButton": True
-            },
-            aggFunc="sum",
-            enableValue=True,
-            cellClass="numeric-cell"
-        )
+    # Configurar as funções de agregação para todas as colunas numéricas
+    for coluna in df_para_exibir.columns:
+        # Verificar se a coluna é numérica
+        if df_para_exibir[coluna].dtype.kind in 'ifc':  # i=integer, f=float, c=complex
+            # Verificar se é a coluna principal (a que mostra as matrículas)
+            if coluna == coluna_dados:
+                # Para a coluna principal, sempre usar soma
+                funcao_agg = "sum"
+            elif "percentual" in coluna.lower() or "%" in coluna:
+                # Para colunas de percentuais, usar média
+                funcao_agg = "avg"
+            elif any(termo in coluna.lower() for termo in ["media", "média", "average", "mean"]):
+                # Para colunas que já são médias, continuar usando média
+                funcao_agg = "avg"
+            elif any(termo in coluna.lower() for termo in ["máximo", "maximo", "max"]):
+                # Para colunas que representam máximos
+                funcao_agg = "max"
+            elif any(termo in coluna.lower() for termo in ["mínimo", "minimo", "min"]):
+                # Para colunas que representam mínimos
+                funcao_agg = "min"
+            else:
+                # Para as demais colunas numéricas, usar soma
+                funcao_agg = "sum"
+
+            gb.configure_column(
+                coluna,
+                type=["numericColumn", "numberColumnFilter"],
+                filter="agNumberColumnFilter",
+                filterParams={
+                    "inRangeInclusive": True,
+                    "applyButton": True,
+                    "clearButton": True
+                },
+                aggFunc=funcao_agg,
+                valueFormatter=JsCode(f"""
+                function(params) {{
+                    if (!params.value && params.value !== 0) return '';
+                    if (params.node && params.node.rowPinned) {{
+                        return '<b>' + new Intl.NumberFormat('pt-BR').format(params.value) + '</b>';
+                    }}
+                    return new Intl.NumberFormat('pt-BR').format(params.value);
+                }}
+                """).js_code,
+                enableValue=True,
+                cellClass="numeric-cell"
+            )
 
     # Otimizações para grandes datasets
     if is_large_dataset:
