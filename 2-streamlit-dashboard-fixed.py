@@ -308,6 +308,36 @@ def verificar_coluna_existe(df, coluna_nome):
 
     return False, coluna_nome
 
+def adicionar_linha_totais(df, coluna_dados):
+    """
+    Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
+    """
+    if df.empty:
+        return df
+
+    if 'TOTAL' in df.index or (df.iloc[:, 0] == 'TOTAL').any():
+        return df
+
+    totais = {}
+    for col in df.columns:
+        totais[col] = ""
+
+    if len(df.columns) > 0:
+        totais[df.columns[0]] = "TOTAL"
+
+    if coluna_dados in df.columns:
+        try:
+            valor_total = pd.to_numeric(df[coluna_dados], errors='coerce').sum()
+            totais[coluna_dados] = valor_total
+        except:
+            totais[coluna_dados] = ""
+
+    if '% do Total' in df.columns:
+        totais['% do Total'] = 100.0
+
+    linha_totais = pd.DataFrame([totais], index=['TOTAL'])
+    return pd.concat([df, linha_totais])
+
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
     Ordena df_base pela coluna_ordenacao e formata colunas numéricas.
@@ -410,31 +440,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             df_para_exibir = df_para_exibir.loc[indices_para_manter]
             st.info("Mostrando amostra de 5.000 registros (de um total maior)")
 
-    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
-
-    # Configurar a coluna de dados para soma automática
-    if coluna_dados and coluna_dados in df_para_exibir.columns:
-        gb.configure_column(
-            coluna_dados,
-            type=["numericColumn", "numberColumnFilter"],
-            filter="agNumberColumnFilter",
-            filterParams={"inRangeInclusive": True, "applyButton": True, "clearButton": True},
-            aggFunc="sum",  # Habilita a soma automática
-            enableValue=True,
-            cellClass="numeric-cell"
-        )
-
-    # Configurar a linha de total global
-    gb.configure_grid_options(
-        groupIncludeTotalRow=True,    # Ativa totais
-        groupDisplayType="singleColumn",
-        suppressAggFuncInHeader=True,
-        autoGroupColumnDef={
-            "headerName": "TOTAL",  # Nome da linha de total
-            "cellRendererParams": {"suppressCount": True}
-        }
-    )
-
     js_agg_functions = JsCode(f"""
     function(params) {{
         try {{
@@ -489,6 +494,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         }}
     }}
     """)
+
+    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
     localeText = dict(contains="Contém", notContains="Não contém", equals="Igual a", notEqual="Diferente de",
                       startsWith="Começa com", endsWith="Termina com", blank="Em branco", notBlank="Não em branco",
@@ -620,6 +627,21 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
         localeText=localeText
     )
 
+    # Se tiver coluna de dados numéricos, configurar como numericColumn
+    if coluna_dados and coluna_dados in df_para_exibir.columns:
+        gb.configure_column(
+            coluna_dados,
+            type=["numericColumn", "numberColumnFilter"],
+            filter="agNumberColumnFilter",
+            filterParams={
+                "inRangeInclusive": True,
+                "applyButton": True,
+                "clearButton": True
+            },
+            aggFunc="sum",
+            enableValue=True,
+            cellClass="numeric-cell"
+        )
 
     # Otimizações para grandes datasets
     if is_large_dataset:
@@ -1060,10 +1082,12 @@ else:
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
-    df_filtrado[coluna_dados] = pd.to_numeric(
-        df_filtrado[coluna_dados],
-        errors='coerce'  # Converte valores inválidos para NaN
-    )
+for col in colunas_adicionais:
+    if col in df_filtrado.columns:
+        colunas_tabela.append(col)
+
+if coluna_dados in df_filtrado.columns:
+    colunas_tabela.append(coluna_dados)
 
 colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
 colunas_tabela = colunas_existentes
@@ -1089,7 +1113,7 @@ tabela_filtrada = tabela_exibicao.copy()
 
 # Adicionar linha de totais
 try:
-    tabela_com_totais = tabela_filtrada
+    tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
 except Exception as e:
     st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
     tabela_com_totais = tabela_filtrada
@@ -1173,6 +1197,12 @@ with tab1:
     else:
         aplicar_filtros = True
         mostrar_dica = False
+
+    try:
+        tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+    except Exception as e:
+        st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
+        tabela_com_totais = tabela_filtrada
 
     altura_tabela = altura_manual
 
