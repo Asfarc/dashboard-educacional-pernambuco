@@ -1201,16 +1201,24 @@ with tab1:
         altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
             altura_manual = st.slider("Altura da tabela (pixels)",
-                                      min_value=200,
-                                      max_value=1000,
-                                      value=600,
-                                      step=50)
+                                    min_value=200,
+                                    max_value=1000,
+                                    value=600,
+                                    step=50)
         else:
             altura_manual = 600
 
     with col1:
         total_registros = len(tabela_exibicao)
         mostrar_todos = st.checkbox(ROTULO_MOSTRAR_REGISTROS, value=True)
+
+        # NOVO - Opção para linha de totais
+        posicao_totais = st.radio(
+            "Linha de totais:",
+            ["Rodapé", "Topo", "Nenhum"],
+            index=0,  # Padrão: Rodapé
+            horizontal=True
+        )
 
     with col2:
         st.write(" ")
