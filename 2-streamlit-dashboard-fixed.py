@@ -1113,6 +1113,9 @@ else:
 # Preparar a tabela para exibição imediata
 tabela_filtrada = tabela_exibicao.copy()
 
+# Exibir a tabela imediatamente
+altura_tabela = 600  # Altura padrão fixa
+
 # Mostrar configurações APÓS a tabela
 tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
 
