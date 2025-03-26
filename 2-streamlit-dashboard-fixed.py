@@ -393,6 +393,40 @@ def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
     # Retornar o resultado do grid e as estatísticas
     return grid_return
 
+# Adicione esta função para configurar a exibição da linha de totais no AG Grid
+def configurar_estilo_linha_totais(gb, coluna_dados):
+    """
+    Configura o AG Grid para destacar visualmente a linha de totais.
+    """
+    # CSS para destacar a linha de totais
+    css_totais = """
+    <style>
+        .ag-row.total-row {
+            font-weight: bold !important;
+            background-color: #f0f5ff !important;
+            border-top: 2px solid #aaa !important;
+            border-bottom: 2px solid #aaa !important;
+        }
+
+        .ag-row.total-row .ag-cell {
+            color: #000066 !important;
+        }
+
+        .ag-theme-streamlit .total-cell {
+            font-weight: bold !important;
+        }
+
+        /* Destaque para o valor total principal */
+        .ag-row.total-row [col-id="{}"] {{
+            font-weight: bold !important;
+            color: #000066 !important;
+            background-color: #e6f0ff !important;
+        }}
+    </style>
+    """.format(coluna_dados)
+
+    st.markdown(css_totais, unsafe_allow_html=True)
+
     # Configurar classe de linha baseada na coluna marcadora
     js_row_class = JsCode("""
     function(params) {
