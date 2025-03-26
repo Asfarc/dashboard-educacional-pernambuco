@@ -419,18 +419,19 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             type=["numericColumn", "numberColumnFilter"],
             filter="agNumberColumnFilter",
             filterParams={"inRangeInclusive": True, "applyButton": True, "clearButton": True},
-            aggFunc="sum",  # Habilita a soma automática
+            aggFunc="sum",  # Mantenha apenas aqui
             enableValue=True,
             cellClass="numeric-cell"
         )
 
     # Configurar a linha de total global
     gb.configure_grid_options(
-        groupIncludeTotalRow=True,    # Ativa totais
+        pivotMode=True,  # <--- ADICIONE ESTA LINHA
+        groupIncludeTotalRow=True,
         groupDisplayType="singleColumn",
         suppressAggFuncInHeader=True,
         autoGroupColumnDef={
-            "headerName": "TOTAL",  # Nome da linha de total
+            "headerName": "TOTAL",
             "cellRendererParams": {"suppressCount": True}
         }
     )
@@ -619,22 +620,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
 
         localeText=localeText
     )
-
-    # Se tiver coluna de dados numéricos, configurar como numericColumn
-    if coluna_dados and coluna_dados in df_para_exibir.columns:
-        gb.configure_column(
-            coluna_dados,
-            type=["numericColumn", "numberColumnFilter"],
-            filter="agNumberColumnFilter",
-            filterParams={
-                "inRangeInclusive": True,
-                "applyButton": True,
-                "clearButton": True
-            },
-            aggFunc="sum",
-            enableValue=True,
-            cellClass="numeric-cell"
-        )
 
     # Otimizações para grandes datasets
     if is_large_dataset:
