@@ -1085,7 +1085,7 @@ with tab1:
         modo_desempenho = st.checkbox(ROTULO_MODO_DESEMPENHO, value=True,
                                       help=DICA_MODO_DESEMPENHO)
 
-    st.write("### Filtros da tabela")
+    st.write("### Incluir outras colunas na tabela")
     col5, col6 = st.columns([1, 5])
 
     with col5:
