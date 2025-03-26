@@ -1060,13 +1060,25 @@ else:
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
-    df_filtrado[coluna_dados] = pd.to_numeric(
-        df_filtrado[coluna_dados],
-        errors='coerce'  # Converte valores inválidos para NaN
-    )
+    # Garante que a coluna_dados está na lista de colunas
+    if coluna_dados and (coluna_dados not in colunas_adicionais):
+        colunas_adicionais.append(coluna_dados)
 
-colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
-colunas_tabela = colunas_existentes
+    # Converte a coluna_dados para numérico (para todos os níveis)
+    if coluna_dados and (coluna_dados in df_filtrado.columns):
+        df_filtrado[coluna_dados] = pd.to_numeric(
+            df_filtrado[coluna_dados],
+            errors='coerce'
+        )
+
+    # Adiciona colunas adicionais à lista principal
+    for col in colunas_adicionais:
+        if col in df_filtrado.columns:
+            colunas_tabela.append(col)
+
+    # Filtra colunas existentes
+    colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
+    colunas_tabela = colunas_existentes
 
 if coluna_dados in df_filtrado.columns:
     with pd.option_context('mode.chained_assignment', None):
