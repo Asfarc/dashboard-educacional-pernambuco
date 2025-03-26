@@ -534,7 +534,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
         gb.configure_column("CODIGO DA ESCOLA", width=140, headerWrapText=True, autoHeaderHeight=True)
     if "NOME DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("NOME DA ESCOLA", width=150, headerWrapText=False, autoHeaderHeight=False)
+        gb.configure_column("NOME DA ESCOLA",
+                            width=150,  # Mantém a largura original
+                            maxWidth=150,  # Define uma largura máxima fixa
+                            suppressSizeToFit=True,  # Impede que a coluna seja redimensionada automaticamente
+                            wrapText=False,  # Não quebra texto na célula
+                            cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                            headerWrapText=True)  # Permite quebra de texto no cabeçalho
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
         gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
