@@ -1071,7 +1071,10 @@ colunas_tabela = colunas_existentes
 if coluna_dados in df_filtrado.columns:
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
-        df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
+        df_filtrado_tabela[coluna_dados] = pd.to_numeric(  # <--- Garanta que isso está presente
+            df_filtrado_tabela[coluna_dados],
+            errors='coerce'
+        )
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
