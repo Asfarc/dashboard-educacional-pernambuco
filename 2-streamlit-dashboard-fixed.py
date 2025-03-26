@@ -934,7 +934,11 @@ if coluna_dados in df_filtrado.columns:
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
-    with pd.option_context('mode.chained_assignment', None):
+    if coluna_dados.startswith("Número de"):
+        # NÃO CHAME formatar_numero() aqui; deixe puro, pois o JavaScript formata
+        pass
+    else:
+        # Se quiser formatar outras colunas como texto, beleza
         tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
             lambda x: formatar_numero(x) if pd.notnull(x) else "-"
         )
