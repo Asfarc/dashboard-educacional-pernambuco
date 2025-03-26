@@ -586,7 +586,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     elif "NOME DA UF" in df_para_exibir.columns:
         coluna_nome_principal = "NOME DA UF"
 
-
     # Configurar colunas para controle da linha de totais
     colunas_sem_totais = [
         "ANO",
@@ -628,6 +627,21 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                         return '<b>TODAS</b>';
                     }
                     return params.value;
+                }
+                """).js_code
+            )
+
+        elif coluna == coluna_dados or coluna.startswith("Número de"):
+            # Apenas somar a coluna de matrículas e colunas que começam com "Número de"
+            gb.configure_column(
+                coluna,
+                type=["numericColumn", "numberColumnFilter"],
+                filter="agNumberColumnFilter",
+                aggFunc="sum",
+                valueFormatter=JsCode("""
+                function(params) {
+                    if (params.value == null) return '';
+                    return new Intl.NumberFormat('pt-BR').format(params.value);
                 }
                 """).js_code
             )
