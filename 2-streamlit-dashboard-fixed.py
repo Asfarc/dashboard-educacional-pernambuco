@@ -577,6 +577,16 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                             cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
                             headerWrapText=True)
 
+    # Determinar qual coluna de nome deve mostrar "TOTAL"
+    coluna_nome_principal = None
+    if "NOME DA ESCOLA" in df_para_exibir.columns:
+        coluna_nome_principal = "NOME DA ESCOLA"
+    elif "NOME DO MUNICIPIO" in df_para_exibir.columns:
+        coluna_nome_principal = "NOME DO MUNICIPIO"
+    elif "NOME DA UF" in df_para_exibir.columns:
+        coluna_nome_principal = "NOME DA UF"
+
+
     # Configurar colunas para controle da linha de totais
     colunas_sem_totais = [
         "ANO",
@@ -635,6 +645,18 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 """).js_code
             )
 
+    js_estilo_linha_totais = JsCode("""
+    function(params) {
+        if (params.node && params.node.rowPinned) {
+            return {
+                'background-color': '#f0f2f7',
+                'font-weight': 'bold',
+                'border-top': '2px solid #ccc'
+            };
+        }
+        return null;
+    }
+    """)
 
     # Configurar seleção de células, clipboard e paginação
     gb.configure_grid_options(
@@ -653,8 +675,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         paginationPageSize=25,
         paginationSizeSelector=[5, 10, 25, 50, 100],
 
-        localeText=localeText
-    )
+        localeText=localeText,
+        grandTotalRow=posicao_totais
+        )
 
     # Se tiver coluna de dados numéricos, configurar como numericColumn
     if coluna_dados and coluna_dados in df_para_exibir.columns:
@@ -718,7 +741,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         suppressMenuHide=True,
         suppressMovableColumns=False,
         suppressRowHoverHighlight=True,
-        suppressRowDeselection=True
+        suppressRowDeselection=True,
+        getRowStyle=js_estilo_linha_totais.js_code
     )
 
     grid_options = gb.build()
@@ -1148,8 +1172,20 @@ except Exception as e:
 
 # Exibir a tabela imediatamente
 altura_tabela = 600  # Altura padrão fixa
+
+# Verificar se a posição dos totais foi definida
+if 'posicao_totais' not in locals():
+    posicao_totais = "Rodapé"  # Valor padrão
+
+posicao_totais_map = {"Rodapé": "bottom", "Topo": "top", "Nenhum": None}
+
 try:
-    grid_result = exibir_tabela_com_aggrid(tabela_com_totais, altura=altura_tabela, coluna_dados=coluna_dados)
+    grid_result = exibir_tabela_com_aggrid(
+        tabela_com_totais,
+        altura=altura_tabela,
+        coluna_dados=coluna_dados,
+        posicao_totais=posicao_totais_map.get(posicao_totais)
+    )
 except Exception as e:
     st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
     st.dataframe(tabela_com_totais, height=altura_tabela)
