@@ -1035,6 +1035,7 @@ colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
 
+# Definir colunas adicionais com base no nível de agregação
 if tipo_visualizacao == "Escola":
     colunas_adicionais = [
         "CODIGO DA ESCOLA",
@@ -1060,39 +1061,32 @@ else:
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
-    # Garante que a coluna_dados está presente em TODOS os níveis de agregação
-    if coluna_dados and (coluna_dados not in colunas_adicionais):
-        colunas_adicionais.append(coluna_dados)
+# --- ADICIONE A PARTE CRÍTICA AQUI (PARA TODOS OS NÍVEIS) ---
+# 1. Garante que a coluna_dados está na lista de colunas
+if coluna_dados and (coluna_dados not in colunas_adicionais):
+    colunas_adicionais.append(coluna_dados)
 
-    # Adiciona colunas adicionais à lista principal (apenas se existirem no DataFrame)
-    for col in colunas_adicionais:
-        if col in df_filtrado.columns:
-            colunas_tabela.append(col)
+# 2. Adiciona colunas à lista principal (apenas se existirem no DataFrame)
+for col in colunas_adicionais:
+    if col in df_filtrado.columns:
+        colunas_tabela.append(col)
 
-    # Filtra colunas existentes
-    colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
-    colunas_tabela = colunas_existentes
+# 3. Converte coluna_dados para numérico (APÓS incluir na lista)
+if coluna_dados and (coluna_dados in df_filtrado.columns):
+    df_filtrado[coluna_dados] = pd.to_numeric(
+        df_filtrado[coluna_dados],
+        errors='coerce'
+    )
 
-    # Converte a coluna_dados para numérico (APÓS incluir na lista)
-    if coluna_dados and (coluna_dados in df_filtrado.columns):
-        df_filtrado[coluna_dados] = pd.to_numeric(
-            df_filtrado[coluna_dados],
-            errors='coerce'
-        )
+# 4. Filtra colunas existentes
+colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
+colunas_tabela = colunas_existentes
 
-    # Adiciona colunas adicionais à lista principal
-    for col in colunas_adicionais:
-        if col in df_filtrado.columns:
-            colunas_tabela.append(col)
-
-    # Filtra colunas existentes
-    colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
-    colunas_tabela = colunas_existentes
-
+# Preparar dados para exibição
 if coluna_dados in df_filtrado.columns:
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
-        df_filtrado_tabela[coluna_dados] = pd.to_numeric(  # <--- Garanta que isso está presente
+        df_filtrado_tabela[coluna_dados] = pd.to_numeric(
             df_filtrado_tabela[coluna_dados],
             errors='coerce'
         )
