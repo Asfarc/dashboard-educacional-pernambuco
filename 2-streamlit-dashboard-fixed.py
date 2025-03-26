@@ -534,7 +534,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
     if "CODIGO DA ESCOLA" in df_para_exibir.columns:
         gb.configure_column("CODIGO DA ESCOLA", width=140, headerWrapText=True, autoHeaderHeight=True)
     if "NOME DA ESCOLA" in df_para_exibir.columns:
-        gb.configure_column("NOME DA ESCOLA", width=200, headerWrapText=True, autoHeaderHeight=True)
+        gb.configure_column("NOME DA ESCOLA", width=200, headerWrapText=True, autoHeaderHeight=False)
     if "DEPENDENCIA ADMINISTRATIVA" in df_para_exibir.columns:
         gb.configure_column("DEPENDENCIA ADMINISTRATIVA", width=180, headerWrapText=True, autoHeaderHeight=True)
 
