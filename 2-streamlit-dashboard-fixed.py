@@ -918,10 +918,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
                 height: auto !important;
             }
             .ag-cell { 
-                overflow: hidden !important; 
-                text-overflow: ellipsis !important;
-                white-space: nowrap !important;
-                max-width: inherit !important;
+                overflow: hidden; 
+                text-overflow: ellipsis; 
             }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
