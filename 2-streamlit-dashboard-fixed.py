@@ -656,22 +656,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None):
             enableBrowserTooltips=True
         )
 
-    # Barra de status personalizada
-    gb.configure_grid_options(
-        statusBar={
-            'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'left'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'left'},
-                {
-                    'statusPanel': 'agCustomStatsToolPanel',
-                    'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions.js_code
-                    }
-                }
-            ]
-        }
-    )
-
     # Barra lateral e configs avançadas
     gb.configure_side_bar()
 
