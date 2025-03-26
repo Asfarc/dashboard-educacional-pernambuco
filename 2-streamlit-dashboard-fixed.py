@@ -1060,11 +1060,20 @@ else:
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
-    # Garante que a coluna_dados está na lista de colunas
+    # Garante que a coluna_dados está presente em TODOS os níveis de agregação
     if coluna_dados and (coluna_dados not in colunas_adicionais):
         colunas_adicionais.append(coluna_dados)
 
-    # Converte a coluna_dados para numérico (para todos os níveis)
+    # Adiciona colunas adicionais à lista principal (apenas se existirem no DataFrame)
+    for col in colunas_adicionais:
+        if col in df_filtrado.columns:
+            colunas_tabela.append(col)
+
+    # Filtra colunas existentes
+    colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
+    colunas_tabela = colunas_existentes
+
+    # Converte a coluna_dados para numérico (APÓS incluir na lista)
     if coluna_dados and (coluna_dados in df_filtrado.columns):
         df_filtrado[coluna_dados] = pd.to_numeric(
             df_filtrado[coluna_dados],
