@@ -308,7 +308,6 @@ def verificar_coluna_existe(df, coluna_nome):
 
     return False, coluna_nome
 
-
 def adicionar_linha_totais(df, coluna_dados):
     """
     Adiciona uma linha de 'TOTAL' ao final, somando a coluna_dados.
@@ -338,7 +337,6 @@ def adicionar_linha_totais(df, coluna_dados):
 
     linha_totais = pd.DataFrame([totais], index=['TOTAL'])
     return pd.concat([df, linha_totais])
-
 
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
@@ -1115,7 +1113,7 @@ tabela_filtrada = tabela_exibicao.copy()
 
 # Adicionar linha de totais
 try:
-    tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+    tabela_com_totais = tabela_filtrada
 except Exception as e:
     st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
     tabela_com_totais = tabela_filtrada
@@ -1201,7 +1199,7 @@ with tab1:
         mostrar_dica = False
 
     try:
-        tabela_com_totais = adicionar_linha_totais(tabela_filtrada, coluna_dados)
+        tabela_com_totais = tabela_filtrada
     except Exception as e:
         st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
         tabela_com_totais = tabela_filtrada
