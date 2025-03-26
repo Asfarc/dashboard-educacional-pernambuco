@@ -393,6 +393,69 @@ def exibir_tabela_sem_totais(df_para_exibir, coluna_dados, altura=600):
     # Retornar o resultado do grid e as estatísticas
     return grid_return
 
+    # Configurar classe de linha baseada na coluna marcadora
+    js_row_class = JsCode("""
+    function(params) {
+        if (!params.data) return '';
+        if (params.data._is_total_row === true) return 'total-row';
+        for (const key in params.data) {
+            if (params.data[key] && 
+                params.data[key].toString && 
+                params.data[key].toString().toUpperCase() === 'TOTAL') {
+                return 'total-row';
+            }
+        }
+        return '';
+    }
+    """)
+
+    # Configurar classe de célula para destacar valores
+    js_cell_style = JsCode("""
+    function(params) {
+        if (!params.node || !params.data) return null;
+
+        // Verifica se é a linha de totais
+        let isTotalRow = false;
+        if (params.data._is_total_row === true) {
+            isTotalRow = true;
+        } else {
+            for (const key in params.data) {
+                if (params.data[key] && 
+                    params.data[key].toString && 
+                    params.data[key].toString().toUpperCase() === 'TOTAL') {
+                    isTotalRow = true;
+                    break;
+                }
+            }
+        }
+
+        if (isTotalRow) {
+            if (params.column.colId === '""" + coluna_dados + """') {
+                return {
+                    'font-weight': 'bold',
+                    'color': '#000066',
+                    'background-color': '#e6f0ff'
+                };
+            }
+            return {
+                'font-weight': 'bold'
+            };
+        }
+        return null;
+    }
+    """)
+
+    # Aplicar configurações ao grid
+    gb.configure_grid_options(
+        getRowClass=js_row_class,
+        getRowStyle=js_cell_style
+    )
+
+    # Ocultar a coluna marcadora
+    gb.configure_column('_is_total_row', hide=True)
+
+    return gb
+
 def preparar_tabela_para_exibicao(df_base, colunas_para_exibir, coluna_ordenacao):
     """
     Ordena df_base pela coluna_ordenacao e formata colunas numéricas.
