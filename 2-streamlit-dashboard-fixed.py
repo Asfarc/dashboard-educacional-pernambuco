@@ -934,7 +934,11 @@ if coluna_dados in df_filtrado.columns:
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
-    with pd.option_context('mode.chained_assignment', None):
+    if coluna_dados.startswith("Número de"):
+        # NÃO aplicar formatar_numero() — pois AgGrid já vai formatar como inteiro
+        pass
+    else:
+        # Para colunas que não começam com "Número de", você aplica formatar_numero se quiser
         tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
             lambda x: formatar_numero(x) if pd.notnull(x) else "-"
         )
