@@ -661,6 +661,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     js_estilo_linha_totais = JsCode("""
     function(params) {
+        // Verifique se é uma linha pinnada (total)
         if (params.node && params.node.rowPinned) {
             return {
                 'background-color': '#f0f2f7',
@@ -688,10 +689,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         paginationAutoPageSize=False,
         paginationPageSize=25,
         paginationSizeSelector=[5, 10, 25, 50, 100],
-
         localeText=localeText,
-        grandTotalRow=posicao_totais
-        )
+        grandTotalRow=posicao_totais,
+        # Adicione esta configuração importante para garantir que os totais sejam calculados corretamente
+        suppressAggFuncInHeader=True,
+        # Defina explicitamente o estilo da linha de totais
+        rowStyle=js_estilo_linha_totais.js_code
+    )
 
     # Se tiver coluna de dados numéricos, configurar como numericColumn
     if coluna_dados and coluna_dados in df_para_exibir.columns:
@@ -699,14 +703,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             coluna_dados,
             type=["numericColumn", "numberColumnFilter"],
             filter="agNumberColumnFilter",
-            filterParams={
-                "inRangeInclusive": True,
-                "applyButton": True,
-                "clearButton": True
-            },
-            aggFunc="sum",
+            aggFunc="sum",  # Certifique-se que isso está definido
             enableValue=True,
-            cellClass="numeric-cell"
+            valueFormatter=JsCode("""
+            function(params) {
+                if (params.value == null || params.value === undefined) return '';
+                return new Intl.NumberFormat('pt-BR').format(params.value);
+            }
+            """).js_code,
+            cellStyle=JsCode("""
+            function(params) {
+                if (params.node && params.node.rowPinned) {
+                    return {
+                        'font-weight': 'bold',
+                        'background-color': '#f0f2f7'
+                    };
+                }
+                return null;
+            }
+            """).js_code
         )
 
     # Otimizações para grandes datasets
@@ -1191,7 +1206,19 @@ altura_tabela = 600  # Altura padrão fixa
 if 'posicao_totais' not in locals():
     posicao_totais = "Rodapé"  # Valor padrão
 
-posicao_totais_map = {"Rodapé": "bottom", "Topo": "top", "Nenhum": None}
+posicao_totais_map = {
+    "Rodapé": "bottom",
+    "Topo": "top",
+    "Nenhum": None
+}
+
+# Garantir que os dados são numéricos antes de enviar ao AgGrid
+if coluna_dados and coluna_dados in tabela_com_totais.columns:
+    with pd.option_context('mode.chained_assignment', None):
+        # Converte para numérico, substituindo valores não-numéricos por NaN
+        tabela_com_totais[coluna_dados] = pd.to_numeric(tabela_com_totais[coluna_dados], errors='coerce')
+        # Preenche NaN com 0 para evitar problemas na agregação
+        tabela_com_totais[coluna_dados] = tabela_com_totais[coluna_dados].fillna(0)
 
 try:
     grid_result = exibir_tabela_com_aggrid(
