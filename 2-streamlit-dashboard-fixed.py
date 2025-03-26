@@ -1198,12 +1198,6 @@ with tab1:
         aplicar_filtros = True
         mostrar_dica = False
 
-    try:
-        tabela_com_totais = tabela_filtrada
-    except Exception as e:
-        st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
-        tabela_com_totais = tabela_filtrada
-
     altura_tabela = altura_manual
 
     col1, col2 = st.columns(2)
