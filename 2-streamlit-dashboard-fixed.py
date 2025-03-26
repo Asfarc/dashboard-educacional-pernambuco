@@ -564,9 +564,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     # Se quisermos a linha de totais fixada e a coluna_dados existir
     pinned_row_data = None
     if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
-        soma = df_para_exibir[coluna_dados].sum()
-        # Cria uma row só com o total nessa coluna
-        pinned_row_data = {coluna_dados: soma}
+        soma_np = df_para_exibir[coluna_dados].sum()
+        soma_python = int(soma_np)  # ou float(soma_np)
+        pinned_row_data = {coluna_dados: soma_python}
 
     # Monta as opções
     grid_options = gb.build()
@@ -934,11 +934,7 @@ if coluna_dados in df_filtrado.columns:
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
-    if coluna_dados.startswith("Número de"):
-        # NÃO CHAME formatar_numero() aqui; deixe puro, pois o JavaScript formata
-        pass
-    else:
-        # Se quiser formatar outras colunas como texto, beleza
+    with pd.option_context('mode.chained_assignment', None):
         tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
             lambda x: formatar_numero(x) if pd.notnull(x) else "-"
         )
