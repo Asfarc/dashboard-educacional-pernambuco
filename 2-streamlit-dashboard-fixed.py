@@ -599,8 +599,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'left'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'left'},
+                {'statusPanel': 'agTotalRowCountComponent', 'align': 'center'},
+                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'center'},
                 {
                     'statusPanel': 'agCustomStatsToolPanel',
                     'statusPanelParams': {
