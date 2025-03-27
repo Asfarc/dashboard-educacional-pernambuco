@@ -491,7 +491,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 filter="agNumberColumnFilter",
                 aggFunc="sum",  # se quiser somar no rodapé ou no status bar
                 width=180,  # Largura fixa para todas as colunas de matrículas
-                maxWidth=220,  # Limita a largura máxima
+                maxWidth=150,  # Limita a largura máxima
                 headerClass="centered-header",
                 valueFormatter=JsCode("""
                     function(params) {
