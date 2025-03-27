@@ -534,20 +534,28 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             function(params) {
                 params.api.sizeColumnsToFit();
 
-                // Ajusta o container da paginação para ter a mesma largura da tabela
-                setTimeout(function() {
+                // Função para ajustar a paginação
+                const adjustPagination = () => {
                     const gridElement = document.querySelector('.ag-root-wrapper');
                     const paginationElement = document.querySelector('.ag-paging-panel');
                     if (gridElement && paginationElement) {
                         paginationElement.style.width = gridElement.clientWidth + 'px';
                     }
-                }, 100);
+                };
+
+                // Executa imediatamente e após um pequeno delay
+                adjustPagination();
+                setTimeout(adjustPagination, 200);
+
+                // Observa mudanças na estrutura da tabela (ex: colunas adicionadas/removidas)
+                const gridElement = document.querySelector('.ag-root-wrapper');
+                const observer = new MutationObserver(adjustPagination);
+                observer.observe(gridElement, { childList: true, subtree: true });
             }
         """),
         onColumnResized=JsCode("""
             function(params) {
                 console.log('Coluna redimensionada', params);
-                // Reajusta paginação quando colunas são redimensionadas
                 const gridElement = document.querySelector('.ag-root-wrapper');
                 const paginationElement = document.querySelector('.ag-paging-panel');
                 if (gridElement && paginationElement) {
@@ -557,11 +565,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         """),
         onColumnVisibilityChanged=JsCode("""
             function(params) {
-                // Quando colunas são adicionadas ou removidas, reajusta o layout
                 setTimeout(function() {
                     params.api.sizeColumnsToFit();
-
-                    // Reajusta o container da paginação
                     const gridElement = document.querySelector('.ag-root-wrapper');
                     const paginationElement = document.querySelector('.ag-paging-panel');
                     if (gridElement && paginationElement) {
@@ -572,7 +577,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         """),
         onFilterChanged=JsCode("""
             function(params) {
-                // Reajusta quando filtros são alterados (pode mudar o tamanho da tabela)
                 setTimeout(function() {
                     const gridElement = document.querySelector('.ag-root-wrapper');
                     const paginationElement = document.querySelector('.ag-paging-panel');
@@ -637,6 +641,16 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         gridOptions=grid_options,
         height=altura,
         custom_css="""
+            /* --- NOVAS REGRAS --- */
+            .ag-paging-panel {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            .ag-root-wrapper {
+                margin: 0 auto;
+            }
+
+            /* CSS existente abaixo */
             .ag-row-selected { background-color: transparent !important; }
             .numeric-cell { text-align: right; }
             .ag-cell.ag-cell-range-selected,
@@ -668,15 +682,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 font-size: 12px !important;
             }
             .ag-header-cell {
-            text-align: center !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+                text-align: center !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
             .ag-header-row {
                 height: auto !important;
             }
-            /* Corrige alinhamento do ícone de filtro/menu */
             .ag-header-icon {
                 margin-left: auto !important;
             }
@@ -684,14 +697,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 overflow: hidden;
                 text-align: center !important;
                 text-overflow: ellipsis; 
-            }         
+            }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
         fit_columns_on_grid_load=True,
         allow_unsafe_jscode=True,
         theme="streamlit",
-        key=f"aggrid_{id(df_para_exibir)}"
+        key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
     # Atalhos de teclado: Ctrl+C (copiar) e Ctrl+A (selecionar tudo)
