@@ -530,7 +530,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         paginationPageSize=25,
         paginationSizeSelector=[5, 10, 25, 50, 100],
         localeText=localeText,
-        suppressAggFuncInHeader=True  # não exibir aggFunc no cabeçalho
+        suppressAggFuncInHeader=True,
+        onGridReady=JsCode("""
+            function(params) {
+                params.api.sizeColumnsToFit();
+            }
+        """)
     )
 
     # Barra de status: soma, média, min, max
