@@ -474,7 +474,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             gb.configure_column(
                 col,
                 minWidth=largura,  # Largura mínima conforme o seu ajuste
-                maxWidth=largura,  # Largura máxima fixa em 300 pixels
+                maxWidth=800,  # Largura máxima fixa em 300 pixels
                 suppressSizeToFit=False,
                 wrapText=False,
                 cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
@@ -490,7 +490,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 filter="agNumberColumnFilter",
                 aggFunc="sum",  # se quiser somar no rodapé ou no status bar
                 minWidth=largura,  # Largura mínima conforme o seu ajuste
-                maxWidth=largura,  # Largura máxima fixa em 300 pixels
+                maxWidth=300,  # Largura máxima fixa em 300 pixels
                 headerClass="centered-header",
                 valueFormatter=JsCode("""
                     function(params) {
