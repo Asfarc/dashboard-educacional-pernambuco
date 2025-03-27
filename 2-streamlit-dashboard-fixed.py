@@ -621,7 +621,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 height: auto !important;
             }
             .ag-cell { 
-                overflow: hidden; 
+                overflow: hidden;
+                text-align: center !important;
                 text-overflow: ellipsis; 
             }
         """,
