@@ -458,6 +458,20 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         autoHeaderHeight=True,
         headerClass="centered-header",  # Classe para centralização
         cellStyle={'textAlign': 'center'},  # Centraliza o conteúdo
+        headerComponentParams={
+            'template':
+                '<div class="ag-cell-label-container" role="presentation">' +
+                '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
+                '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center; width: 100%;">' +
+                '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="display: flex; justify-content: center; text-align: center; width: 100%;"></span>' +
+                '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>' +
+                '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>' +
+                '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>' +
+                '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>' +
+                '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>' +
+                '  </div>' +
+                '</div>'
+        }
     )
 
     # Ajuste manual de algumas colunas
