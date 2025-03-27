@@ -646,18 +646,66 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         gridOptions=grid_options,
         height=altura,
         custom_css="""
-            /* --- NOVAS REGRAS --- */
+            /* Regras para cabeçalhos centralizados */
+            .ag-header-cell {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+            }
+
+            .ag-header-cell-text {
+                text-align: center !important;
+                width: 100% !important;
+                font-weight: bold !important;
+                white-space: normal !important;
+                line-height: 1.2 !important;
+                overflow: visible !important;
+                font-size: 12px !important;
+            }
+
+            .ag-header-container {
+                text-align: center !important;
+            }
+
+            /* Regras para células centralizadas */
+            .ag-cell {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+            }
+
+            /* Regras para paginação e container principal */
             .ag-paging-panel {
                 width: 100% !important;
                 justify-content: center !important;
             }
+
             .ag-root-wrapper {
                 margin: 0 auto;
             }
 
-            /* CSS existente abaixo */
-            .ag-row-selected { background-color: transparent !important; }
-            .numeric-cell { text-align: right; }
+            /* Regras para seleção e hover */
+            .ag-row-selected { 
+                background-color: transparent !important; 
+            }
+
+            .ag-row {
+                background-color: inherit !important;
+            }
+
+            .ag-row:hover {
+                background-color: inherit !important;
+            }
+
+            .ag-row-selected,
+            .ag-row-selected:hover {
+                background-color: transparent !important;
+                border: none !important;
+            }
+
+            /* Regras para células selecionadas */
             .ag-cell.ag-cell-range-selected,
             .ag-cell.ag-cell-range-selected-1,
             .ag-cell.ag-cell-range-selected-2,
@@ -666,59 +714,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 background-color: #e6f2ff !important; 
                 color: #000 !important; 
             }
-            .ag-row {
-                background-color: inherit !important;
-            }
-            .ag-row:hover {
-                background-color: inherit !important;
-            }
-            .ag-row-selected,
-            .ag-row-selected:hover {
-                background-color: transparent !important;
-                border: none !important;
-            }
-            .ag-header-cell-text { 
-                font-weight: bold !important;
-                text-align: center !important;
-                white-space: normal !important;
-                width: 100% !important;
-                line-height: 1.2 !important;
-                overflow: visible !important;
-                font-size: 12px !important;
-            }
-            .ag-header-cell {
-                text-align: center !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-            .ag-header-row {
-                height: auto !important;
-            }
-            .ag-header-icon {
-                margin-left: auto !important;
-            }
-            .ag-cell {
-                text-align: center !important;  /* Centraliza todas as células */
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-        
-            .ag-header-cell-text {
-                text-align: center !important;  /* Centraliza cabeçalhos */
-            }
-        
-            /* Mantenha o restante do CSS existente abaixo */
-            .ag-paging-panel {
-                width: 100% !important;
-                justify-content: center !important;
-            }
-            .ag-root-wrapper {
-                margin: 0 auto;
-            }
-            .ag-row-selected { 
-                background-color: transparent !important; 
+
+            /* Regras para células numéricas */
+            .numeric-cell { 
+                text-align: right; 
             }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
