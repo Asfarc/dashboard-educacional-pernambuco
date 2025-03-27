@@ -659,6 +659,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
 
             .ag-header-cell-text {
+                display: flex !important;
                 text-align: center !important;
                 align-items: center !important;
                 width: 100% !important;
@@ -671,6 +672,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
 
             .ag-header-container {
+                display: flex !important;
                 text-align: center !important;
                 align-items: center !important;
                 width: 100% !important;
@@ -688,6 +690,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
             /* Regras para paginação e container principal */
             .ag-paging-panel {
+            display: flex !important;
             text-align: center !important;
             align-items: center !important;
             width: 100% !important;
