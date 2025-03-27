@@ -611,14 +611,17 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 font-size: 12px !important;
             }
             .ag-header-cell {
-                padding: 4px !important;
-                height: auto !important;
-                min-height: 50px !important;
-                display: flex !important;
-                align-items: center !important;
+            text-align: center !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             }
             .ag-header-row {
                 height: auto !important;
+            }
+            /* Corrige alinhamento do ícone de filtro/menu */
+            .ag-header-icon {
+                margin-left: auto !important;
             }
             .ag-cell { 
                 overflow: hidden;
