@@ -603,7 +603,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
             .ag-header-cell-text { 
                 font-weight: bold !important;
+                text-align: center !important;
                 white-space: normal !important;
+                width: 100% !important;
                 line-height: 1.2 !important;
                 overflow: visible !important;
                 font-size: 12px !important;
