@@ -490,13 +490,20 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 type=["numericColumn", "numberColumnFilter"],  # AgGrid reconhece como número
                 filter="agNumberColumnFilter",
                 aggFunc="sum",  # se quiser somar no rodapé ou no status bar
+                width=180,  # Largura fixa para todas as colunas de matrículas
+                maxWidth=220,  # Limita a largura máxima
+                headerClass="centered-header",
                 valueFormatter=JsCode("""
                     function(params) {
                         if (params.value == null) return '';
                         // Formata sem decimais, em pt-BR
                         return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
                     }
-                """).js_code
+                """).js_code,
+                cellStyle={
+                    'textAlign': 'right',
+                    'fontWeight': '500'
+                }
             )
 
         else:
@@ -627,13 +634,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 overflow: hidden;
                 text-align: center !important;
                 text-overflow: ellipsis; 
-            }
-            .ag-pinned-bottom-row .ag-cell {
-                font-weight: bold !important;
-                font-size: 14px !important;
-                color: #fff !important;
-                background-color: #333 !important;
-            }            
+            }         
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
