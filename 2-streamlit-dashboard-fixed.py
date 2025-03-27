@@ -441,8 +441,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     gb.configure_default_column(
         groupable=True,
-        flex=1,  # Largura fixa para todas as colunas de matrículas
-        maxWidth=300,  # Limita a largura máxima
         editable=False,
         wrapText=True,
         autoHeight=False,
@@ -485,7 +483,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             )
 
     for coluna in df_para_exibir.columns:
-
         if coluna.startswith("Número de"):
             # Colunas numéricas (inteiros) - sem casas decimais
             gb.configure_column(
