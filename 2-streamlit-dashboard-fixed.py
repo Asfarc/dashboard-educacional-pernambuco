@@ -520,6 +520,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     # Configurações do grid
     gb.configure_grid_options(
+        defaultColDef={"headerClass": "centered-header"},
+        rowStyle={"textAlign": "center"},
         rowSelection='none',
         suppressRowDeselection=True,
         suppressRowClickSelection=True,
