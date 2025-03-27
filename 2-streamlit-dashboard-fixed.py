@@ -533,11 +533,53 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         onGridReady=JsCode("""
             function(params) {
                 params.api.sizeColumnsToFit();
+
+                // Ajusta o container da paginação para ter a mesma largura da tabela
+                setTimeout(function() {
+                    const gridElement = document.querySelector('.ag-root-wrapper');
+                    const paginationElement = document.querySelector('.ag-paging-panel');
+                    if (gridElement && paginationElement) {
+                        paginationElement.style.width = gridElement.clientWidth + 'px';
+                    }
+                }, 100);
             }
         """),
         onColumnResized=JsCode("""
             function(params) {
                 console.log('Coluna redimensionada', params);
+                // Reajusta paginação quando colunas são redimensionadas
+                const gridElement = document.querySelector('.ag-root-wrapper');
+                const paginationElement = document.querySelector('.ag-paging-panel');
+                if (gridElement && paginationElement) {
+                    paginationElement.style.width = gridElement.clientWidth + 'px';
+                }
+            }
+        """),
+        onColumnVisibilityChanged=JsCode("""
+            function(params) {
+                // Quando colunas são adicionadas ou removidas, reajusta o layout
+                setTimeout(function() {
+                    params.api.sizeColumnsToFit();
+
+                    // Reajusta o container da paginação
+                    const gridElement = document.querySelector('.ag-root-wrapper');
+                    const paginationElement = document.querySelector('.ag-paging-panel');
+                    if (gridElement && paginationElement) {
+                        paginationElement.style.width = gridElement.clientWidth + 'px';
+                    }
+                }, 100);
+            }
+        """),
+        onFilterChanged=JsCode("""
+            function(params) {
+                // Reajusta quando filtros são alterados (pode mudar o tamanho da tabela)
+                setTimeout(function() {
+                    const gridElement = document.querySelector('.ag-root-wrapper');
+                    const paginationElement = document.querySelector('.ag-paging-panel');
+                    if (gridElement && paginationElement) {
+                        paginationElement.style.width = gridElement.clientWidth + 'px';
+                    }
+                }, 100);
             }
         """)
     )
