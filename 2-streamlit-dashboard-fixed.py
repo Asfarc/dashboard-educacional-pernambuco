@@ -698,10 +698,27 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             .ag-header-icon {
                 margin-left: auto !important;
             }
-            .ag-cell { 
-                overflow: hidden;
-                text-align: center !important;
-                text-overflow: ellipsis; 
+            .ag-cell {
+                text-align: center !important;  /* Centraliza todas as células */
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+        
+            .ag-header-cell-text {
+                text-align: center !important;  /* Centraliza cabeçalhos */
+            }
+        
+            /* Mantenha o restante do CSS existente abaixo */
+            .ag-paging-panel {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            .ag-root-wrapper {
+                margin: 0 auto;
+            }
+            .ag-row-selected { 
+                background-color: transparent !important; 
             }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
