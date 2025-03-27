@@ -657,13 +657,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 align-items: center !important;
                 text-align: center !important;
                 justify-content: center !important;
-                text-align: center !important;
             }
 
             .ag-header-cell-text {
                 text-align: center !important;
                 width: 100% !important;
-                text-align: center !important;
+                justify-content: center !important;
                 font-weight: bold !important;
                 white-space: normal !important;
                 line-height: 1.2 !important;
@@ -672,22 +671,25 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
 
             .ag-header-container {
-                    width: 100% !important;
-                    text-align: center !important;
+                text-align: center !important;
+                width: 100% !important;
+                justify-content: center !important;
             }
 
             /* Regras para células centralizadas */
             .ag-cell {
                 display: flex !important;
                 align-items: center !important;
-                justify-content: center !important;
                 text-align: center !important;
+                width: 100% !important;
+                justify-content: center !important;
             }
 
             /* Regras para paginação e container principal */
             .ag-paging-panel {
-                width: 100% !important;
-                justify-content: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            justify-content: center !important;
             }
 
             .ag-root-wrapper {
