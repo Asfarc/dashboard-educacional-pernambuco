@@ -679,9 +679,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
             /* Regras para células centralizadas */
             .ag-cell {
-                display: flex !important;
-                align-items: center !important;
-                text-align: center !important;
+                display: flex;
+                align-items: center;
+                text-align: center;
                 width: 100% !important;
                 justify-content: center !important;
             }
