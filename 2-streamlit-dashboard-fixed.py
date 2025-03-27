@@ -730,7 +730,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
             /* Regras para células numéricas */
             .numeric-cell { 
-                text-align: right; 
+                text-align: center !important;
+                width: 100% !important;
+                justify-content: center !important;
             }
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
