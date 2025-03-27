@@ -490,7 +490,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 type=["numericColumn", "numberColumnFilter"],  # AgGrid reconhece como número
                 filter="agNumberColumnFilter",
                 aggFunc="sum",  # se quiser somar no rodapé ou no status bar
-                width=200,  # Largura fixa para todas as colunas de matrículas
+                flex=1,  # Largura fixa para todas as colunas de matrículas
                 maxWidth=200,  # Limita a largura máxima
                 headerClass="centered-header",
                 valueFormatter=JsCode("""
