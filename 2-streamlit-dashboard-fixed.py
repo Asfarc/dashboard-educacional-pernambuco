@@ -146,7 +146,6 @@ def formatar_numero(numero):
     except (ValueError, TypeError):
         return str(numero)
 
-
 @st.cache_data
 def carregar_dados():
     """
@@ -184,7 +183,6 @@ def carregar_dados():
         st.error(ERRO_CARREGAR_DADOS.format(e))
         st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
-
 
 @st.cache_data
 def carregar_mapeamento_colunas():
@@ -239,7 +237,6 @@ def criar_mapeamento_colunas(df):
 
     return mapeamento_ajustado
 
-
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
@@ -261,7 +258,6 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
         return mapeamento[etapa]["subetapas"][subetapa]
 
     return series_subetapa[serie]
-
 
 def verificar_coluna_existe(df, coluna_nome):
     if not coluna_nome:
@@ -301,7 +297,6 @@ def converter_df_para_excel(df):
         output = io.BytesIO()
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
-
 
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom"):
     """
@@ -480,7 +475,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 col,
                 width=largura,
                 maxWidth=largura,
-                suppressSizeToFit=True,
+                suppressSizeToFit=False,
                 wrapText=False,
                 cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
                 headerWrapText=True
@@ -630,7 +625,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=False,
+        fit_columns_on_grid_load=True,
         allow_unsafe_jscode=True,
         theme="streamlit",
         key=f"aggrid_{id(df_para_exibir)}"
@@ -699,7 +694,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         )
 
     return grid_return
-
 
 # -------------------------------
 # Carregamento de Dados
