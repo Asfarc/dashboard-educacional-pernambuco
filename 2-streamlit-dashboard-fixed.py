@@ -477,7 +477,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 maxWidth=800,  # Largura máxima fixa em 300 pixels
                 suppressSizeToFit=False,
                 wrapText=False,
-                cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
+                cellStyle={
+                    'overflow': 'hidden',
+                    'text-overflow': 'ellipsis',
+                    'white-space': 'nowrap',
+                    'textAlign': 'center'  # Adicionado
+                },
                 headerWrapText=True
             )
 
@@ -500,7 +505,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     }
                 """).js_code,
                 cellStyle={
-                    'textAlign': 'right',
+                    'textAlign': 'center',
                     'fontWeight': '500'
                 }
             )
