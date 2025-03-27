@@ -622,7 +622,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             suppressColumnVirtualisation=False,
             suppressRowVirtualisation=False,
             enableCellTextSelection=True,
-            enableBrowserTooltips=True
+            enableBrowserTooltips=True,
+            defaultColDef={"headerClass": "centered-header"},
+            rowStyle={"textAlign": "center"}
         )
 
     # Se quisermos a linha de totais fixada e a coluna_dados existir
@@ -651,7 +653,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             /* Regras para cabeçalhos centralizados */
             .ag-header-cell {
                 display: flex !important;
+                width: 100% !important;
                 align-items: center !important;
+                text-align: center !important;
                 justify-content: center !important;
                 text-align: center !important;
             }
@@ -659,6 +663,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             .ag-header-cell-text {
                 text-align: center !important;
                 width: 100% !important;
+                text-align: center !important;
                 font-weight: bold !important;
                 white-space: normal !important;
                 line-height: 1.2 !important;
@@ -667,7 +672,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
 
             .ag-header-container {
-                text-align: center !important;
+                    width: 100% !important;
+                    text-align: center !important;
             }
 
             /* Regras para células centralizadas */
