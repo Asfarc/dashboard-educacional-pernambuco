@@ -475,7 +475,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 col,
                 width=largura,
                 maxWidth=largura,
-                suppressSizeToFit=False,
+                suppressSizeToFit=True,
                 wrapText=False,
                 cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
                 headerWrapText=True
