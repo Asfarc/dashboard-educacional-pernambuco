@@ -628,6 +628,12 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 text-align: center !important;
                 text-overflow: ellipsis; 
             }
+            .ag-pinned-bottom-row .ag-cell {
+                font-weight: bold !important;
+                font-size: 14px !important;
+                color: #fff !important;
+                background-color: #333 !important;
+            }            
         """,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.VALUE_CHANGED,
