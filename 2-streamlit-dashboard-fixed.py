@@ -455,7 +455,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         sortable=True,
         suppressMenu=False,
         headerWrapText=True,
-        autoHeaderHeight=True
+        autoHeaderHeight=True,
+        headerClass="centered-header",  # Classe para centralização
+        cellStyle={'textAlign': 'center'},  # Centraliza o conteúdo
     )
 
     # Ajuste manual de algumas colunas
