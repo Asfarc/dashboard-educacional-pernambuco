@@ -535,6 +535,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             function(params) {
                 params.api.sizeColumnsToFit();
             }
+        """),
+        onColumnResized=JsCode("""
+            function(params) {
+                console.log('Coluna redimensionada', params);
+            }
         """)
     )
 
