@@ -479,9 +479,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 wrapText=False,
                 cellStyle={
                     'overflow': 'hidden',
+                    'textAlign': 'center',
                     'text-overflow': 'ellipsis',
                     'white-space': 'nowrap',
-                    'textAlign': 'center'  # Adicionado
                 },
                 headerWrapText=True
             )
@@ -496,7 +496,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 aggFunc="sum",  # se quiser somar no rodapé ou no status bar
                 minWidth=largura,  # Largura mínima conforme o seu ajuste
                 maxWidth=300,  # Largura máxima fixa em 300 pixels
-                headerClass="centered-header",
                 valueFormatter=JsCode("""
                     function(params) {
                         if (params.value == null) return '';
