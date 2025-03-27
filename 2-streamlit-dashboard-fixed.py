@@ -464,7 +464,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         "CODIGO DO MUNICIPIO": 200,
         "NOME DO MUNICIPIO": 220,
         "CODIGO DA ESCOLA": 200,
-        "NOME DA ESCOLA": 200,
+        "NOME DA ESCOLA": 300,
         "DEPENDENCIA ADMINISTRATIVA": 200,
         "CODIGO DA UF": 200,
         "NOME DA UF": 200
