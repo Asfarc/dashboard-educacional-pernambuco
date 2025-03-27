@@ -298,7 +298,7 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom"):
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom", tipo_visualizacao=None):
     """
     Exibe DataFrame no AgGrid, com opções de:
       - paginacão, range selection, status bar
@@ -1042,7 +1042,9 @@ try:
         tabela_com_totais,
         altura=altura_tabela,
         coluna_dados=coluna_dados,
-        posicao_totais=posicao_totais_map.get(posicao_totais)
+        posicao_totais=posicao_totais_map.get(posicao_totais),
+        # Adicione o parâmetro tipo_visualizacao:
+        tipo_visualizacao=tipo_visualizacao
     )
 except Exception as e:
     st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
