@@ -464,7 +464,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         "CODIGO DO MUNICIPIO": 160,
         "NOME DO MUNICIPIO": 220,
         "CODIGO DA ESCOLA": 140,
-        "NOME DA ESCOLA": 150,
+        "NOME DA ESCOLA": 200,
         "DEPENDENCIA ADMINISTRATIVA": 180,
         "CODIGO DA UF": 100,
         "NOME DA UF": 120
@@ -475,7 +475,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 col,
                 width=largura,
                 maxWidth=largura,
-                suppressSizeToFit=True,
+                suppressSizeToFit=False,
                 wrapText=False,
                 cellStyle={'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'},
                 headerWrapText=True
