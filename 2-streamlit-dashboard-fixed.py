@@ -1346,19 +1346,6 @@ except Exception as e:
 # Cabeçalho e Informações Iniciais
 # -------------------------------
 st.title(TITULO_DASHBOARD)
-
-st.markdown(
-    f"""
-    <div class="main-header">
-        <h3>Visualização por {tipo_visualizacao} - Anos: {', '.join(map(str, anos_selecionados))}</h3>
-        <p>{etapa_selecionada} 
-           {f'| {subetapa_selecionada}' if subetapa_selecionada != 'Todas' else ''} 
-           {f'| {serie_selecionada}' if serie_selecionada != 'Todas' and serie_selecionada in series_disponiveis else ''}</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
