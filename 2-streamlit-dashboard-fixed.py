@@ -322,7 +322,7 @@ h2 {
 }
 """
 
-st.markdown(css_unificado, unsafe_allow_html=True)
+st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
 
 # -------------------------------
 # Funções Auxiliares
