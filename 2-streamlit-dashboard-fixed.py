@@ -587,8 +587,7 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
             line=dict(color='#d6d6d6', width=1)
         ),
         customdata=custom_data,
-        hoverinfo="text",
-        hovertemplate="%{customdata}"
+        hoverinfo="text"
     )])
 
     # Ajustar layout
