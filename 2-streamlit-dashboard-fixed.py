@@ -620,18 +620,27 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     # --------------------------------------------------------------------------------
     # Pinned Row unificando "Total de linhas" (na primeira coluna) e soma de 'coluna_dados'
     # --------------------------------------------------------------------------------
+    # 1) Calcular a soma da coluna e converter para int (caso seja np.int64)
+    soma_valor = int(df_para_exibir[coluna_dados].sum())
+    # 2) Calcular o total de linhas
+    total_linhas = int(len(df_para_exibir))
+
+    # 3) Montar um texto para a coluna "ANO" com "Total de linhas: X"
+    texto_total_linhas = f"Total de linhas: {total_linhas:,}"
+
+    # 4) Formatar a soma com pontos como separadores de milhar (opcional)
+    soma_formatada = f"{soma_valor:,}".replace(",", ".")
+
+    # 5) Agora seu pinned_row_data fica assim:
     pinned_row_data = {
-        "minha_coluna_texto": "Algum texto",
-        "minha_coluna_numerica": df_para_exibir[coluna_dados].sum()
+        "ANO": texto_total_linhas,  # Texto na coluna "ANO"
+        coluna_dados: soma_formatada  # Soma na coluna de matrículas
     }
 
-    # Converte qualquer np.int64 para int normal
-    for k, v in pinned_row_data.items():
-        if isinstance(v, (np.int64, np.integer)):
-            pinned_row_data[k] = int(v)
-
+    # 6) Montar as grid_options
     grid_options = gb.build()
 
+    # 7) Se pinned_row_data existir, fixar no rodapé ou topo
     if pinned_row_data:
         if posicao_totais == "bottom":
             grid_options["pinnedBottomRowData"] = [pinned_row_data]
