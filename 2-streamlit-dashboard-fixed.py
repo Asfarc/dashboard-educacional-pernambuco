@@ -574,25 +574,27 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 // Garantir centralização dos cabeçalhos
                 setTimeout(function() {
                     const headerCells = document.querySelectorAll('.ag-header-cell-text');
-                    headerCells.forEach(cell => {
-                        cell.style.justifyContent = 'center';
-                        cell.style.textAlign = 'center';
-
-                        // Garantir que o elemento pai também esteja centralizado
-                        const parentLabel = cell.closest('.ag-header-cell-label');
-                        if (parentLabel) {
-                            parentLabel.style.justifyContent = 'center';
-                            parentLabel.style.textAlign = 'center';
-                        }
-
-                        // Garantir que o container também esteja centralizado
-                        const headerCell = cell.closest('.ag-header-cell');
-                        if (headerCell) {
-                            headerCell.style.justifyContent = 'center';
-                            headerCell.style.textAlign = 'center';
-                        }
-                    });
-                }, 300);
+                    if (headerCells) {
+                        headerCells.forEach(cell => {
+                            if (cell) {
+                                cell.style.justifyContent = 'center';
+                                cell.style.textAlign = 'center';
+                                
+                                const parentLabel = cell.closest('.ag-header-cell-label');
+                                if (parentLabel) {
+                                    parentLabel.style.justifyContent = 'center';
+                                    parentLabel.style.textAlign = 'center';
+                                }
+                                
+                                const headerCell = cell.closest('.ag-header-cell');
+                                if (headerCell) {
+                                    headerCell.style.justifyContent = 'center';
+                                    headerCell.style.textAlign = 'center';
+                                }
+                            }
+                        });
+                    }
+                }, 500);  // Aumente o timeout para 500ms
 
                 // Resto do seu código para a paginação...
             }
