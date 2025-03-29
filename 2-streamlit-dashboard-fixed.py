@@ -657,6 +657,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     # Monta as opções
     grid_options = gb.build()
+    # Configuração para centralizar cabeçalhos
+    grid_options["defaultColDef"] = grid_options.get("defaultColDef", {})
+    grid_options["defaultColDef"]["headerClass"] = "center-header"
 
     # Se pinned_row_data existir
     if pinned_row_data:
