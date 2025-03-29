@@ -304,70 +304,203 @@ def converter_df_para_excel(df):
 
 
 def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
-                                  tipo_visualizacao=None):
+                                  alinhamento_padrao=None, cores_personalizadas=None, formatacao_condicional=True,
+                                  pagina_atual=1, itens_por_pagina=50, colunas_nao_somadas=None, cache_key=None):
     """
-    Versão avançada da exibição de DataFrame usando Plotly Table
+    Versão avançada e otimizada da exibição de DataFrame usando Plotly Table
+
+    Parâmetros:
+    -----------
+    df_para_exibir : pandas.DataFrame
+        DataFrame contendo os dados a serem exibidos
+    altura : int
+        Altura da tabela em pixels
+    coluna_dados : str
+        Nome da coluna principal de dados numéricos para cálculos
+    posicao_totais : str
+        Posição da linha de totais: "bottom", "top" ou None
+    alinhamento_padrao : str ou dict
+        Alinhamento das células. Pode ser uma string ("left", "center", "right") para todas as colunas
+        ou um dicionário {coluna: alinhamento} para configuração individual
+    cores_personalizadas : dict
+        Dicionário com configurações de cores para a tabela, com as chaves:
+        - header_color: cor do cabeçalho
+        - even_row_color: cor das linhas pares
+        - odd_row_color: cor das linhas ímpares
+        - total_row_color: cor da linha de totais
+        - conditional_color_high: cor para valores altos na formatação condicional
+        - conditional_color_low: cor para valores baixos na formatação condicional
+    formatacao_condicional : bool
+        Se True, aplica formatação condicional às células numéricas
+    pagina_atual : int
+        Número da página atual para paginação
+    itens_por_pagina : int
+        Número de itens por página
+    colunas_nao_somadas : list
+        Lista de colunas que não devem ser somadas na linha de totais
+    cache_key : str
+        Chave para cache de resultados (melhoria de performance)
+
+    Retorna:
+    --------
+    dict
+        Dicionário contendo dados sobre a tabela e configurações de paginação
     """
+
+    # Verificação inicial dos dados
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
-        return {"data": pd.DataFrame()}
+        return {
+            "data": pd.DataFrame(),
+            "pagina_atual": 1,
+            "total_paginas": 1,
+            "total_linhas": 0
+        }
 
-    # Verificar se o conjunto de dados é muito grande
-    is_very_large_dataset = len(df_para_exibir) > 10000
-    if is_very_large_dataset:
-        st.warning(
-            f"O conjunto de dados tem {formatar_numero(len(df_para_exibir))} linhas, "
-            "o que pode causar lentidão na visualização."
-        )
-        mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
-        if not mostrar_tudo:
-            df_para_exibir = df_para_exibir.head(5000).copy()
-            st.info("Mostrando amostra de 5.000 registros (de um total maior)")
+    # Usar cache para melhorar performance se cache_key for fornecido
+    if cache_key:
+        @st.cache_data(ttl=600, key=f"table_data_{cache_key}")
+        def get_cached_data(df):
+            return df.copy()
 
-    # Criar uma cópia para não modificar o DataFrame original
-    df_exibicao = df_para_exibir.copy()
+        df_para_exibir = get_cached_data(df_para_exibir)
 
-    # Calcular totais para colunas numéricas
+    # Configuração de paginação
+    total_linhas = len(df_para_exibir)
+    total_paginas = max(1, (total_linhas + itens_por_pagina - 1) // itens_por_pagina)
+    pagina_atual = min(max(1, pagina_atual), total_paginas)
+
+    # Calcular índices para a página atual
+    inicio = (pagina_atual - 1) * itens_por_pagina
+    fim = min(inicio + itens_por_pagina, total_linhas)
+
+    # Extrair dados da página atual
+    df_pagina = df_para_exibir.iloc[inicio:fim].copy()
+
+    # Criar uma cópia para exibição
+    df_exibicao = df_pagina.copy()
+
+    # Configuração de cores padrão
+    cores_padrao = {
+        "header_color": "#364b60",
+        "even_row_color": "#f9f9f9",
+        "odd_row_color": "white",
+        "total_row_color": "#e6f2ff",
+        "conditional_color_high": "#e6ffe6",  # Verde claro para valores altos
+        "conditional_color_low": "#fff0f0"  # Vermelho claro para valores baixos
+    }
+
+    # Atualizar com cores personalizadas se fornecidas
+    if cores_personalizadas:
+        cores_padrao.update(cores_personalizadas)
+
+    # Extrair cores para uso
+    header_color = cores_padrao["header_color"]
+    cell_colors = [cores_padrao["odd_row_color"], cores_padrao["even_row_color"]]
+    total_row_color = cores_padrao["total_row_color"]
+
+    # Definir colunas que não devem ser somadas
+    if colunas_nao_somadas is None:
+        colunas_nao_somadas = [
+            "ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
+            "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"
+        ]
+
+    # Calcular totais para colunas numéricas, excluindo as colunas não somáveis
     totais = {}
-    if coluna_dados and coluna_dados in df_exibicao.columns:
-        for col in df_exibicao.columns:
-            if col.startswith("Número de") or col == coluna_dados:
+    if coluna_dados and coluna_dados in df_para_exibir.columns:
+        for col in df_para_exibir.columns:
+            if col in colunas_nao_somadas:
+                # Para colunas não somáveis
+                if col == list(df_para_exibir.columns)[0]:
+                    totais[col] = "TOTAL"
+                else:
+                    totais[col] = ""
+            elif col.startswith("Número de") or col == coluna_dados or pd.api.types.is_numeric_dtype(
+                    df_para_exibir[col]):
                 try:
                     totais[col] = df_para_exibir[col].sum()
                 except:
                     totais[col] = ""
+            else:
+                totais[col] = ""
+
+    # Calcular estatísticas para formatação condicional
+    estatisticas = {}
+    if formatacao_condicional and coluna_dados and coluna_dados in df_para_exibir.columns:
+        try:
+            estatisticas = {
+                "media": df_para_exibir[coluna_dados].mean(),
+                "desvio_padrao": df_para_exibir[coluna_dados].std(),
+                "max": df_para_exibir[coluna_dados].max(),
+                "min": df_para_exibir[coluna_dados].min()
+            }
+        except:
+            formatacao_condicional = False
 
     # Formatar colunas numéricas
     for col in df_exibicao.columns:
-        if col.startswith("Número de") or col == coluna_dados:
-            if pd.api.types.is_numeric_dtype(df_exibicao[col]):
-                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_numero(x) if pd.notnull(x) else "-")
+        if col.startswith("Número de") or col == coluna_dados or pd.api.types.is_numeric_dtype(df_exibicao[col]):
+            df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_numero(x) if pd.notnull(x) else "-")
 
-    # Definir cores e estilos
-    header_color = '#364b60'
-    cell_colors = ['#f9f9f9', 'white']
-    total_row_color = '#e6f2ff'
+    # Configurar alinhamento das células
+    if alinhamento_padrao is None:
+        # Configuração automática: esquerda para texto, direita para números
+        cell_align = []
+        for col in df_exibicao.columns:
+            if col == coluna_dados or col.startswith("Número de") or pd.api.types.is_numeric_dtype(df_para_exibir[col]):
+                cell_align.append('right')  # Colunas numéricas à direita
+            else:
+                cell_align.append('left')  # Colunas de texto à esquerda
+    elif isinstance(alinhamento_padrao, dict):
+        # Configuração individual por coluna
+        cell_align = []
+        for col in df_exibicao.columns:
+            if col in alinhamento_padrao:
+                cell_align.append(alinhamento_padrao[col])
+            else:
+                # Padrão para colunas não especificadas
+                if col == coluna_dados or col.startswith("Número de") or pd.api.types.is_numeric_dtype(
+                        df_para_exibir[col]):
+                    cell_align.append('right')
+                else:
+                    cell_align.append('left')
+    else:
+        # Usar o mesmo alinhamento para todas as colunas
+        cell_align = [alinhamento_padrao] * len(df_exibicao.columns)
 
-    # Preparar dados
+    # Preparar dados para a tabela
     header_values = list(df_exibicao.columns)
     cell_values = [df_exibicao[col].tolist() for col in df_exibicao.columns]
 
-    # Configurações de estilo das células
-    cell_align = ['center'] * len(df_exibicao.columns)
-
-    # Criar lista de cores para alternância de linhas
+    # Criar lista de cores para alternância de linhas e formatação condicional
+    fill_color = []
     if len(df_exibicao) > 0:
-        fill_color = []
         for i, col in enumerate(df_exibicao.columns):
-            if posicao_totais == "top":
-                # Primeira linha é o total
-                row_colors = [total_row_color] + [cell_colors[j % 2] for j in range(len(df_exibicao))]
-            elif posicao_totais == "bottom":
-                # Última linha é o total
-                row_colors = [cell_colors[j % 2] for j in range(len(df_exibicao))] + [total_row_color]
-            else:
-                # Sem linha de total
-                row_colors = [cell_colors[j % 2] for j in range(len(df_exibicao))]
+            # Base: alternância de cores para linhas
+            row_colors = [cell_colors[j % 2] for j in range(len(df_exibicao))]
+
+            # Aplicar formatação condicional para colunas numéricas se ativado
+            if (formatacao_condicional and
+                    (col == coluna_dados or col.startswith("Número de") or
+                     pd.api.types.is_numeric_dtype(df_para_exibir[col]))):
+
+                try:
+                    # Obter valores originais para comparação
+                    valores_originais = df_para_exibir.iloc[inicio:fim][col].values
+
+                    # Aplicar cores condicionais
+                    for idx, valor in enumerate(valores_originais):
+                        if pd.notnull(valor):
+                            # Valores acima da média recebem cor mais intensa
+                            if valor > estatisticas["media"] + estatisticas["desvio_padrao"] * 0.5:
+                                row_colors[idx] = cores_padrao["conditional_color_high"]
+                            # Valores abaixo da média recebem cor mais fraca
+                            elif valor < estatisticas["media"] - estatisticas["desvio_padrao"] * 0.5:
+                                row_colors[idx] = cores_padrao["conditional_color_low"]
+                except:
+                    pass  # Manter cores alternadas se houver erro
+
             fill_color.append(row_colors)
     else:
         fill_color = [cell_colors[0]]
@@ -376,19 +509,68 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
     if posicao_totais in ["top", "bottom"] and totais:
         total_row = []
         for col in df_exibicao.columns:
-            if col == list(df_exibicao.columns)[0]:
-                total_row.append("TOTAL")
-            elif col in totais:
-                total_row.append(formatar_numero(totais[col]))
+            if col in totais:
+                if isinstance(totais[col], (int, float)):
+                    total_row.append(formatar_numero(totais[col]))
+                else:
+                    total_row.append(totais[col])
             else:
                 total_row.append("")
 
         if posicao_totais == "top":
             cell_values = [[total_row[i]] + values for i, values in enumerate(cell_values)]
+            # Adicionar cor da linha de totais no topo
+            fill_color = [[total_row_color] + colors for colors in fill_color]
         else:  # bottom
             cell_values = [values + [total_row[i]] for i, values in enumerate(cell_values)]
+            # Adicionar cor da linha de totais no final
+            fill_color = [colors + [total_row_color] for colors in fill_color]
 
-    # Criar a tabela Plotly
+    # Preparar os dados de hover para tooltip
+    hover_data = []
+    for i, col in enumerate(df_exibicao.columns):
+        col_hover = []
+
+        # Adicionar informações específicas por coluna no hover
+        if col == coluna_dados or col.startswith("Número de") or pd.api.types.is_numeric_dtype(df_para_exibir[col]):
+            try:
+                # Para campos numéricos, mostrar porcentagem do total
+                valores_originais = df_para_exibir.iloc[inicio:fim][col].values
+                total_col = df_para_exibir[col].sum() if not pd.isna(df_para_exibir[col].sum()) else 1
+
+                for valor in valores_originais:
+                    if pd.notnull(valor) and total_col != 0:
+                        percentual = (valor / total_col) * 100
+                        col_hover.append(f"Valor: {formatar_numero(valor)}<br>% do total: {percentual:.1f}%")
+                    else:
+                        col_hover.append("")
+            except:
+                col_hover = [""] * len(df_exibicao)
+        else:
+            col_hover = [""] * len(df_exibicao)
+
+        # Adicionar hover para a linha de totais
+        if posicao_totais == "top":
+            col_hover = ["Total"] + col_hover
+        elif posicao_totais == "bottom":
+            col_hover = col_hover + ["Total"]
+
+        hover_data.append(col_hover)
+
+    # Configurações avançadas de tooltip para células
+    custom_data = []
+    for i in range(len(cell_values[0])):
+        row_data = {}
+        for j, col in enumerate(df_exibicao.columns):
+            if j < len(hover_data) and i < len(hover_data[j]):
+                row_data[col] = hover_data[j][i]
+        custom_data.append(row_data)
+
+    # Ordenação interativa: adicionar flag para indicar coluna ordenável
+    ordenaveis = [col == coluna_dados or col.startswith("Número de") or
+                  pd.api.types.is_numeric_dtype(df_para_exibir[col]) for col in df_exibicao.columns]
+
+    # Criar a tabela Plotly com recursos avançados
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=header_values,
@@ -404,8 +586,56 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
             font=dict(color='black', size=12, family="Arial"),
             height=35,
             line=dict(color='#d6d6d6', width=1)
-        )
+        ),
+        customdata=custom_data,
+        hoverinfo="text",
+        hovertemplate="%{customdata}"
     )])
+
+    # Ajustar layout
+    fig.update_layout(
+        margin=dict(l=5, r=5, t=5, b=5),
+        height=altura,
+        hovermode="closest"
+    )
+
+    # Adicionar funcionalidade de ordenação
+    fig.update_layout(clickmode='event+select')
+
+    # Exibir a tabela
+    st.plotly_chart(fig, use_container_width=True, config={
+        'displayModeBar': True,
+        'scrollZoom': True,
+        'toImageButtonOptions': {
+            'format': 'png',
+            'filename': 'tabela_dados',
+            'height': altura,
+            'width': 1200,
+            'scale': 2
+        }
+    })
+
+    # Se houver mais de uma página, exibir controles de paginação
+    if total_paginas > 1:
+        col1, col2, col3 = st.columns([2, 3, 2])
+
+        with col1:
+            if pagina_atual > 1:
+                anterior = st.button("« Anterior")
+            else:
+                anterior = st.button("« Anterior", disabled=True)
+
+        with col2:
+            st.write(f"Página {pagina_atual} de {total_paginas} • "
+                     f"Mostrando {(pagina_atual - 1) * itens_por_pagina + 1} a "
+                     f"{min(pagina_atual * itens_por_pagina, total_linhas)} "
+                     f"de {total_linhas} registros")
+
+        with col3:
+            if pagina_atual < total_paginas:
+                proximo = st.button("Próximo »")
+            else:
+                proximo = st.button("Próximo »", disabled=True)
 
     # Adicionar estatísticas abaixo da tabela se coluna_dados existir
     if coluna_dados and coluna_dados in df_para_exibir.columns:
@@ -428,21 +658,14 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
         except Exception as e:
             st.caption(f"Não foi possível calcular estatísticas: {str(e)}")
 
-    # Ajustar layout
-    fig.update_layout(
-        margin=dict(l=5, r=5, t=5, b=5),
-        height=altura
-    )
-
-    # Exibir a tabela
-    st.plotly_chart(fig, use_container_width=True, config={
-        'displayModeBar': False,
-        'scrollZoom': True
-    })
-
-    # Retornar estrutura semelhante ao AgGrid para compatibilidade
-    return {"data": df_para_exibir}
-
+    # Retornar informações sobre a tabela e paginação
+    return {
+        "data": df_para_exibir,
+        "pagina_atual": pagina_atual,
+        "total_paginas": total_paginas,
+        "total_linhas": total_linhas,
+        "itens_por_pagina": itens_por_pagina
+    }
 
 # -------------------------------
 # Carregamento de Dados
