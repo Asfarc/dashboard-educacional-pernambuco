@@ -760,6 +760,115 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
+    js_header_inspector = """
+    <script>
+        function inspectAgGridHeaders() {
+            try {
+                console.log('--- COMEÇANDO INSPEÇÃO DE CABEÇALHOS ---');
+
+                // Verifica a estrutura geral
+                const gridWrapper = document.querySelector('.ag-root-wrapper');
+                if (!gridWrapper) {
+                    console.log('Grid não encontrado. Tentando novamente em 500ms.');
+                    setTimeout(inspectAgGridHeaders, 500);
+                    return;
+                }
+
+                console.log('Grid encontrado:', gridWrapper);
+
+                // 1. Inspeção do cabeçalho principal
+                const headerContainer = document.querySelector('.ag-header');
+                console.log('Container de cabeçalho:', headerContainer);
+
+                // 2. Células de cabeçalho
+                const headerCells = document.querySelectorAll('.ag-header-cell');
+                console.log(`Encontradas ${headerCells.length} células de cabeçalho`);
+
+                if (headerCells.length > 0) {
+                    // Amostra do primeiro cabeçalho para entender a estrutura
+                    const firstHeader = headerCells[0];
+                    console.log('Primeiro cabeçalho - classes:', firstHeader.className);
+                    console.log('Primeiro cabeçalho - HTML:', firstHeader.outerHTML);
+
+                    // Atributos da primeira célula
+                    console.log('Atributos do primeiro cabeçalho:');
+                    for (let i = 0; i < firstHeader.attributes.length; i++) {
+                        console.log(` - ${firstHeader.attributes[i].name}: ${firstHeader.attributes[i].value}`);
+                    }
+
+                    // Estrutura interna
+                    const firstHeaderLabel = firstHeader.querySelector('.ag-header-cell-label');
+                    if (firstHeaderLabel) {
+                        console.log('Label do primeiro cabeçalho:', firstHeaderLabel.outerHTML);
+                    }
+
+                    const firstHeaderText = firstHeader.querySelector('.ag-header-cell-text');
+                    if (firstHeaderText) {
+                        console.log('Texto do primeiro cabeçalho:', firstHeaderText.outerHTML);
+                        console.log('Conteúdo de texto:', firstHeaderText.textContent);
+                    }
+                }
+
+                // Anotar todas as classes relevantes para selecionar cabeçalhos
+                const headers = document.querySelectorAll('.ag-header *');
+                const headerClasses = new Set();
+                headers.forEach(el => {
+                    el.classList.forEach(cls => {
+                        if (cls.includes('header') || cls.includes('ag-')) {
+                            headerClasses.add(cls);
+                        }
+                    });
+                });
+
+                console.log('Classes relevantes de cabeçalho:', Array.from(headerClasses).join(', '));
+
+                // Adicionando marcadores visuais para debug
+                headerCells.forEach((cell, index) => {
+                    const debugDiv = document.createElement('div');
+                    debugDiv.textContent = 'H' + index;
+                    debugDiv.style.position = 'absolute';
+                    debugDiv.style.top = '0';
+                    debugDiv.style.right = '0';
+                    debugDiv.style.backgroundColor = 'red';
+                    debugDiv.style.color = 'white';
+                    debugDiv.style.fontSize = '8px';
+                    debugDiv.style.padding = '2px';
+                    debugDiv.style.zIndex = '9999';
+                    debugDiv.className = 'header-debug-marker';
+                    cell.style.position = 'relative';
+                    cell.appendChild(debugDiv);
+                });
+
+                console.log('--- FIM DA INSPEÇÃO DE CABEÇALHOS ---');
+
+            } catch(e) {
+                console.error('Erro na inspeção de cabeçalhos:', e);
+            }
+        }
+
+        // Executa após o carregamento inicial
+        setTimeout(inspectAgGridHeaders, 1000);
+
+        // Também adiciona botão para inspeção manual
+        const debugButton = document.createElement('button');
+        debugButton.textContent = 'Inspecionar Cabeçalhos';
+        debugButton.style.position = 'fixed';
+        debugButton.style.bottom = '10px';
+        debugButton.style.right = '10px';
+        debugButton.style.zIndex = '9999';
+        debugButton.style.backgroundColor = '#f44336';
+        debugButton.style.color = 'white';
+        debugButton.style.border = 'none';
+        debugButton.style.padding = '5px 10px';
+        debugButton.style.cursor = 'pointer';
+        debugButton.onclick = inspectAgGridHeaders;
+
+        document.body.appendChild(debugButton);
+    </script>
+    """
+
+    st.markdown(js_header_inspector, unsafe_allow_html=True)
+
     # Atalhos de teclado: Ctrl+C (copiar) e Ctrl+A (selecionar tudo)
     js_clipboard_helper = """
     <script>
