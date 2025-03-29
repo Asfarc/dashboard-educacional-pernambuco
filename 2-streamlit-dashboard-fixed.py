@@ -298,39 +298,19 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
-                             tipo_visualizacao=None):
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom", tipo_visualizacao=None):
     """
     Exibe DataFrame no AgGrid, com opções de:
-      - paginacão, range selection, status bar
-      - linha de totais fixada no topo ou rodapé (pinned row), se posicao_totais != None
+      - Paginação, seleção de intervalos, status bar custom (opcional)
+      - Linha de totais fixada no topo ou rodapé (pinned row), se posicao_totais != None
+      - Unifica o "Total de linhas" e a soma da coluna de matrículas na mesma pinned row
     """
+
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
         return {"data": pd.DataFrame()}
-    if coluna_dados and coluna_dados not in df_para_exibir.columns:
-        st.error(f"Coluna '{coluna_dados}' não encontrada nos dados!")
-        return {"data": pd.DataFrame()}
 
-    is_large_dataset = len(df_para_exibir) > 5000
-    is_very_large_dataset = len(df_para_exibir) > 10000
-
-    if is_very_large_dataset:
-        st.warning(
-            f"O conjunto de dados tem {formatar_numero(len(df_para_exibir))} linhas, "
-            "o que pode causar lentidão na visualização."
-        )
-        mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
-        if not mostrar_tudo:
-            indices_para_manter = df_para_exibir.index[:5000].tolist()
-            df_para_exibir = df_para_exibir.loc[indices_para_manter]
-            st.info("Mostrando amostra de 5.000 registros (de um total maior)")
-
-    # ----
-    # JS p/ calcular soma, média, min e max e exibir na status bar
-    # Corrigido: removemos as substituições que estragavam a formatação.
-    # ----
+    # Exemplo de função JS que calcula soma/média/min/máx (usada na StatusBar se quiser manter):
     js_agg_functions = JsCode(f"""
     function(params) {{
         try {{
@@ -380,8 +360,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     }}
     """)
 
+    # Constrói o GridOptions
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
 
+    # Texto de tradução/locale
     localeText = dict(
         contains="Contém",
         notContains="Não contém",
@@ -444,6 +426,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         count="Contagem"
     )
 
+    # Configurações padrão de cada coluna
     gb.configure_default_column(
         groupable=True,
         editable=False,
@@ -463,7 +446,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         autoHeaderHeight=True
     )
 
-    # Ajuste manual de algumas colunas
+    # Exemplo de ajustes manuais em colunas específicas (se houver)
     ajuste_colunas = {
         "ANO": 50,
         "CODIGO DO MUNICIPIO": 200,
@@ -474,16 +457,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         "CODIGO DA UF": 200,
         "NOME DA UF": 200
     }
-
-    # Defina uma largura padrão para as colunas numéricas
-    largura_padrao_numericas = 50  # ou outro valor que você considere adequado
+    largura_padrao_numericas = 50
 
     for col, largura in ajuste_colunas.items():
         if col in df_para_exibir.columns:
             gb.configure_column(
                 col,
-                minWidth=largura,  # Largura mínima conforme o seu ajuste
-                maxWidth=800,  # Largura máxima fixa
+                minWidth=largura,
+                maxWidth=800,
                 suppressSizeToFit=False,
                 wrapText=False,
                 cellStyle={
@@ -492,23 +473,22 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     'text-overflow': 'ellipsis',
                     'white-space': 'nowrap',
                 },
-                headerClass="centered-header",  # Adicione esta linha
+                headerClass="centered-header",
             )
 
+    # Se detectar colunas que começam com "Número de", configurar como numéricas
     for coluna in df_para_exibir.columns:
         if coluna.startswith("Número de"):
-            # Colunas numéricas (inteiros) - sem casas decimais
             gb.configure_column(
                 coluna,
-                type=["numericColumn", "numberColumnFilter"],  # AgGrid reconhece como número
+                type=["numericColumn", "numberColumnFilter"],
                 filter="agNumberColumnFilter",
-                aggFunc="sum",  # se quiser somar no rodapé ou no status bar
-                minWidth=largura_padrao_numericas,  # Usando a nova variável padronizada
-                maxWidth=300,  # Largura máxima fixa em 300 pixels
+                aggFunc="sum",
+                minWidth=largura_padrao_numericas,
+                maxWidth=300,
                 valueFormatter=JsCode("""
                     function(params) {
                         if (params.value == null) return '';
-                        // Formata sem decimais, em pt-BR
                         return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
                     }
                 """).js_code,
@@ -517,32 +497,30 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     'fontWeight': '500'
                 }
             )
-
         else:
-            # Todas as demais colunas são texto
+            # Mantém como texto
             gb.configure_column(
                 coluna,
                 filter="agTextColumnFilter",
-                # pode configurar outras opções de texto se quiser
             )
 
-    # Configurações do grid
+    # Configurações gerais do grid
     gb.configure_grid_options(
         defaultColDef={
             "headerClass": "centered-header",
             "suppressMovable": False,
             "headerComponentParams": {
                 "template":
-                    '<div class="ag-cell-label-container" role="presentation">' +
-                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center;">' +
-                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="text-align: center;"></span>' +
-                    '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>' +
-                    '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>' +
-                    '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>' +
-                    '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>' +
-                    '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>' +
-                    '  </div>' +
+                    '<div class="ag-cell-label-container" role="presentation">'
+                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>'
+                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center;">'
+                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="text-align: center;"></span>'
+                    '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>'
+                    '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>'
+                    '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>'
+                    '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>'
+                    '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>'
+                    '  </div>'
                     '</div>'
             }
         },
@@ -562,21 +540,26 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         paginationSizeSelector=[5, 10, 25, 50, 100],
         localeText=localeText,
         suppressAggFuncInHeader=True,
+        # Exemplo de manter somente o 'agCustomStatsToolPanel' no status bar (removendo totalRows e filteredRows):
+        statusBar={
+            'statusPanels': [
+                {
+                    'statusPanel': 'agCustomStatsToolPanel',
+                    'statusPanelParams': {
+                        'aggStatFunc': js_agg_functions.js_code
+                    }
+                }
+            ]
+        },
         onGridReady=JsCode("""
             function(params) {
                 setTimeout(() => {
                     try {
                         const gridElement = document.querySelector('.ag-root-wrapper');
                         const paginationElement = document.querySelector('.ag-paging-panel');
-                        // Ajustar largura da paginação
                         if (gridElement && paginationElement) {
                             paginationElement.style.width = gridElement.clientWidth + 'px';
-                        }    
-                        // Chamar função de ajuste de headers
-                        if (typeof adjustHeaders === 'function') {
-                            adjustHeaders();
                         }
-                        // Forçar redimensionamento inicial
                         params.api.sizeColumnsToFit();
                     } catch(e) {
                         console.error('Erro no onGridReady:', e);
@@ -606,39 +589,23 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
         """),
         onFilterChanged=JsCode("""
-                function(params) {
-                    setTimeout(() => {
-                        const gridElement = document.querySelector('.ag-root-wrapper');
-                        const paginationElement = document.querySelector('.ag-paging-panel');
-                        if (gridElement && paginationElement) {
-                            paginationElement.style.width = gridElement.clientWidth + 'px';
-                        }
-                    }, 100);
-                }
-            """)
-    )
-
-    # Barra de status: soma, média, min, max
-    gb.configure_grid_options(
-        statusBar={
-            'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'center'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'center'},
-                {
-                    'statusPanel': 'agCustomStatsToolPanel',
-                    'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions.js_code
+            function(params) {
+                setTimeout(() => {
+                    const gridElement = document.querySelector('.ag-root-wrapper');
+                    const paginationElement = document.querySelector('.ag-paging-panel');
+                    if (gridElement && paginationElement) {
+                        paginationElement.style.width = gridElement.clientWidth + 'px';
                     }
-                }
-            ]
-        }
+                }, 100);
+            }
+        """)
     )
 
-    # Barra lateral
+    # Barra lateral interna do AG Grid
     gb.configure_side_bar()
 
-    # Se for dataset grande
-    if is_large_dataset:
+    # Ajustes de desempenho para grandes datasets (opcional)
+    if len(df_para_exibir) > 5000:
         gb.configure_grid_options(
             rowBuffer=100,
             animateRows=False,
@@ -650,40 +617,42 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             rowStyle={"textAlign": "center"}
         )
 
-    # Modificação: Criação de uma única linha de rodapé combinando Total de linhas e Soma
+    # --------------------------------------------------------------------------------
+    # Pinned Row unificando "Total de linhas" (na primeira coluna) e soma de 'coluna_dados'
+    # --------------------------------------------------------------------------------
     pinned_row_data = None
     if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
-        # Obter a soma da coluna de dados
-        soma_np = df_para_exibir[coluna_dados].sum()
-        soma_python = int(soma_np)  # ou float(soma_np)
+        soma_valor = df_para_exibir[coluna_dados].sum()
+        total_linhas = len(df_para_exibir)
 
-        # Criar um dicionário para a linha de rodapé
-        pinned_row_data = {}
-
-        # Adicionar "Total de linhas: X" na primeira coluna
+        # Se quiser colocar o texto na primeira coluna do seu DF, pegue seu nome
+        # (caso queira escolher outra, basta mudar aqui)
         primeira_coluna = df_para_exibir.columns[0]
-        pinned_row_data[primeira_coluna] = f"Total de linhas: {len(df_para_exibir)}"
 
-        # Adicionar a soma na coluna de dados
-        pinned_row_data[coluna_dados] = soma_python
+        pinned_row_data = {
+            # Aqui, exibimos "Total de linhas: X" na primeira coluna
+            primeira_coluna: f"Total de linhas: {total_linhas:,}",
+            # E a soma na coluna de dados
+            coluna_dados: soma_valor
+        }
 
-    # Monta as opções
     grid_options = gb.build()
 
-    # Se pinned_row_data existir
     if pinned_row_data:
         if posicao_totais == "bottom":
             grid_options["pinnedBottomRowData"] = [pinned_row_data]
-        elif posicao_totais == "top":
+        else:
             grid_options["pinnedTopRowData"] = [pinned_row_data]
 
-    # Render AgGrid
+    # --------------------------------------------------------------------------------
+    # Renderização do grid
+    # --------------------------------------------------------------------------------
     grid_return = AgGrid(
         df_para_exibir,
         gridOptions=grid_options,
         height=altura,
         custom_css="""
-            /* Regras para cabeçalhos centralizados */
+            /* Centralização de cabeçalhos */
             .ag-header-cell {
                 display: flex !important;
                 width: 100% !important;
@@ -715,39 +684,35 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 text-align: center !important;
             }
 
-            /* Regras para paginação e container principal */
+            /* Paginação centralizada */
             .ag-paging-panel {
-            display: flex !important;
-            text-align: center !important;
-            align-items: center !important;
-            width: 100% !important;
-            justify-content: center !important;
+                display: flex !important;
+                text-align: center !important;
+                align-items: center !important;
+                width: 100% !important;
+                justify-content: center !important;
             }
-
             .ag-root-wrapper {
                 margin: 0 auto;
             }
 
-            /* Regras para seleção e hover */
+            /* Seleção e hover */
             .ag-row-selected { 
                 background-color: transparent !important; 
             }
-
             .ag-row {
                 background-color: inherit !important;
             }
-
             .ag-row:hover {
                 background-color: inherit !important;
             }
-
             .ag-row-selected,
             .ag-row-selected:hover {
                 background-color: transparent !important;
                 border: none !important;
             }
 
-            /* Regras para células selecionadas */
+            /* Células selecionadas (range selection) */
             .ag-cell.ag-cell-range-selected,
             .ag-cell.ag-cell-range-selected-1,
             .ag-cell.ag-cell-range-selected-2,
@@ -757,7 +722,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 color: #000 !important; 
             }
 
-            /* Regras para células numéricas */
+            /* Células numéricas */
             .numeric-cell { 
                 display: flex !important;
                 text-align: center !important;
@@ -773,11 +738,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
+    # Ajuste final via JS para centralizar cabeçalhos (backup)
     js_simplified_fix = """
     <script>
         function centralizeHeaders() {
             try {
-                // Adiciona CSS direto no documento (mais confiável)
                 if (!document.getElementById('aggrid-header-fix')) {
                     const styleEl = document.createElement('style');
                     styleEl.id = 'aggrid-header-fix';
@@ -794,40 +759,28 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     `;
                     document.head.appendChild(styleEl);
                 }
-
-                // Também aplica inline para casos específicos
-                const headers = document.querySelectorAll('.ag-header-cell-label, .ag-header-cell-text');
-                headers.forEach(el => {
-                    if (el.classList.contains('ag-header-cell-text')) {
-                        el.style.width = '100%';
-                        el.style.textAlign = 'center';
-                    } else if (el.classList.contains('ag-header-cell-label')) {
-                        el.style.display = 'flex';
-                        el.style.justifyContent = 'center';
-                    }
-                });
             } catch(e) {
                 console.error('Erro na centralização:', e);
             }
         }
 
-        // Executa algumas vezes para garantir
         for (let i = 1; i <= 5; i++) {
             setTimeout(centralizeHeaders, i * 500);
         }
     </script>
     """
-
     st.markdown(js_simplified_fix, unsafe_allow_html=True)
 
+    # Exibe info de quantos registros foram filtrados, se quiser
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
         st.info(
-            f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} "
-            f"de {formatar_numero(len(df_para_exibir))} registros."
+            f"Filtro aplicado: mostrando {len(filtered_data):,} "
+            f"de {len(df_para_exibir):,} registros."
         )
 
     return grid_return
+
 
 # -------------------------------
 # Carregamento de Dados
