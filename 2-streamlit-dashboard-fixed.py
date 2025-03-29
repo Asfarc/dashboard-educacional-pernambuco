@@ -1136,7 +1136,7 @@ except Exception as e:
     st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
     st.dataframe(tabela_com_totais, height=altura_tabela)
 
-tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
+tab1 = st.tabs(["Configurações"])
 
 with tab1:
     st.write("### Configurações de exibição")
