@@ -657,7 +657,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     # Monta as opções
     grid_options = gb.build()
-
     # Se pinned_row_data existir
     if pinned_row_data:
         if posicao_totais == "bottom":
@@ -761,130 +760,73 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
-    js_advanced_center = """
+    # Atalhos de teclado: Ctrl+C (copiar) e Ctrl+A (selecionar tudo)
+    js_clipboard_helper = """
     <script>
-        function forceAllHeaderCenter() {
-            try {
-                // Os cabeçalhos reais podem estar em vários tipos de elementos
-                const selectors = [
-                    '.ag-header-cell-text',                 // Texto principal
-                    '.ag-header-cell-label',                // Container do label
-                    '.ag-header-cell',                      // Célula inteira
-                    '.ag-header-group-cell-label',          // Cabeçalhos agrupados
-                    '.ag-header-group-cell',                // Grupo de cabeçalhos
-                    'div[col-id]'                           // Qualquer div com col-id
-                ];
-
-                let foundElements = false;
-
-                // Tenta cada tipo de seletor
-                selectors.forEach(selector => {
-                    const elements = document.querySelectorAll(selector);
-                    if (elements.length > 0) {
-                        foundElements = true;
-                        elements.forEach(el => {
-                            el.style.display = 'flex';
-                            el.style.justifyContent = 'center';
-                            el.style.alignItems = 'center';
-                            el.style.textAlign = 'center';
-                            el.style.width = '100%';
-
-                            // Se for um container, também centraliza o conteúdo
-                            const children = el.children;
-                            for (let i = 0; i < children.length; i++) {
-                                children[i].style.textAlign = 'center';
-                                children[i].style.justifyContent = 'center';
-                            }
-                        });
-                        console.log('Centralizados ' + elements.length + ' elementos do tipo: ' + selector);
-                    }
-                });
-
-                if (!foundElements) {
-                    console.log('Nenhum elemento de cabeçalho encontrado. Tentando novamente em 100ms...');
-                    setTimeout(forceAllHeaderCenter, 100);
-                }
-
-                // Tenta acessar a API do AgGrid diretamente
-                try {
-                    const gridDiv = document.querySelector('.ag-root-wrapper');
-                    if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                        gridDiv.gridOptions.api.refreshHeader();
-                        console.log('Cabeçalho atualizado através da API do AgGrid');
-                    }
-                } catch(apiError) {
-                    console.log('Não foi possível usar a API do AgGrid:', apiError);
-                }
-
-            } catch(e) {
-                console.error('Erro ao centralizar todos os cabeçalhos:', e);
-            }
-        }
-
-        // Executa várias vezes para garantir que vai pegar mesmo após mudanças de visualização
-        setTimeout(forceAllHeaderCenter, 300);
-        setTimeout(forceAllHeaderCenter, 800);
-        setTimeout(forceAllHeaderCenter, 1500);
-        setTimeout(forceAllHeaderCenter, 3000);
-
-        // Observa mudanças no DOM para reagir quando a visualização muda
-        const observer = new MutationObserver(function(mutations) {
-            console.log('Mudanças detectadas no DOM, reaplicando centralização...');
-            setTimeout(forceAllHeaderCenter, 200);
-        });
-
         setTimeout(function() {
-            const grid = document.querySelector('.ag-root-wrapper');
-            if (grid) {
-                observer.observe(grid, { childList: true, subtree: true });
-                console.log('Observador de mudanças configurado');
+            try {
+                const gridDiv = document.querySelector('.ag-root-wrapper');
+                if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
+                    const api = gridDiv.gridOptions.api;
+                    document.addEventListener('keydown', function(e) {
+                        if (e.ctrlKey && e.key === 'c') {
+                            api.copySelectedRangeToClipboard(true);
+                        }
+                        if (e.ctrlKey && e.key === 'a') {
+                            e.preventDefault();
+                            const allColumns = api.getColumns();
+                            if (allColumns.length > 0) {
+                                const range = {
+                                    startRow: 0,
+                                    endRow: api.getDisplayedRowCount() - 1,
+                                    startColumn: allColumns[0],
+                                    endColumn: allColumns[allColumns.length - 1]
+                                };
+                                api.addCellRange(range);
+                            }
+                        }
+                    });
+                }
+            } catch(e) {
+                console.error('Erro ao configurar clipboard:', e);
             }
-        }, 1000);
+        }, 800);
     </script>
     """
+    st.markdown(js_clipboard_helper, unsafe_allow_html=True)
 
-    st.markdown(js_advanced_center, unsafe_allow_html=True)
-    js_force_center = """
+    js_fix_headers = """
     <script>
-        function forceAgGridHeadersCenter() {
+        function adjustHeaders() {
             try {
-                // Tenta selecionar todos os elementos de cabeçalho
-                var headers = document.querySelectorAll('.ag-header-cell-label');
-
-                // Se não encontrar, tenta novamente em 100ms
-                if (headers.length === 0) {
-                    setTimeout(forceAgGridHeadersCenter, 100);
+                const grid = document.querySelector('.ag-root-wrapper');
+                if (!grid) {
+                    setTimeout(adjustHeaders, 100); // Tenta novamente se o grid não estiver pronto
                     return;
                 }
 
-                // Aplica estilos diretamente a cada elemento
-                headers.forEach(function(header) {
-                    header.style.display = 'flex';
-                    header.style.justifyContent = 'center';
-                    header.style.width = '100%';
-                    header.style.textAlign = 'center';
-
-                    // Também seleciona e estiliza o texto dentro do cabeçalho
-                    var textElements = header.querySelectorAll('.ag-header-cell-text');
-                    textElements.forEach(function(text) {
-                        text.style.textAlign = 'center';
-                        text.style.width = '100%';
-                    });
+                const headerRows = grid.querySelectorAll('.ag-header-row');
+                headerRows.forEach(row => {
+                    row.style.height = 'auto';
+                    row.style.minHeight = '50px';
                 });
 
-                console.log('Centralizando ' + headers.length + ' cabeçalhos');
-            } catch(e) {
-                console.error('Erro ao centralizar:', e);
+                const headerCells = grid.querySelectorAll('.ag-header-cell-text');
+                headerCells.forEach(cell => {
+                    cell.style.whiteSpace = 'normal';
+                    cell.style.overflow = 'visible';
+                });
+            } catch(e) { 
+                console.error('Erro ao ajustar cabeçalhos:', e); 
             }
         }
 
-        // Executa várias vezes para garantir que vai pegar quando o grid estiver carregado
-        setTimeout(forceAgGridHeadersCenter, 300);
-        setTimeout(forceAgGridHeadersCenter, 600);
-        setTimeout(forceAgGridHeadersCenter, 1000);
-        setTimeout(forceAgGridHeadersCenter, 2000);
+        // Inicia o ajuste e verifica continuamente
+        setTimeout(adjustHeaders, 300);
     </script>
     """
+    st.markdown(js_fix_headers, unsafe_allow_html=True)
+
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
         st.info(
