@@ -307,6 +307,9 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
         return {"data": pd.DataFrame()}
+    if coluna_dados and coluna_dados not in df_para_exibir.columns:
+        st.error(f"Coluna '{coluna_dados}' não encontrada nos dados!")
+        return {"data": pd.DataFrame()}
 
     is_large_dataset = len(df_para_exibir) > 5000
     is_very_large_dataset = len(df_para_exibir) > 10000
