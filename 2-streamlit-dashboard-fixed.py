@@ -487,20 +487,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     'white-space': 'nowrap',
                 },
                 headerClass="centered-header",  # Adicione esta linha
-                headerComponentParams={  # Adicione esta configuração
-                    'template':
-                        '<div class="ag-cell-label-container" role="presentation">' +
-                        '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                        '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center;">' +
-                        '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="text-align: center;"></span>' +
-                        '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>' +
-                        '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>' +
-                        '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>' +
-                        '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>' +
-                        '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>' +
-                        '  </div>' +
-                        '</div>'
-                }
             )
 
     for coluna in df_para_exibir.columns:
@@ -539,6 +525,20 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         defaultColDef={
             "headerClass": "centered-header",
             "suppressMovable": False,
+            "headerComponentParams": {
+                "template":
+                    '<div class="ag-cell-label-container" role="presentation">' +
+                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
+                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center;">' +
+                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="text-align: center;"></span>' +
+                    '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>' +
+                    '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>' +
+                    '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>' +
+                    '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>' +
+                    '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>' +
+                    '  </div>' +
+                    '</div>'
+            }
         },
         rowStyle={"textAlign": "center"},
         rowSelection='none',
