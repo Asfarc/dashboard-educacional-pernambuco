@@ -802,44 +802,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         setTimeout(forceAgGridHeadersCenter, 2000);
     </script>
     """
-
-    st.markdown(js_force_center, unsafe_allow_html=True)
-
-    # Atalhos de teclado: Ctrl+C (copiar) e Ctrl+A (selecionar tudo)
-    js_clipboard_helper = """
-    <script>
-        setTimeout(function() {
-            try {
-                const gridDiv = document.querySelector('.ag-root-wrapper');
-                if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
-                    const api = gridDiv.gridOptions.api;
-                    document.addEventListener('keydown', function(e) {
-                        if (e.ctrlKey && e.key === 'c') {
-                            api.copySelectedRangeToClipboard(true);
-                        }
-                        if (e.ctrlKey && e.key === 'a') {
-                            e.preventDefault();
-                            const allColumns = api.getColumns();
-                            if (allColumns.length > 0) {
-                                const range = {
-                                    startRow: 0,
-                                    endRow: api.getDisplayedRowCount() - 1,
-                                    startColumn: allColumns[0],
-                                    endColumn: allColumns[allColumns.length - 1]
-                                };
-                                api.addCellRange(range);
-                            }
-                        }
-                    });
-                }
-            } catch(e) {
-                console.error('Erro ao configurar clipboard:', e);
-            }
-        }, 800);
-    </script>
-    """
-    st.markdown(js_clipboard_helper, unsafe_allow_html=True)
-
     js_fix_headers = """
     <script>
         function adjustHeaders() {
