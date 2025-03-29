@@ -519,17 +519,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 filter="agTextColumnFilter",
                 valueFormatter=None
             )
-        elif col == coluna_dados:  # Coluna numérica
-            gb.configure_column(
-                col,
-                cellStyle=JsCode("""
-                    function(params) {
-                        if (params.node.rowPinned) {
-                            return { 'font-weight': 'bold', 'background-color': '#f2f2f2' };
-                        }
-                    }
-                """)
-            )
 
     # Configurações gerais do grid
     gb.configure_grid_options(
