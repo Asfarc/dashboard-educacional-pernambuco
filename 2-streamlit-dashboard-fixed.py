@@ -876,6 +876,7 @@ with right_sidebar:
             novas_colunas = colunas_tabela.copy()
             novas_colunas.extend(colunas_adicionais)
             st.session_state.colunas_escolhidas = novas_colunas
+    # Botão para aplicar configurações
     if st.button("Aplicar configurações", type="primary"):
         st.session_state.pagina_atual = 1  # Reset página ao aplicar novas configurações
         # Se houver novas colunas adicionadas, atualizar a tabela
