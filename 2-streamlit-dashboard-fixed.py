@@ -877,14 +877,25 @@ with right_sidebar:
             novas_colunas.extend(colunas_adicionais)
             st.session_state.colunas_escolhidas = novas_colunas
     if st.button("Aplicar configurações", type="primary"):
-        st.session_state.pagina_atual = 1
+        st.session_state.pagina_atual = 1  # Reset página ao aplicar novas configurações
+        # Se houver novas colunas adicionadas, atualizar a tabela
         if 'colunas_escolhidas' in st.session_state:
             try:
-                tabela_dados = df_filtrado[st.session_state.colunas_escolhidas].sort_values(by=coluna_dados, ascending=False)
+                tabela_dados = df_filtrado[st.session_state.colunas_escolhidas].sort_values(by=coluna_dados,
+                                                                                            ascending=False)
                 tabela_com_totais = tabela_dados.copy()
             except Exception as e:
                 st.error(f"Erro ao atualizar colunas: {str(e)}")
-        st.experimental_rerun()
+
+        # Usar a versão atualizada do rerun para garantir compatibilidade com todas as versões do Streamlit
+        try:
+            st.rerun()  # Versão mais recente do Streamlit
+        except:
+            try:
+                st.experimental_rerun()  # Versão mais antiga do Streamlit
+            except:
+                st.warning(
+                    "Não foi possível recarregar a aplicação automaticamente. Por favor, atualize a página manualmente.")
 
     st.markdown("---")
     st.markdown("### Exportar dados")
