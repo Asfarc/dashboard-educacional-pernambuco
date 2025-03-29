@@ -507,9 +507,28 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         if "ANO" in df_para_exibir.columns:
             gb.configure_column(
                 "ANO",
-                type=[],  # remove numericColumn
+                col,
+                cellStyle=JsCode("""
+                    function(params) {
+                        if (params.node.rowPinned) {
+                            return { 'font-weight': 'bold', 'background-color': '#f2f2f2' };
+                        }
+                    }
+                """),
+            type=[],  # remove numericColumn
                 filter="agTextColumnFilter",
                 valueFormatter=None
+            )
+        elif col == coluna_dados:  # Coluna numérica
+            gb.configure_column(
+                col,
+                cellStyle=JsCode("""
+                    function(params) {
+                        if (params.node.rowPinned) {
+                            return { 'font-weight': 'bold', 'background-color': '#f2f2f2' };
+                        }
+                    }
+                """)
             )
 
     # Configurações gerais do grid
@@ -642,16 +661,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     if posicao_totais == "bottom":
         grid_options["pinnedBottomRowData"] = [pinned_row_data]
-        grid_options["pinnedBottomRowStyle"] = {
-            "fontWeight": "bold",
-            "backgroundColor": "#f2f2f2"
-        }
     else:
         grid_options["pinnedTopRowData"] = [pinned_row_data]
-        grid_options["pinnedTopRowStyle"] = {
-            "fontWeight": "bold",
-            "backgroundColor": "#f2f2f2"
-        }
 
     # --------------------------------------------------------------------------------
     # Renderização do grid
