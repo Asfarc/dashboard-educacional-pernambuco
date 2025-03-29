@@ -512,7 +512,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                             return {
                                 ...baseStyle,
                                 'font-weight': 'bold',
-                                'background-color': '#e37777'
+                                'background-color': '#F3C5C5'
                             };
                         }
 
@@ -534,7 +534,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 cellStyle=JsCode("""
                     function(params) {
                         if (params.node.rowPinned) {
-                            return { 'font-weight': 'bold', 'background-color': '#e37777' };
+                            return { 'font-weight': 'bold', 'background-color': '#F3C5C5' };
                         }
                     }
                 """),
