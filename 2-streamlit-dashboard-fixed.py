@@ -642,8 +642,16 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     if posicao_totais == "bottom":
         grid_options["pinnedBottomRowData"] = [pinned_row_data]
+        grid_options["pinnedBottomRowStyle"] = {
+            "fontWeight": "bold",
+            "backgroundColor": "#f2f2f2"
+        }
     else:
         grid_options["pinnedTopRowData"] = [pinned_row_data]
+        grid_options["pinnedTopRowStyle"] = {
+            "fontWeight": "bold",
+            "backgroundColor": "#f2f2f2"
+        }
 
     # --------------------------------------------------------------------------------
     # Renderização do grid
