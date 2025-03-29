@@ -357,13 +357,12 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
             "total_linhas": 0
         }
 
-    # Usar cache para melhorar performance se cache_key for fornecido
-    if cache_key:
-        @st.cache_data(ttl=600, key=f"table_data_{cache_key}")
-        def get_cached_data(df):
-            return df.copy()
+    @st.cache_data(ttl=600)
+    def copiar_dataframe(df):
+        return df.copy()
 
-        df_para_exibir = get_cached_data(df_para_exibir)
+    if cache_key:
+        df_para_exibir = copiar_dataframe(df_para_exibir)
 
     # Configuração de paginação
     total_linhas = len(df_para_exibir)
