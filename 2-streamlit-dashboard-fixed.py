@@ -620,8 +620,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'center'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'center'},
+                # Mantém apenas o painel de estatísticas customizado
                 {
                     'statusPanel': 'agCustomStatsToolPanel',
                     'statusPanelParams': {
@@ -631,7 +630,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             ]
         }
     )
-
     # Barra lateral
     gb.configure_side_bar()
 
@@ -652,8 +650,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     pinned_row_data = None
     if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
         soma_np = df_para_exibir[coluna_dados].sum()
-        soma_python = int(soma_np)  # ou float(soma_np)
-        pinned_row_data = {coluna_dados: soma_python}
+        soma_python = int(soma_np)
+        total_linhas = len(df_para_exibir)
+        primeira_coluna = df_para_exibir.columns[0]  # Nome da primeira coluna
+        pinned_row_data = {
+            primeira_coluna: f"Total de linhas: {formatar_numero(total_linhas)}",  # Texto na primeira coluna
+            coluna_dados: soma_python  # Soma na coluna de dados
+        }
 
     # Monta as opções
     grid_options = gb.build()
@@ -710,7 +713,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             width: 100% !important;
             justify-content: center !important;
             }
-
+            .ag-pinned-bottom-row-viewport .ag-row .ag-cell:first-child {
+                text-align: left !important;
+                padding-left: 10px !important;
+                font-weight: bold;
+            }
             .ag-root-wrapper {
                 margin: 0 auto;
             }
