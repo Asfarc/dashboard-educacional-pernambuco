@@ -746,11 +746,12 @@ else:
 
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
-    dependencia_selecionada = st.sidebar.multiselect(
-        "DEPENDÊNCIA ADMINISTRATIVA:",
+    dependencia_selecionada = st.sidebar.pills(
+        "DEPENDENCIA ADMINISTRATIVA:",
         options=dependencias_disponiveis,
         default=dependencias_disponiveis,
-        help="Selecione uma ou mais opções"
+        selection_mode="multi",
+        label_visibility="visible"
     )
     if dependencia_selecionada:
         df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
