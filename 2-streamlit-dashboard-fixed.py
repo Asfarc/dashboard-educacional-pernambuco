@@ -486,7 +486,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 wrapText=False,
                 cellStyle={
                     'overflow': 'hidden',
-                    'textAlign': 'center',
+                    'textAlign': 'left',
                     'text-overflow': 'ellipsis',
                     'white-space': 'nowrap',
                 },
