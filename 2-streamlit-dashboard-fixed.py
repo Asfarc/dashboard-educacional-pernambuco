@@ -409,7 +409,8 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
     totais = {}
     if coluna_dados and coluna_dados in df_para_exibir.columns:
         for col in df_para_exibir.columns:
-            if col in colunas_nao_somadas:
+            # Verifica se a coluna é uma das colunas definidas para não serem somadas
+            if any(col_padrao in col for col_padrao in colunas_nao_somadas):
                 # Para colunas não somáveis
                 if col == list(df_para_exibir.columns)[0]:
                     totais[col] = "TOTAL"
@@ -1066,18 +1067,9 @@ with tab1:
         else:  # Personalizado ou outro valor
             cores_personalizadas = None
 
-    # Lista de colunas que não devem ser somadas
-    st.write("### Colunas a excluir do cálculo de totais")
-    colunas_disponiveis = [col for col in df_filtrado.columns
-                           if not (col.startswith("Número de") or col == coluna_dados)]
-
-    colunas_nao_somadas = st.multiselect(
-        "Selecione as colunas que NÃO devem ser somadas:",
-        options=colunas_disponiveis,
-        default=["ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
-                 "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"],
-        help="Estas colunas não serão incluídas no cálculo de totais"
-    )
+    # Lista fixa de colunas que não devem ser somadas
+    colunas_nao_somadas = ["ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
+                           "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 
     altura_tabela = altura_manual
 
