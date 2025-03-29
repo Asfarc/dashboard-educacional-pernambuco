@@ -571,6 +571,31 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             function(params) {
                 if (params && params.api) {
                     params.api.sizeColumnsToFit();
+
+                    // Garantir centralização dos cabeçalhos
+                    setTimeout(function() {
+                        const headerCells = document.querySelectorAll('.ag-header-cell-text');
+                        if (headerCells) {
+                            headerCells.forEach(cell => {
+                                if (cell) {
+                                    cell.style.justifyContent = 'center';
+                                    cell.style.textAlign = 'center';
+
+                                    const parentLabel = cell.closest('.ag-header-cell-label');
+                                    if (parentLabel) {
+                                        parentLabel.style.justifyContent = 'center';
+                                        parentLabel.style.textAlign = 'center';
+                                    }
+
+                                    const headerCell = cell.closest('.ag-header-cell');
+                                    if (headerCell) {
+                                        headerCell.style.justifyContent = 'center';
+                                        headerCell.style.textAlign = 'center';
+                                    }
+                                }
+                            });
+                        }
+                    }, 500);
                 }
             }
         """),
@@ -791,20 +816,32 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     js_fix_headers = """
     <script>
-        setTimeout(function() {
+        function adjustHeaders() {
             try {
-                const gridDivs = document.querySelectorAll('.ag-header-row');
-                gridDivs.forEach(function(div) {
-                    div.style.height = 'auto';
-                    div.style.minHeight = '50px';
+                const grid = document.querySelector('.ag-root-wrapper');
+                if (!grid) {
+                    setTimeout(adjustHeaders, 100); // Tenta novamente se o grid não estiver pronto
+                    return;
+                }
+
+                const headerRows = grid.querySelectorAll('.ag-header-row');
+                headerRows.forEach(row => {
+                    row.style.height = 'auto';
+                    row.style.minHeight = '50px';
                 });
-                const headerCells = document.querySelectorAll('.ag-header-cell-text');
-                headerCells.forEach(function(cell) {
+
+                const headerCells = grid.querySelectorAll('.ag-header-cell-text');
+                headerCells.forEach(cell => {
                     cell.style.whiteSpace = 'normal';
                     cell.style.overflow = 'visible';
                 });
-            } catch(e) { console.error('Erro ao ajustar cabeçalhos:', e); }
-        }, 500);
+            } catch(e) { 
+                console.error('Erro ao ajustar cabeçalhos:', e); 
+            }
+        }
+
+        // Inicia o ajuste e verifica continuamente
+        setTimeout(adjustHeaders, 300);
     </script>
     """
     st.markdown(js_fix_headers, unsafe_allow_html=True)
