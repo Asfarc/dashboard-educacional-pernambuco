@@ -328,7 +328,8 @@ def converter_df_para_excel(df):
 
 def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
                                   alinhamento_padrao=None, cores_personalizadas=None, formatacao_condicional=True,
-                                  pagina_atual=1, itens_por_pagina=50, colunas_nao_somadas=None, cache_key=None):
+                                  pagina_atual=1, itens_por_pagina=50, coluna_ordenacao=None, ascendente=False,
+                                  colunas_nao_somadas=None, cache_key=None):
     """
     Versão avançada e otimizada da exibição de DataFrame usando Plotly Table
 
@@ -369,7 +370,29 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
     dict
         Dicionário contendo dados sobre a tabela e configurações de paginação
     """
+    # Ordenação inicial
+    if coluna_ordenacao and coluna_ordenacao in df_para_exibir.columns:
+        df_para_exibir = df_para_exibir.sort_values(
+            by=coluna_ordenacao,
+            ascending=ascendente
+        )
 
+    # No layout da tabela, adicionar:
+    fig.update_layout(
+        updatemenus=[{
+            'type': 'dropdown',
+            'direction': 'down',
+            'x': 1.0,
+            'y': 1.2,
+            'buttons': [
+                {
+                    'args': [{'sort': True, 'sort_column': col}],
+                    'label': f'Ordenar por {col}',
+                    'method': 'restyle'
+                } for col in df_para_exibir.columns
+            ]
+        }]
+    )
     # Verificação inicial dos dados
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
@@ -408,8 +431,6 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
         "even_row_color": "#f9f9f9",
         "odd_row_color": "white",
         "total_row_color": "#e6f2ff",
-        "conditional_color_high": "#e6ffe6",  # Verde claro para valores altos
-        "conditional_color_low": "#fff0f0"  # Vermelho claro para valores baixos
     }
 
     # Atualizar com cores personalizadas se fornecidas
@@ -618,11 +639,21 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
     fig.update_layout(
         margin=dict(l=5, r=5, t=5, b=5),
         height=altura,
-        hovermode="closest"
+        hovermode="closest",
+        updatemenus=[{
+            'type': 'dropdown',
+            'direction': 'down',
+            'x': 1.0,
+            'y': 1.2,
+            'buttons': [
+                {
+                    'args': [{'sort': True, 'sort_column': col}],
+                    'label': f'Ordenar por {col}',
+                    'method': 'restyle'
+                } for col in df_para_exibir.columns
+            ]
+        }]
     )
-
-    # Adicionar funcionalidade de ordenação
-    fig.update_layout(clickmode='event+select')
 
     # Exibir a tabela
     st.plotly_chart(fig, use_container_width=True, config={
@@ -639,31 +670,25 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
 
     # Se houver mais de uma página, exibir controles de paginação
     if total_paginas > 1:
-        col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+        col1, col2, col3 = st.columns([2, 3, 2])
 
         with col1:
-            if st.button("⏮️ Primeira"):
-                st.session_state.pagina_atual = 1
+            if pagina_atual > 1:
+                anterior = st.button("« Anterior")
+            else:
+                anterior = st.button("« Anterior", disabled=True)
 
         with col2:
-            if st.button("◀️ Anterior") and st.session_state.pagina_atual > 1:
-                st.session_state.pagina_atual -= 1
+            st.write(f"Página {pagina_atual} de {total_paginas} • "
+                     f"Mostrando {(pagina_atual - 1) * itens_por_pagina + 1} a "
+                     f"{min(pagina_atual * itens_por_pagina, total_linhas)} "
+                     f"de {total_linhas} registros")
 
         with col3:
-            if st.button("Próximo ▶️") and st.session_state.pagina_atual < total_paginas:
-                st.session_state.pagina_atual += 1
-
-        with col4:
-            if st.button("⏭️ Última"):
-                st.session_state.pagina_atual = total_paginas
-
-        # Seletor numérico de página
-        nova_pagina = st.number_input("Ir para página:",
-                                      min_value=1,
-                                      max_value=total_paginas,
-                                      value=st.session_state.pagina_atual)
-        if nova_pagina != st.session_state.pagina_atual:
-            st.session_state.pagina_atual = nova_pagina
+            if pagina_atual < total_paginas:
+                proximo = st.button("Próximo »")
+            else:
+                proximo = st.button("Próximo »", disabled=True)
 
     # Adicionar estatísticas abaixo da tabela se coluna_dados existir
     if coluna_dados and coluna_dados in df_para_exibir.columns:
