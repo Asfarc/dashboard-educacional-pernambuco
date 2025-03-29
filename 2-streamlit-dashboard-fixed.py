@@ -298,7 +298,9 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom", tipo_visualizacao=None):
+
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
+                             tipo_visualizacao=None):
     """
     Exibe DataFrame no AgGrid, com opções de:
       - paginacão, range selection, status bar
@@ -603,7 +605,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 }, 100);
             }
         """),
-            onFilterChanged=JsCode("""
+        onFilterChanged=JsCode("""
                 function(params) {
                     setTimeout(() => {
                         const gridElement = document.querySelector('.ag-root-wrapper');
@@ -614,13 +616,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                     }, 100);
                 }
             """)
-        )
+    )
 
     # Barra de status: soma, média, min, max
     gb.configure_grid_options(
         statusBar={
             'statusPanels': [
-                # Mantém apenas o painel de estatísticas customizado
+                {'statusPanel': 'agTotalRowCountComponent', 'align': 'center'},
+                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'center'},
                 {
                     'statusPanel': 'agCustomStatsToolPanel',
                     'statusPanelParams': {
@@ -630,6 +633,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             ]
         }
     )
+
     # Barra lateral
     gb.configure_side_bar()
 
@@ -646,20 +650,26 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             rowStyle={"textAlign": "center"}
         )
 
-    # Se quisermos a linha de totais fixada e a coluna_dados existir
+    # Modificação: Criação de uma única linha de rodapé combinando Total de linhas e Soma
     pinned_row_data = None
     if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
+        # Obter a soma da coluna de dados
         soma_np = df_para_exibir[coluna_dados].sum()
-        soma_python = int(soma_np)
-        total_linhas = len(df_para_exibir)
-        primeira_coluna = df_para_exibir.columns[0]  # Nome da primeira coluna
-        pinned_row_data = {
-            primeira_coluna: f"Total de linhas: {formatar_numero(total_linhas)}",  # Texto na primeira coluna
-            coluna_dados: soma_python  # Soma na coluna de dados
-        }
+        soma_python = int(soma_np)  # ou float(soma_np)
+
+        # Criar um dicionário para a linha de rodapé
+        pinned_row_data = {}
+
+        # Adicionar "Total de linhas: X" na primeira coluna
+        primeira_coluna = df_para_exibir.columns[0]
+        pinned_row_data[primeira_coluna] = f"Total de linhas: {len(df_para_exibir)}"
+
+        # Adicionar a soma na coluna de dados
+        pinned_row_data[coluna_dados] = soma_python
 
     # Monta as opções
     grid_options = gb.build()
+
     # Se pinned_row_data existir
     if pinned_row_data:
         if posicao_totais == "bottom":
@@ -713,11 +723,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             width: 100% !important;
             justify-content: center !important;
             }
-            .ag-pinned-bottom-row-viewport .ag-row .ag-cell:first-child {
-                text-align: left !important;
-                padding-left: 10px !important;
-                font-weight: bold;
-            }
+
             .ag-root-wrapper {
                 margin: 0 auto;
             }
