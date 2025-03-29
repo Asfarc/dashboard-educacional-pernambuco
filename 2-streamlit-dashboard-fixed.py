@@ -21,6 +21,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# CSS para o sidebar esquerdo (inalterado)
 css_sidebar = """
 <style>
     /* Cria um overlay para toda a sidebar */
@@ -37,13 +38,11 @@ css_sidebar = """
         margin: 1rem;
         padding: 1rem;
     }
-
     /* Garante que os controles fiquem visíveis acima do overlay */
     [data-testid="stSidebar"] > div {
         position: relative;
         z-index: 1;
     }
-
     /* Texto branco para todos os elementos */
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
@@ -53,14 +52,12 @@ css_sidebar = """
     [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
         color: white !important;
     }
-
     /* Mantém o texto das opções em preto */
     [data-testid="stSidebar"] option,
     [data-testid="stSidebar"] select,
     [data-testid="stSidebar"] [data-baseweb="select"] div {
         color: black !important;
     }
-
     /* ------ REGRAS ATUALIZADAS ------ */
     /* Altera TODOS os itens selecionados na sidebar */
     [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
@@ -68,20 +65,17 @@ css_sidebar = """
         color: white !important;
         border-radius: 1px !important;
     }
-
     /* Altera o hover */
     [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
         background-color: #2a3a4d !important;
         cursor: pointer;
     }
-
     /* Remove a cor azul padrão do Streamlit */
     [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
         box-shadow: none !important;
     }
 </style>
 """
-
 st.markdown(css_sidebar, unsafe_allow_html=True)
 
 css_pills = """
@@ -90,54 +84,54 @@ css_pills = """
     [data-testid="stSidebar"] div[data-testid="stPills"] {
         margin-top: 8px;
     }
-
     /* Botões não selecionados (kind="pills") */
     button[kind="pills"][data-testid="stBaseButton-pills"] {
         background-color: transparent !important;
         color: white !important;
         border: 1px solid #e37777 !important;
         border-radius: 1px !important;
-        /* etc. */
     }
-
     /* Botões selecionados (kind="pillsActive") */
     button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
         background-color: #e37777 !important; 
         color: white !important;          
         border: none !important;
         border-radius: 1px !important;
-        /* etc. */
     }
-
-    /* Caso precise estilizar o <p> lá dentro (texto em si) */
+    /* Estilização do texto nos botões ativos */
     button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
         color: white !important;
-        font-weight: bold; /* Exemplo extra */
+        font-weight: bold;
     }
 </style>
 """
-
 st.markdown(css_pills, unsafe_allow_html=True)
 
-# CSS para estilizar o "sidebar direito"
+# CSS para estilizar o "sidebar direito" (atualizado para seguir o padrão do esquerdo)
 right_sidebar_css = """
 <style>
-    div[data-testid="column"]:nth-of-type(3) {
-        background-color: #f0f2f6;
+    div[data-testid="column"]:nth-of-type(2) {
+        background-color: #364b60;
         border-radius: 10px;
         padding: 1rem;
         border-left: 1px solid #e0e0e0;
+        color: white;
     }
-
-    div[data-testid="column"]:nth-of-type(3) h3 {
-        color: #1f77b4;
+    div[data-testid="column"]:nth-of-type(2) h3 {
+        color: white;
         border-bottom: 1px solid #e0e0e0;
         padding-bottom: 10px;
         margin-bottom: 15px;
     }
-
-    div[data-testid="column"]:nth-of-type(3) .stButton > button {
+    div[data-testid="column"]:nth-of-type(2) .stButton > button {
         width: 100%;
+    }
+    /* Ajuste para inputs e selects dentro do painel direito */
+    div[data-testid="column"]:nth-of-type(2) .stSelectbox, 
+    div[data-testid="column"]:nth-of-type(2) .stSlider, 
+    div[data-testid="column"]:nth-of-type(2) .stRadio {
+        color: black;
+        background-color: white;
     }
 </style>
 """
@@ -156,11 +150,9 @@ def formatar_numero(numero):
     if pd.isna(numero) or numero == "-":
         return "-"
     try:
-        # Exibe sem casas decimais se for inteiro
         if float(numero).is_integer():
             return f"{int(numero):,}".replace(",", ".")
         else:
-            # 2 casas decimais
             parte_inteira = int(float(numero))
             parte_decimal = abs(float(numero) - parte_inteira)
             inteiro_fmt = f"{parte_inteira:,}".replace(",", ".")
@@ -169,14 +161,10 @@ def formatar_numero(numero):
     except (ValueError, TypeError):
         return str(numero)
 
-
 @st.cache_data
 def carregar_dados():
     """
     Carrega os dados das planilhas no formato Parquet.
-    - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
-    - Converte colunas que começam com 'Número de' para tipo numérico.
-    Em caso de erro, exibe uma mensagem e interrompe a execução.
     """
     try:
         diretorios_possiveis = [".", "data", "dados", os.path.join(os.path.dirname(__file__), "data")]
@@ -208,7 +196,6 @@ def carregar_dados():
         st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
 
-
 @st.cache_data
 def carregar_mapeamento_colunas():
     """
@@ -228,7 +215,6 @@ def carregar_mapeamento_colunas():
     except Exception as e:
         st.error(f"Erro ao carregar o mapeamento de colunas: {e}")
         st.stop()
-
 
 def criar_mapeamento_colunas(df):
     colunas_map = {col.lower().strip(): col for col in df.columns}
@@ -250,41 +236,31 @@ def criar_mapeamento_colunas(df):
             "subetapas": {},
             "series": {}
         }
-
         for subetapa, coluna in config.get("subetapas", {}).items():
             mapeamento_ajustado[etapa]["subetapas"][subetapa] = obter_coluna_real(coluna)
-
         for sub, series_dict in config.get("series", {}).items():
             if sub not in mapeamento_ajustado[etapa]["series"]:
                 mapeamento_ajustado[etapa]["series"][sub] = {}
             for serie, col_serie in series_dict.items():
                 mapeamento_ajustado[etapa]["series"][sub][serie] = obter_coluna_real(col_serie)
-
     return mapeamento_ajustado
-
 
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
         return ""
-
     if subetapa == "Todas":
         return mapeamento[etapa].get("coluna_principal", "")
-
     if "subetapas" not in mapeamento[etapa] or subetapa not in mapeamento[etapa]["subetapas"]:
         st.warning(ERRO_SUBETAPA_NAO_ENCONTRADA.format(subetapa, etapa))
         return mapeamento[etapa].get("coluna_principal", "")
-
     if serie == "Todas":
         return mapeamento[etapa]["subetapas"][subetapa]
-
     series_subetapa = mapeamento[etapa].get("series", {}).get(subetapa, {})
     if not series_subetapa or serie not in series_subetapa:
         st.warning(ERRO_SERIE_NAO_ENCONTRADA.format(serie, subetapa))
         return mapeamento[etapa]["subetapas"][subetapa]
-
     return series_subetapa[serie]
-
 
 def verificar_coluna_existe(df, coluna_nome):
     if not coluna_nome:
@@ -297,7 +273,6 @@ def verificar_coluna_existe(df, coluna_nome):
         return True, colunas_normalizadas[coluna_normalizada]
     return False, coluna_nome
 
-
 def converter_df_para_csv(df):
     if df is None or df.empty:
         return "Não há dados para exportar.".encode('utf-8')
@@ -306,7 +281,6 @@ def converter_df_para_csv(df):
     except Exception as e:
         st.error(f"Erro ao converter para CSV: {str(e)}")
         return "Erro na conversão".encode('utf-8')
-
 
 def converter_df_para_excel(df):
     if df is None or df.empty:
@@ -325,59 +299,23 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-
-def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
-                                  alinhamento_padrao=None, cores_personalizadas=None, formatacao_condicional=True,
-                                  pagina_atual=1, itens_por_pagina=50, coluna_ordenacao=None, ascendente=False,
-                                  colunas_nao_somadas=None, cache_key=None):
+def exibir_tabela_plotly_avancada(
+    df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
+    alinhamento_padrao=None, cores_personalizadas=None,
+    pagina_atual=1, itens_por_pagina=50, sort_column=None, sort_asc=True,
+    colunas_nao_somadas=None, cache_key=None
+):
     """
-    Versão avançada e otimizada da exibição de DataFrame usando Plotly Table
-
-    Parâmetros:
-    -----------
-    df_para_exibir : pandas.DataFrame
-        DataFrame contendo os dados a serem exibidos
-    altura : int
-        Altura da tabela em pixels
-    coluna_dados : str
-        Nome da coluna principal de dados numéricos para cálculos
-    posicao_totais : str
-        Posição da linha de totais: "bottom", "top" ou None
-    alinhamento_padrao : str ou dict
-        Alinhamento das células. Pode ser uma string ("left", "center", "right") para todas as colunas
-        ou um dicionário {coluna: alinhamento} para configuração individual
-    cores_personalizadas : dict
-        Dicionário com configurações de cores para a tabela, com as chaves:
-        - header_color: cor do cabeçalho
-        - even_row_color: cor das linhas pares
-        - odd_row_color: cor das linhas ímpares
-        - total_row_color: cor da linha de totais
-        - conditional_color_high: cor para valores altos na formatação condicional
-        - conditional_color_low: cor para valores baixos na formatação condicional
-    formatacao_condicional : bool
-        Se True, aplica formatação condicional às células numéricas
-    pagina_atual : int
-        Número da página atual para paginação
-    itens_por_pagina : int
-        Número de itens por página
-    colunas_nao_somadas : list
-        Lista de colunas que não devem ser somadas na linha de totais
-    cache_key : str
-        Chave para cache de resultados (melhoria de performance)
-
-    Retorna:
-    --------
-    dict
-        Dicionário contendo dados sobre a tabela e configurações de paginação
+    Exibe um DataFrame usando Plotly Table com paginação e ordenação.
+    As formatações condicionais foram removidas e os números (exceto ano/códigos) são formatados.
     """
-    # Ordenação inicial
-    if coluna_ordenacao and coluna_ordenacao in df_para_exibir.columns:
+    # Ordenação via parâmetro externo
+    if sort_column and sort_column in df_para_exibir.columns:
         df_para_exibir = df_para_exibir.sort_values(
-            by=coluna_ordenacao,
-            ascending=ascendente
+            by=sort_column,
+            ascending=sort_asc
         )
 
-    # Verificação inicial dos dados
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
         return {
@@ -394,58 +332,43 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
     if cache_key:
         df_para_exibir = copiar_dataframe(df_para_exibir)
 
-    # Configuração de paginação
     total_linhas = len(df_para_exibir)
     total_paginas = max(1, (total_linhas + itens_por_pagina - 1) // itens_por_pagina)
     pagina_atual = min(max(1, pagina_atual), total_paginas)
-
-    # Calcular índices para a página atual
     inicio = (pagina_atual - 1) * itens_por_pagina
     fim = min(inicio + itens_por_pagina, total_linhas)
-
-    # Extrair dados da página atual
     df_pagina = df_para_exibir.iloc[inicio:fim].copy()
-
-    # Criar uma cópia para exibição
     df_exibicao = df_pagina.copy()
 
-    # Configuração de cores padrão
+    # Cores padrão
     cores_padrao = {
         "header_color": "#364b60",
         "even_row_color": "#f9f9f9",
         "odd_row_color": "white",
         "total_row_color": "#e6f2ff",
     }
-
-    # Atualizar com cores personalizadas se fornecidas
     if cores_personalizadas:
         cores_padrao.update(cores_personalizadas)
-
-    # Extrair cores para uso
     header_color = cores_padrao["header_color"]
     cell_colors = [cores_padrao["odd_row_color"], cores_padrao["even_row_color"]]
     total_row_color = cores_padrao["total_row_color"]
 
-    # Definir colunas que não devem ser somadas
     if colunas_nao_somadas is None:
         colunas_nao_somadas = [
             "ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
             "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"
         ]
 
-    # Calcular totais para colunas numéricas, excluindo as colunas não somáveis
+    # Cálculo dos totais (mantido, embora não seja exibido abaixo da tabela)
     totais = {}
     if coluna_dados and coluna_dados in df_para_exibir.columns:
         for col in df_para_exibir.columns:
-            # Verifica se a coluna é uma das colunas definidas para não serem somadas
             if any(col_padrao in col for col_padrao in colunas_nao_somadas):
-                # Para colunas não somáveis
                 if col == list(df_para_exibir.columns)[0]:
                     totais[col] = "TOTAL"
                 else:
                     totais[col] = ""
-            elif col.startswith("Número de") or col == coluna_dados or pd.api.types.is_numeric_dtype(
-                    df_para_exibir[col]):
+            elif col.startswith("Número de") or col == coluna_dados or pd.api.types.is_numeric_dtype(df_para_exibir[col]):
                 try:
                     totais[col] = df_para_exibir[col].sum()
                 except:
@@ -453,82 +376,43 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
             else:
                 totais[col] = ""
 
-    # Calcular estatísticas para formatação condicional
-    estatisticas = {}
-    if formatacao_condicional and coluna_dados and coluna_dados in df_para_exibir.columns:
-        try:
-            estatisticas = {
-                "media": df_para_exibir[coluna_dados].mean(),
-                "desvio_padrao": df_para_exibir[coluna_dados].std(),
-                "max": df_para_exibir[coluna_dados].max(),
-                "min": df_para_exibir[coluna_dados].min()
-            }
-        except:
-            formatacao_condicional = False
-
-    # Formatar colunas numéricas
+    # Formatação das colunas: para exceções (ex.: ANO, códigos) não aplicamos formatação
+    colunas_excecao = ["ANO", "CODIGO DA ESCOLA", "CODIGO DO MUNICIPIO"]
     for col in df_exibicao.columns:
-        if col.startswith("Número de") or col == coluna_dados or pd.api.types.is_numeric_dtype(df_exibicao[col]):
+        if col in colunas_excecao:
+            df_exibicao[col] = df_exibicao[col].apply(lambda x: str(x) if pd.notnull(x) else "-")
+        elif col.startswith("Número de") or col == coluna_dados or pd.api.types.is_numeric_dtype(df_exibicao[col]):
             df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_numero(x) if pd.notnull(x) else "-")
 
-    # Configurar alinhamento das células
+    # Alinhamento das células: automático (números à direita, texto à esquerda)
     if alinhamento_padrao is None:
-        # Configuração automática: esquerda para texto, direita para números
         cell_align = []
         for col in df_exibicao.columns:
-            if col == coluna_dados or col.startswith("Número de") or pd.api.types.is_numeric_dtype(df_para_exibir[col]):
-                cell_align.append('right')  # Colunas numéricas à direita
+            if col in colunas_excecao or col == coluna_dados or (pd.api.types.is_numeric_dtype(df_para_exibir[col])):
+                cell_align.append('right')
             else:
-                cell_align.append('left')  # Colunas de texto à esquerda
+                cell_align.append('left')
     elif isinstance(alinhamento_padrao, dict):
-        # Configuração individual por coluna
         cell_align = []
         for col in df_exibicao.columns:
             if col in alinhamento_padrao:
                 cell_align.append(alinhamento_padrao[col])
             else:
-                # Padrão para colunas não especificadas
-                if col == coluna_dados or col.startswith("Número de") or pd.api.types.is_numeric_dtype(
-                        df_para_exibir[col]):
+                if col in colunas_excecao or col == coluna_dados or pd.api.types.is_numeric_dtype(df_para_exibir[col]):
                     cell_align.append('right')
                 else:
                     cell_align.append('left')
     else:
-        # Usar o mesmo alinhamento para todas as colunas
         cell_align = [alinhamento_padrao] * len(df_exibicao.columns)
 
-    # Preparar dados para a tabela
     header_values = list(df_exibicao.columns)
     cell_values = [df_exibicao[col].tolist() for col in df_exibicao.columns]
 
-    # Criar lista de cores para alternância de linhas e formatação condicional
+    # Criar cores alternadas simples (sem formatação condicional)
     fill_color = []
     if len(df_exibicao) > 0:
-        for i, col in enumerate(df_exibicao.columns):
-            # Base: alternância de cores para linhas
-            row_colors = [cell_colors[j % 2] for j in range(len(df_exibicao))]
-
-            # Aplicar formatação condicional para colunas numéricas se ativado
-            if (formatacao_condicional and
-                    (col == coluna_dados or col.startswith("Número de") or
-                     pd.api.types.is_numeric_dtype(df_para_exibir[col]))):
-
-                try:
-                    # Obter valores originais para comparação
-                    valores_originais = df_para_exibir.iloc[inicio:fim][col].values
-
-                    # Aplicar cores condicionais
-                    for idx, valor in enumerate(valores_originais):
-                        if pd.notnull(valor):
-                            # Valores acima da média recebem cor mais intensa
-                            if valor > estatisticas["media"] + estatisticas["desvio_padrao"] * 0.5:
-                                row_colors[idx] = cores_padrao["conditional_color_high"]
-                            # Valores abaixo da média recebem cor mais fraca
-                            elif valor < estatisticas["media"] - estatisticas["desvio_padrao"] * 0.5:
-                                row_colors[idx] = cores_padrao["conditional_color_low"]
-                except:
-                    pass  # Manter cores alternadas se houver erro
-
+        for _ in df_exibicao.columns:
+            row_colors = [cell_colors[i % 2] for i in range(len(df_exibicao))]
             fill_color.append(row_colors)
     else:
         fill_color = [cell_colors[0]]
@@ -544,61 +428,24 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
                     total_row.append(totais[col])
             else:
                 total_row.append("")
-
         if posicao_totais == "top":
             cell_values = [[total_row[i]] + values for i, values in enumerate(cell_values)]
-            # Adicionar cor da linha de totais no topo
             fill_color = [[total_row_color] + colors for colors in fill_color]
         else:  # bottom
             cell_values = [values + [total_row[i]] for i, values in enumerate(cell_values)]
-            # Adicionar cor da linha de totais no final
             fill_color = [colors + [total_row_color] for colors in fill_color]
 
-    # Preparar os dados de hover para tooltip
+    # Preparar dados de hover simples
     hover_data = []
     for i, col in enumerate(df_exibicao.columns):
-        col_hover = []
-
-        # Adicionar informações específicas por coluna no hover
-        if col == coluna_dados or col.startswith("Número de") or pd.api.types.is_numeric_dtype(df_para_exibir[col]):
-            try:
-                # Para campos numéricos, mostrar porcentagem do total
-                valores_originais = df_para_exibir.iloc[inicio:fim][col].values
-                total_col = df_para_exibir[col].sum() if not pd.isna(df_para_exibir[col].sum()) else 1
-
-                for valor in valores_originais:
-                    if pd.notnull(valor) and total_col != 0:
-                        percentual = (valor / total_col) * 100
-                        col_hover.append(f"Valor: {formatar_numero(valor)}<br>% do total: {percentual:.1f}%")
-                    else:
-                        col_hover.append("")
-            except:
-                col_hover = [""] * len(df_exibicao)
-        else:
-            col_hover = [""] * len(df_exibicao)
-
-        # Adicionar hover para a linha de totais
+        col_hover = [""] * len(df_exibicao)
         if posicao_totais == "top":
             col_hover = ["Total"] + col_hover
         elif posicao_totais == "bottom":
             col_hover = col_hover + ["Total"]
-
         hover_data.append(col_hover)
 
-    # Configurações avançadas de tooltip para células
-    custom_data = []
-    for i in range(len(cell_values[0])):
-        row_data = {}
-        for j, col in enumerate(df_exibicao.columns):
-            if j < len(hover_data) and i < len(hover_data[j]):
-                row_data[col] = hover_data[j][i]
-        custom_data.append(row_data)
-
-    # Ordenação interativa: adicionar flag para indicar coluna ordenável
-    ordenaveis = [col == coluna_dados or col.startswith("Número de") or
-                  pd.api.types.is_numeric_dtype(df_para_exibir[col]) for col in df_exibicao.columns]
-
-    # Criar a tabela Plotly com recursos avançados
+    # Criação da tabela Plotly (sem updatemenus para ordenação interna)
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=header_values,
@@ -609,37 +456,22 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
         ),
         cells=dict(
             values=cell_values,
-            fill_color=fill_color if len(df_exibicao) > 0 else [cell_colors[0]],
+            fill_color=fill_color,
             align=cell_align,
             font=dict(color='black', size=12, family="Arial"),
             height=35,
             line=dict(color='#d6d6d6', width=1)
         ),
-        customdata=custom_data,
+        customdata=hover_data,
         hoverinfo="text"
     )])
 
-    # Ajustar layout
     fig.update_layout(
         margin=dict(l=5, r=5, t=5, b=5),
         height=altura,
-        hovermode="closest",
-        updatemenus=[{
-            'type': 'dropdown',
-            'direction': 'down',
-            'x': 1.0,
-            'y': 1.2,
-            'buttons': [
-                {
-                    'args': [{'sort': True, 'sort_column': col}],
-                    'label': f'Ordenar por {col}',
-                    'method': 'restyle'
-                } for col in df_para_exibir.columns
-            ]
-        }]
+        hovermode="closest"
     )
 
-    # Exibir a tabela
     st.plotly_chart(fig, use_container_width=True, config={
         'displayModeBar': True,
         'scrollZoom': True,
@@ -652,50 +484,24 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
         }
     })
 
-    # Se houver mais de uma página, exibir controles de paginação
     if total_paginas > 1:
         col1, col2, col3 = st.columns([2, 3, 2])
-
         with col1:
             if pagina_atual > 1:
                 anterior = st.button("« Anterior")
             else:
                 anterior = st.button("« Anterior", disabled=True)
-
         with col2:
             st.write(f"Página {pagina_atual} de {total_paginas} • "
                      f"Mostrando {(pagina_atual - 1) * itens_por_pagina + 1} a "
                      f"{min(pagina_atual * itens_por_pagina, total_linhas)} "
                      f"de {total_linhas} registros")
-
         with col3:
             if pagina_atual < total_paginas:
                 proximo = st.button("Próximo »")
             else:
                 proximo = st.button("Próximo »", disabled=True)
 
-    # Adicionar estatísticas abaixo da tabela se coluna_dados existir
-    if coluna_dados and coluna_dados in df_para_exibir.columns:
-        try:
-            dados_numericos = pd.to_numeric(df_para_exibir[coluna_dados], errors='coerce')
-            soma = dados_numericos.sum()
-            media = dados_numericos.mean()
-            minimo = dados_numericos.min()
-            maximo = dados_numericos.max()
-
-            estatisticas = (
-                f"Total: {formatar_numero(soma)} | "
-                f"Média: {formatar_numero(media)} | "
-                f"Mín: {formatar_numero(minimo)} | "
-                f"Máx: {formatar_numero(maximo)}"
-            )
-
-            # Mostrar estatísticas abaixo da tabela
-            st.caption(estatisticas)
-        except Exception as e:
-            st.caption(f"Não foi possível calcular estatísticas: {str(e)}")
-
-    # Retornar informações sobre a tabela e paginação
     return {
         "data": df_para_exibir,
         "pagina_atual": pagina_atual,
@@ -714,15 +520,13 @@ except Exception as e:
     st.stop()
 
 # ======================================
-# CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
+# CONFIGURAÇÃO DA BARRA LATERAL ESQUERDA (FILTROS)
 # ======================================
 st.sidebar.title("Filtros")
-
 tipo_visualizacao = st.sidebar.radio(
     "Nível de Agregação:",
     ["Escola", "Município", "Estado"]
 )
-
 if tipo_visualizacao == "Escola":
     df = escolas_df
 elif tipo_visualizacao == "Município":
@@ -744,7 +548,6 @@ if "ANO" in df.columns:
     if not anos_selecionados:
         st.warning("Por favor, selecione pelo menos um ano.")
         st.stop()
-
     df_filtrado = df[df["ANO"].isin(anos_selecionados)]
 else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
@@ -755,7 +558,6 @@ etapa_selecionada = st.sidebar.selectbox(
     "Etapa de Ensino:",
     etapas_disponiveis
 )
-
 if etapa_selecionada not in mapeamento_colunas:
     st.error(f"A etapa '{etapa_selecionada}' não foi encontrada no mapeamento de colunas.")
     st.stop()
@@ -822,7 +624,6 @@ else:
 st.title(TITULO_DASHBOARD)
 anos_texto = ", ".join(map(str, anos_selecionados))
 st.markdown(f"**Visualização por {tipo_visualizacao} - Anos: {anos_texto}**")
-
 filtro_texto = f"**Etapa:** {etapa_selecionada}"
 if subetapa_selecionada != "Todas":
     filtro_texto += f" | **Subetapa:** {subetapa_selecionada}"
@@ -834,7 +635,6 @@ st.markdown(filtro_texto)
 # Seção de Indicadores (KPIs)
 # -------------------------------
 col1, col2, col3 = st.columns(3)
-
 try:
     total_matriculas = df_filtrado[coluna_dados].sum()
     with col1:
@@ -843,7 +643,6 @@ except Exception as e:
     with col1:
         st.metric("Total de Matrículas", "-")
         st.caption(f"Erro ao calcular: {str(e)}")
-
 with col2:
     try:
         if tipo_visualizacao == "Escola":
@@ -865,7 +664,6 @@ with col2:
     except Exception as e:
         st.metric("Média de Matrículas", "-")
         st.caption(f"Erro ao calcular: {str(e)}")
-
 with col3:
     try:
         if tipo_visualizacao == "Escola":
@@ -890,14 +688,12 @@ with col3:
 # Seção de Tabela de Dados Detalhados
 # -------------------------------
 st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
-
-# Criar o layout com 3 colunas - o conteúdo principal ocupa 3 e a coluna direita ocupa 1
+# Layout: 3 colunas para a área principal e 1 coluna para o painel direito
 main_area, right_sidebar = st.columns([3, 1])
 
 colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
-
 if tipo_visualizacao == "Escola":
     colunas_adicionais = [
         "CODIGO DA ESCOLA",
@@ -922,122 +718,89 @@ else:
         "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
-
 for col in colunas_adicionais:
     if col in df_filtrado.columns:
         colunas_tabela.append(col)
-
 if coluna_dados in df_filtrado.columns:
     colunas_tabela.append(coluna_dados)
-
-colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
-colunas_tabela = colunas_existentes
+colunas_tabela = [c for c in colunas_tabela if c in df_filtrado.columns]
 
 if coluna_dados in df_filtrado.columns:
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_tabela].copy()
         df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
-
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
 else:
-    tabela_dados = df_filtrado[colunas_existentes].copy()
+    tabela_dados = df_filtrado[colunas_tabela].copy()
     tabela_exibicao = tabela_dados.copy()
-
 tabela_filtrada = tabela_exibicao.copy()
 tabela_com_totais = tabela_filtrada
 
-# Código para leitura do estado da paginação atual
 if 'pagina_atual' not in st.session_state:
     st.session_state.pagina_atual = 1
 
-# Inicialização de variáveis para as novas funcionalidades
-if 'posicao_totais' not in locals():
-    posicao_totais = "Rodapé"
-
+# Mapeamento da posição dos totais
 posicao_totais_map = {
     "Rodapé": "bottom",
     "Topo": "top",
     "Nenhum": None
 }
-# Valores padrão para os novos parâmetros
+
+# Parâmetros padrão para a tabela
 alinhamento_valor = None  # Automático
-formatacao_condicional = True
 itens_por_pagina = 50
 altura_tabela = 600
 cores_personalizadas = {
     "header_color": "#364b60",
     "even_row_color": "#f9f9f9",
     "odd_row_color": "white",
-    "total_row_color": "#e6f2ff",
-    "conditional_color_high": "#e6ffe6",
-    "conditional_color_low": "#fff0f0"
+    "total_row_color": "#e6f2ff"
 }
 colunas_nao_somadas = ["ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
                         "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
 
-# Preparação dos dados numéricos
 if coluna_dados and coluna_dados in tabela_com_totais.columns:
     with pd.option_context('mode.chained_assignment', None):
         tabela_com_totais[coluna_dados] = pd.to_numeric(tabela_com_totais[coluna_dados], errors='coerce')
         tabela_com_totais[coluna_dados] = tabela_com_totais[coluna_dados].fillna(0)
 
-# ALTERAÇÃO PRINCIPAL: Separamos a exibição em duas colunas
+# Painel principal com a tabela
 with main_area:
-    # Exibição da tabela com a função aprimorada na área principal
     try:
         grid_result = exibir_tabela_plotly_avancada(
             tabela_com_totais,
             altura=altura_tabela,
             coluna_dados=coluna_dados,
-            posicao_totais=posicao_totais_map.get(posicao_totais),
+            posicao_totais=posicao_totais_map.get("Rodapé"),
             alinhamento_padrao=alinhamento_valor,
             cores_personalizadas=cores_personalizadas,
-            formatacao_condicional=formatacao_condicional,
             pagina_atual=st.session_state.pagina_atual,
             itens_por_pagina=itens_por_pagina,
+            sort_column=st.session_state.get("sort_column", None),
+            sort_asc=st.session_state.get("sort_asc", True),
             colunas_nao_somadas=colunas_nao_somadas,
             cache_key=f"{tipo_visualizacao}_{etapa_selecionada}_{subetapa_selecionada}_{'-'.join(map(str, anos_selecionados))}"
         )
-
     except Exception as e:
         st.error(f"Erro ao exibir tabela com Plotly: {str(e)}")
         st.dataframe(tabela_com_totais, height=altura_tabela)
 
-    # Estatísticas sempre visíveis abaixo da tabela na área principal
+# (Bloco de estatísticas abaixo da tabela removido para evitar repetição)
 
-    if coluna_dados and coluna_dados in df_filtrado.columns:
-        try:
-            # Calcular estatísticas para a coluna de dados principal
-            descricao = df_filtrado[coluna_dados].describe()
-
-            # Exibir estatísticas básicas em linha
-            col_stats1, col_stats2, col_stats3 = st.columns(3)
-            with col_stats1:
-                st.metric("Total", formatar_numero(df_filtrado[coluna_dados].sum()))
-            with col_stats2:
-                st.metric("Média", formatar_numero(descricao["mean"]))
-            with col_stats3:
-                st.metric("Máximo", formatar_numero(descricao["max"]))
-        except Exception as e:
-            st.caption(f"Não foi possível calcular estatísticas: {str(e)}")
-
-# Sidebar direita (configurações da tabela)
+# Painel direito: Configurações da Tabela e Ordenação
 with right_sidebar:
     st.markdown("### Configurações da Tabela")
-
     # Altura da tabela
     altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
     if altura_personalizada:
         altura_tabela = st.slider("Altura (pixels)", 200, 1000, 600, 50)
-
     # Linha de totais
     posicao_totais = st.radio(
         "Linha de totais:",
         ["Rodapé", "Topo", "Nenhum"],
         index=0
     )
-
     # Alinhamento
     alinhamento_opcoes = {
         "Automático": None,
@@ -1051,67 +814,57 @@ with right_sidebar:
         index=0
     )
     alinhamento_valor = alinhamento_opcoes[alinhamento_selecionado]
-
     # Paginação
     itens_por_pagina = st.select_slider(
         "Itens por página:",
         options=[10, 25, 50, 100, 200, 500],
         value=50
     )
-
-    # Formatação condicional
-    formatacao_condicional = st.checkbox(
-        "Formatação condicional",
-        value=True,
-        help="Destaca valores acima/abaixo da média"
-    )
-
     # Esquema de cores
     esquema_cor = st.selectbox(
         "Esquema de cores:",
         ["Padrão", "Alto contraste", "Tons de azul", "Monocromático"]
     )
-
-    # Definir as cores com base no esquema selecionado
     if esquema_cor == "Padrão":
         cores_personalizadas = {
             "header_color": "#364b60",
             "even_row_color": "#f9f9f9",
             "odd_row_color": "white",
-            "total_row_color": "#e6f2ff",
-            "conditional_color_high": "#e6ffe6",
-            "conditional_color_low": "#fff0f0"
+            "total_row_color": "#e6f2ff"
         }
     elif esquema_cor == "Alto contraste":
         cores_personalizadas = {
             "header_color": "#000000",
             "even_row_color": "#ffffff",
             "odd_row_color": "#f0f0f0",
-            "total_row_color": "#dddddd",
-            "conditional_color_high": "#bbffbb",
-            "conditional_color_low": "#ffbbbb"
+            "total_row_color": "#dddddd"
         }
     elif esquema_cor == "Tons de azul":
         cores_personalizadas = {
             "header_color": "#1a5276",
             "even_row_color": "#ebf5fb",
             "odd_row_color": "#d6eaf8",
-            "total_row_color": "#aed6f1",
-            "conditional_color_high": "#d1f5ff",
-            "conditional_color_low": "#bbdefb"
+            "total_row_color": "#aed6f1"
         }
     else:  # Monocromático
         cores_personalizadas = {
             "header_color": "#4a4a4a",
             "even_row_color": "#f5f5f5",
             "odd_row_color": "#e0e0e0",
-            "total_row_color": "#bdbdbd",
-            "conditional_color_high": "#e0e0e0",
-            "conditional_color_low": "#f5f5f5"
+            "total_row_color": "#bdbdbd"
         }
 
+    st.markdown("### Ordenação da Tabela")
+    colunas_para_ordenar = list(df_filtrado.columns)
+    # Seleciona a coluna de ordenação; se possível, usa a coluna_dados como padrão
+    default_idx = colunas_para_ordenar.index(coluna_dados) if coluna_dados in colunas_para_ordenar else 0
+    sort_column = st.selectbox("Ordenar por:", options=colunas_para_ordenar, index=default_idx)
+    sort_order = st.radio("Ordem:", ["Crescente", "Decrescente"], index=1)
+    sort_asc = True if sort_order == "Crescente" else False
+    st.session_state.sort_column = sort_column
+    st.session_state.sort_asc = sort_asc
+
     st.markdown("### Colunas para exibição")
-    # Adicionar colunas adicionais
     todas_colunas = [col for col in df_filtrado.columns if col not in colunas_tabela]
     if todas_colunas:
         colunas_adicionais = st.multiselect(
@@ -1122,25 +875,18 @@ with right_sidebar:
         if colunas_adicionais:
             novas_colunas = colunas_tabela.copy()
             novas_colunas.extend(colunas_adicionais)
-            # Armazenar as colunas escolhidas em session_state para uso após rerun
             st.session_state.colunas_escolhidas = novas_colunas
-    # Botão para aplicar configurações
     if st.button("Aplicar configurações", type="primary"):
-        st.session_state.pagina_atual = 1  # Reset página ao aplicar novas configurações
-        # Se houver novas colunas adicionadas, atualizar a tabela
+        st.session_state.pagina_atual = 1
         if 'colunas_escolhidas' in st.session_state:
             try:
-                tabela_dados = df_filtrado[st.session_state.colunas_escolhidas].sort_values(by=coluna_dados,
-                                                                                            ascending=False)
+                tabela_dados = df_filtrado[st.session_state.colunas_escolhidas].sort_values(by=coluna_dados, ascending=False)
                 tabela_com_totais = tabela_dados.copy()
             except Exception as e:
                 st.error(f"Erro ao atualizar colunas: {str(e)}")
         st.experimental_rerun()
 
-    # Separador visual
     st.markdown("---")
-
-    # Botões de download
     st.markdown("### Exportar dados")
     try:
         csv_data = converter_df_para_csv(tabela_dados)
@@ -1152,7 +898,6 @@ with right_sidebar:
         )
     except Exception as e:
         st.error(f"Erro ao preparar CSV: {str(e)}")
-
     try:
         excel_data = converter_df_para_excel(tabela_dados)
         st.download_button(
@@ -1163,15 +908,10 @@ with right_sidebar:
         )
     except Exception as e:
         st.error(f"Erro ao preparar Excel: {str(e)}")
-
-    # Resumo Estatístico no sidebar direito
     st.markdown("### Resumo Estatístico")
     if coluna_dados and coluna_dados in df_filtrado.columns:
         try:
-            # Mostrar mais estatísticas em formato compacto
             descricao = df_filtrado[coluna_dados].describe()
-
-            # Estatísticas em formato de tabela compacta
             estatisticas = {
                 "Mediana": formatar_numero(descricao["50%"]),
                 "Desv. Padrão": formatar_numero(descricao["std"]),
@@ -1180,12 +920,8 @@ with right_sidebar:
                 "75%": formatar_numero(descricao["75%"]),
                 "Contagem": formatar_numero(descricao["count"])
             }
-
-            # Exibir como tabela compacta
             stats_df = pd.DataFrame(list(estatisticas.items()), columns=["Estatística", "Valor"])
             st.dataframe(stats_df, hide_index=True, use_container_width=True)
-
-            # Mini gráfico de distribuição
             if st.checkbox("Mostrar gráfico de distribuição", value=False):
                 fig = px.histogram(
                     df_filtrado,
@@ -1197,12 +933,11 @@ with right_sidebar:
                 )
                 fig.update_layout(margin=dict(l=5, r=5, t=30, b=5), bargap=0.05)
                 st.plotly_chart(fig, use_container_width=True)
-
         except Exception as e:
             st.error(f"Erro ao gerar estatísticas: {str(e)}")
     else:
         st.info("Sem dados para estatísticas")
 
-# O rodapé continua fora das colunas
+# Rodapé
 st.markdown("---")
 st.markdown(RODAPE_NOTA)
