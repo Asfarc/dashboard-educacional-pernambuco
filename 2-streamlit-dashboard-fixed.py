@@ -474,7 +474,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     }
 
     # Defina uma largura padrão para as colunas numéricas
-    largura_padrao_numericas = 80  # ou outro valor que você considere adequado
+    largura_padrao_numericas = 50  # ou outro valor que você considere adequado
 
     for col, largura in ajuste_colunas.items():
         if col in df_para_exibir.columns:
