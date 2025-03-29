@@ -486,39 +486,16 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 aggFunc="sum",
                 minWidth=largura_padrao_numericas,
                 maxWidth=300,
-                # --- Formatação do Valor (Incluindo Pinned Row) ---
                 valueFormatter=JsCode("""
                     function(params) {
-                        // Se for pinned row, formata o valor mesmo que seja 0
-                        if (params.node.rowPinned) {
-                            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
-                        }
-
-                        // Para células normais
-                        if (params.value == null || params.value === undefined) return '';
+                        if (params.value == null) return '';
                         return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
                     }
                 """).js_code,
-                # --- Estilo Condicional (Células Normais + Pinned Row) ---
-                cellStyle=JsCode("""
-                    function(params) {
-                        const baseStyle = {
-                            'text-align': 'center',
-                            'font-weight': '500'
-                        };
-
-                        // Aplica estilo adicional se for pinned row
-                        if (params.node.rowPinned) {
-                            return {
-                                ...baseStyle,
-                                'font-weight': 'bold',
-                                'background-color': '#f2f2f2'
-                            };
-                        }
-
-                        return baseStyle;
-                    }
-                """).js_code
+                cellStyle={
+                    'textAlign': 'center',
+                    'fontWeight': '500'
+                }
             )
         else:
             # Mantém como texto
@@ -627,6 +604,13 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 }, 100);
             }
         """),
+        getRowStyle=JsCode("""
+            function(params) {
+                if (params.node.rowPinned) {
+                    return { 'font-weight': 'bold', 'background-color': '#f2f2f2' };
+                }
+            }
+        """),
         onFilterChanged=JsCode("""
             function(params) {
                 setTimeout(() => {
@@ -684,6 +668,21 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         gridOptions=grid_options,
         height=altura,
         custom_css="""
+            /* Estilo para todas as pinned rows */
+            .ag-row-pinned {
+                font-weight: bold !important;
+                background-color: #f2f2f2 !important;
+            }
+            
+            /* Alinhamento do texto na pinned row */
+            .ag-row-pinned .ag-cell {
+                text-align: center !important;
+            }
+            
+            /* Alinhamento especial para a coluna de mensagem (se necessário) */
+            .ag-row-pinned .ag-cell[col-id='NOME DA ESCOLA'] {
+                text-align: left !important;
+            } 
             /* Centralização de cabeçalhos */
             .ag-header-cell {
                 display: flex !important;
