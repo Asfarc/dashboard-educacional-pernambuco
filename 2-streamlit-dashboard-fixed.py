@@ -8,9 +8,8 @@ import io
 import json
 import re
 from constantes import *
-
-# Biblioteca do AgGrid
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # -------------------------------
 # Configuração Inicial da Página
@@ -120,6 +119,7 @@ css_pills = """
 
 st.markdown(css_pills, unsafe_allow_html=True)
 
+
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
@@ -145,6 +145,7 @@ def formatar_numero(numero):
             return f"{inteiro_fmt},{decimal_fmt}"
     except (ValueError, TypeError):
         return str(numero)
+
 
 @st.cache_data
 def carregar_dados():
@@ -183,6 +184,7 @@ def carregar_dados():
         st.error(ERRO_CARREGAR_DADOS.format(e))
         st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
+
 
 @st.cache_data
 def carregar_mapeamento_colunas():
@@ -237,6 +239,7 @@ def criar_mapeamento_colunas(df):
 
     return mapeamento_ajustado
 
+
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
@@ -258,6 +261,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
         return mapeamento[etapa]["subetapas"][subetapa]
 
     return series_subetapa[serie]
+
 
 def verificar_coluna_existe(df, coluna_nome):
     if not coluna_nome:
@@ -298,22 +302,18 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom", tipo_visualizacao=None):
+
+def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
+                                  tipo_visualizacao=None):
     """
-    Exibe DataFrame no AgGrid, com opções de:
-      - paginacão, range selection, status bar
-      - linha de totais fixada no topo ou rodapé (pinned row), se posicao_totais != None
+    Versão avançada da exibição de DataFrame usando Plotly Table
     """
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
         return {"data": pd.DataFrame()}
-    if coluna_dados and coluna_dados not in df_para_exibir.columns:
-        st.error(f"Coluna '{coluna_dados}' não encontrada nos dados!")
-        return {"data": pd.DataFrame()}
 
-    is_large_dataset = len(df_para_exibir) > 5000
+    # Verificar se o conjunto de dados é muito grande
     is_very_large_dataset = len(df_para_exibir) > 10000
-
     if is_very_large_dataset:
         st.warning(
             f"O conjunto de dados tem {formatar_numero(len(df_para_exibir))} linhas, "
@@ -321,500 +321,128 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         )
         mostrar_tudo = st.checkbox("Carregar todos os dados (pode ser lento)", value=False)
         if not mostrar_tudo:
-            indices_para_manter = df_para_exibir.index[:5000].tolist()
-            df_para_exibir = df_para_exibir.loc[indices_para_manter]
+            df_para_exibir = df_para_exibir.head(5000).copy()
             st.info("Mostrando amostra de 5.000 registros (de um total maior)")
 
-    # ----
-    # JS p/ calcular soma, média, min e max e exibir na status bar
-    # Corrigido: removemos as substituições que estragavam a formatação.
-    # ----
-    js_agg_functions = JsCode(f"""
-    function(params) {{
-        try {{
-            const dataColumn = "{coluna_dados if coluna_dados else ''}";
-            if (!dataColumn) return 'Coluna de dados não definida';
+    # Criar uma cópia para não modificar o DataFrame original
+    df_exibicao = df_para_exibir.copy()
 
-            let values = [];
-            let totalSum = 0;
-            let count = 0;
+    # Calcular totais para colunas numéricas
+    totais = {}
+    if coluna_dados and coluna_dados in df_exibicao.columns:
+        for col in df_exibicao.columns:
+            if col.startswith("Número de") or col == coluna_dados:
+                try:
+                    totais[col] = df_para_exibir[col].sum()
+                except:
+                    totais[col] = ""
 
-            params.api.forEachNodeAfterFilter(node => {{
-                if (!node.data) return;
-                const cellValue = node.data[dataColumn];
-                if (cellValue !== null && cellValue !== undefined) {{
-                    // Tentar converter p/ número
-                    const numValue = parseFloat(
-                      (""+cellValue)
-                        .replaceAll('.', '')     // remove milhares
-                        .replaceAll(',', '.')   // troca vírgula decimal por ponto
-                    );
-                    if (!isNaN(numValue)) {{
-                        values.push(numValue);
-                        totalSum += numValue;
-                        count++;
-                    }}
-                }}
-            }});
+    # Formatar colunas numéricas
+    for col in df_exibicao.columns:
+        if col.startswith("Número de") or col == coluna_dados:
+            if pd.api.types.is_numeric_dtype(df_exibicao[col]):
+                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_numero(x) if pd.notnull(x) else "-")
 
-            if (values.length === 0) {{
-                return 'Não há dados';
-            }}
+    # Definir cores e estilos
+    header_color = '#364b60'
+    cell_colors = ['#f9f9f9', 'white']
+    total_row_color = '#e6f2ff'
 
-            const avg = totalSum / count;
-            const min = Math.min(...values);
-            const max = Math.max(...values);
+    # Preparar dados
+    header_values = list(df_exibicao.columns)
+    cell_values = [df_exibicao[col].tolist() for col in df_exibicao.columns]
 
-            // Agora formatamos no padrão PT-BR
-            const formatBR = num => new Intl.NumberFormat('pt-BR', {{ maximumFractionDigits: 2 }}).format(num);
-            return 'Total: ' + formatBR(totalSum)
-                 + ' | Média: ' + formatBR(avg)
-                 + ' | Mín: ' + formatBR(min)
-                 + ' | Máx: ' + formatBR(max);
-        }} catch (error) {{
-            console.error('Erro ao calcular estatísticas:', error);
-            return 'Erro ao calcular estatísticas';
-        }}
-    }}
-    """)
+    # Configurações de estilo das células
+    cell_align = ['center'] * len(df_exibicao.columns)
 
-    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
+    # Criar lista de cores para alternância de linhas
+    if len(df_exibicao) > 0:
+        fill_color = []
+        for i, col in enumerate(df_exibicao.columns):
+            if posicao_totais == "top":
+                # Primeira linha é o total
+                row_colors = [total_row_color] + [cell_colors[j % 2] for j in range(len(df_exibicao))]
+            elif posicao_totais == "bottom":
+                # Última linha é o total
+                row_colors = [cell_colors[j % 2] for j in range(len(df_exibicao))] + [total_row_color]
+            else:
+                # Sem linha de total
+                row_colors = [cell_colors[j % 2] for j in range(len(df_exibicao))]
+            fill_color.append(row_colors)
+    else:
+        fill_color = [cell_colors[0]]
 
-    localeText = dict(
-        contains="Contém",
-        notContains="Não contém",
-        equals="Igual a",
-        notEqual="Diferente de",
-        startsWith="Começa com",
-        endsWith="Termina com",
-        blank="Em branco",
-        notBlank="Não em branco",
-        thousandSeparator=".",
-        decimalSeparator=",",
-        applyFilter="Aplicar",
-        resetFilter="Limpar",
-        clearFilter="Limpar",
-        cancelFilter="Cancelar",
-        lessThan="Menor que",
-        greaterThan="Maior que",
-        lessThanOrEqual="Menor ou igual a",
-        greaterThanOrEqual="Maior ou igual a",
-        inRange="No intervalo",
-        filterOoo="Filtrado",
-        noRowsToShow="Sem dados para exibir",
-        enabled="Habilitado",
-        search="Buscar",
-        selectAll="Selecionar todos",
-        searchOoo="Buscar...",
-        blanks="Em branco",
-        noMatches="Sem correspondência",
-        columns="Colunas",
-        filters="Filtros",
-        rowGroupColumns="Agrupar por",
-        rowGroupColumnsEmptyMessage="Arraste colunas aqui para agrupar",
-        valueColumns="Valores",
-        pivotMode="Modo Pivot",
-        groups="Grupos",
-        values="Valores",
-        pivots="Pivôs",
-        valueColumnsEmptyMessage="Arraste aqui para agregar",
-        pivotColumnsEmptyMessage="Arraste aqui para definir pivô",
-        toolPanelButton="Painéis",
-        loadingOoo="Carregando...",
-        page="Página",
-        PageSize="Tamanho da Página",
-        next="Próximo",
-        last="Último",
-        first="Primeiro",
-        previous="Anterior",
-        of="de",
-        to="até",
-        rows="linhas",
-        loading="Carregando...",
-        totalRows="Total de linhas",
-        totalAndFilteredRows="Linhas",
-        selectedRows="Selecionadas",
-        filteredRows="Filtradas",
-        sum="Soma",
-        min="Mínimo",
-        max="Máximo",
-        average="Média",
-        count="Contagem"
-    )
+    # Adicionar linha de totais se necessário
+    if posicao_totais in ["top", "bottom"] and totais:
+        total_row = []
+        for col in df_exibicao.columns:
+            if col == list(df_exibicao.columns)[0]:
+                total_row.append("TOTAL")
+            elif col in totais:
+                total_row.append(formatar_numero(totais[col]))
+            else:
+                total_row.append("")
 
-    gb.configure_default_column(
-        groupable=True,
-        editable=False,
-        wrapText=True,
-        autoHeight=False,
-        filter="agTextColumnFilter",
-        floatingFilter=True,
-        filterParams={
-            "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
-            "buttons": ["apply", "reset"],
-            "closeOnApply": False
-        },
-        resizable=True,
-        sortable=True,
-        suppressMenu=False,
-        headerWrapText=True,
-        autoHeaderHeight=True
-    )
+        if posicao_totais == "top":
+            cell_values = [[total_row[i]] + values for i, values in enumerate(cell_values)]
+        else:  # bottom
+            cell_values = [values + [total_row[i]] for i, values in enumerate(cell_values)]
 
-    # Ajuste manual de algumas colunas
-    ajuste_colunas = {
-        "ANO": 80,
-        "CODIGO DO MUNICIPIO": 200,
-        "NOME DO MUNICIPIO": 220,
-        "CODIGO DA ESCOLA": 200,
-        "NOME DA ESCOLA": 300,
-        "DEPENDENCIA ADMINISTRATIVA": 200,
-        "CODIGO DA UF": 200,
-        "NOME DA UF": 200
-    }
+    # Criar a tabela Plotly
+    fig = go.Figure(data=[go.Table(
+        header=dict(
+            values=header_values,
+            fill_color=header_color,
+            align='center',
+            font=dict(color='white', size=13, family="Arial"),
+            height=40
+        ),
+        cells=dict(
+            values=cell_values,
+            fill_color=fill_color if len(df_exibicao) > 0 else [cell_colors[0]],
+            align=cell_align,
+            font=dict(color='black', size=12, family="Arial"),
+            height=35,
+            line=dict(color='#d6d6d6', width=1)
+        )
+    )])
 
-    # Defina uma largura padrão para as colunas numéricas
-    largura_padrao_numericas = 80  # ou outro valor que você considere adequado
+    # Adicionar estatísticas abaixo da tabela se coluna_dados existir
+    if coluna_dados and coluna_dados in df_para_exibir.columns:
+        try:
+            dados_numericos = pd.to_numeric(df_para_exibir[coluna_dados], errors='coerce')
+            soma = dados_numericos.sum()
+            media = dados_numericos.mean()
+            minimo = dados_numericos.min()
+            maximo = dados_numericos.max()
 
-    for col, largura in ajuste_colunas.items():
-        if col in df_para_exibir.columns:
-            gb.configure_column(
-                col,
-                minWidth=largura,  # Largura mínima conforme o seu ajuste
-                maxWidth=800,  # Largura máxima fixa
-                suppressSizeToFit=False,
-                wrapText=False,
-                cellStyle={
-                    'overflow': 'hidden',
-                    'textAlign': 'center',
-                    'text-overflow': 'ellipsis',
-                    'white-space': 'nowrap',
-                },
-                headerClass="centered-header",  # Adicione esta linha
+            estatisticas = (
+                f"Total: {formatar_numero(soma)} | "
+                f"Média: {formatar_numero(media)} | "
+                f"Mín: {formatar_numero(minimo)} | "
+                f"Máx: {formatar_numero(maximo)}"
             )
 
-    for coluna in df_para_exibir.columns:
-        if coluna.startswith("Número de"):
-            # Colunas numéricas (inteiros) - sem casas decimais
-            gb.configure_column(
-                coluna,
-                type=["numericColumn", "numberColumnFilter"],  # AgGrid reconhece como número
-                filter="agNumberColumnFilter",
-                aggFunc="sum",  # se quiser somar no rodapé ou no status bar
-                minWidth=largura_padrao_numericas,  # Usando a nova variável padronizada
-                maxWidth=300,  # Largura máxima fixa em 300 pixels
-                valueFormatter=JsCode("""
-                    function(params) {
-                        if (params.value == null) return '';
-                        // Formata sem decimais, em pt-BR
-                        return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
-                    }
-                """).js_code,
-                cellStyle={
-                    'textAlign': 'center',
-                    'fontWeight': '500'
-                }
-            )
+            # Mostrar estatísticas abaixo da tabela
+            st.caption(estatisticas)
+        except Exception as e:
+            st.caption(f"Não foi possível calcular estatísticas: {str(e)}")
 
-        else:
-            # Todas as demais colunas são texto
-            gb.configure_column(
-                coluna,
-                filter="agTextColumnFilter",
-                # pode configurar outras opções de texto se quiser
-            )
-
-    # Configurações do grid
-    gb.configure_grid_options(
-        defaultColDef={
-            "headerClass": "centered-header",
-            "suppressMovable": False,
-            "headerComponentParams": {
-                "template":
-                    '<div class="ag-cell-label-container" role="presentation">' +
-                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center;">' +
-                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="text-align: center;"></span>' +
-                    '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>' +
-                    '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>' +
-                    '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>' +
-                    '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>' +
-                    '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>' +
-                    '  </div>' +
-                    '</div>'
-            }
-        },
-        rowStyle={"textAlign": "center"},
-        rowSelection='none',
-        suppressRowDeselection=True,
-        suppressRowClickSelection=True,
-        enableRangeSelection=True,
-        enableRangeHandle=True,
-        clipboardDelimiter='\t',
-        suppressCopyRowsToClipboard=True,
-        copyHeadersToClipboard=True,
-        ensureDomOrder=True,
-        pagination=True,
-        paginationAutoPageSize=False,
-        paginationPageSize=25,
-        paginationSizeSelector=[5, 10, 25, 50, 100],
-        localeText=localeText,
-        suppressAggFuncInHeader=True,
-        onGridReady=JsCode("""
-            function(params) {
-                setTimeout(() => {
-                    try {
-                        const gridElement = document.querySelector('.ag-root-wrapper');
-                        const paginationElement = document.querySelector('.ag-paging-panel');
-                        // Ajustar largura da paginação
-                        if (gridElement && paginationElement) {
-                            paginationElement.style.width = gridElement.clientWidth + 'px';
-                        }    
-                        // Chamar função de ajuste de headers
-                        if (typeof adjustHeaders === 'function') {
-                            adjustHeaders();
-                        }
-                        // Forçar redimensionamento inicial
-                        params.api.sizeColumnsToFit();
-                    } catch(e) {
-                        console.error('Erro no onGridReady:', e);
-                    }
-                }, 300);
-            }
-        """),
-        onColumnResized=JsCode("""
-            function(params) {
-                const gridElement = document.querySelector('.ag-root-wrapper');
-                const paginationElement = document.querySelector('.ag-paging-panel');
-                if (gridElement && paginationElement) {
-                    paginationElement.style.width = gridElement.clientWidth + 'px';
-                }
-            }
-        """),
-        onColumnVisibilityChanged=JsCode("""
-            function(params) {
-                setTimeout(() => {
-                    params.api.sizeColumnsToFit();
-                    const gridElement = document.querySelector('.ag-root-wrapper');
-                    const paginationElement = document.querySelector('.ag-paging-panel');
-                    if (gridElement && paginationElement) {
-                        paginationElement.style.width = gridElement.clientWidth + 'px';
-                    }
-                }, 100);
-            }
-        """),
-            onFilterChanged=JsCode("""
-                function(params) {
-                    setTimeout(() => {
-                        const gridElement = document.querySelector('.ag-root-wrapper');
-                        const paginationElement = document.querySelector('.ag-paging-panel');
-                        if (gridElement && paginationElement) {
-                            paginationElement.style.width = gridElement.clientWidth + 'px';
-                        }
-                    }, 100);
-                }
-            """)
-        )
-
-    # Barra de status: soma, média, min, max
-    gb.configure_grid_options(
-        statusBar={
-            'statusPanels': [
-                {'statusPanel': 'agTotalRowCountComponent', 'align': 'center'},
-                {'statusPanel': 'agFilteredRowCountComponent', 'align': 'center'},
-                {
-                    'statusPanel': 'agCustomStatsToolPanel',
-                    'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions.js_code
-                    }
-                }
-            ]
-        }
+    # Ajustar layout
+    fig.update_layout(
+        margin=dict(l=5, r=5, t=5, b=5),
+        height=altura
     )
 
-    # Barra lateral
-    gb.configure_side_bar()
+    # Exibir a tabela
+    st.plotly_chart(fig, use_container_width=True, config={
+        'displayModeBar': False,
+        'scrollZoom': True
+    })
 
-    # Se for dataset grande
-    if is_large_dataset:
-        gb.configure_grid_options(
-            rowBuffer=100,
-            animateRows=False,
-            suppressColumnVirtualisation=False,
-            suppressRowVirtualisation=False,
-            enableCellTextSelection=True,
-            enableBrowserTooltips=True,
-            defaultColDef={"headerClass": "centered-header"},
-            rowStyle={"textAlign": "center"}
-        )
+    # Retornar estrutura semelhante ao AgGrid para compatibilidade
+    return {"data": df_para_exibir}
 
-    # Se quisermos a linha de totais fixada e a coluna_dados existir
-    pinned_row_data = None
-    if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
-        soma_np = df_para_exibir[coluna_dados].sum()
-        soma_python = int(soma_np)  # ou float(soma_np)
-        pinned_row_data = {coluna_dados: soma_python}
-
-    # Monta as opções
-    grid_options = gb.build()
-    # Se pinned_row_data existir
-    if pinned_row_data:
-        if posicao_totais == "bottom":
-            grid_options["pinnedBottomRowData"] = [pinned_row_data]
-        elif posicao_totais == "top":
-            grid_options["pinnedTopRowData"] = [pinned_row_data]
-
-    # Render AgGrid
-    grid_return = AgGrid(
-        df_para_exibir,
-        gridOptions=grid_options,
-        height=altura,
-        custom_css="""
-            /* Regras para cabeçalhos centralizados */
-            .ag-header-cell {
-                display: flex !important;
-                width: 100% !important;
-                align-items: center !important;
-                justify-content: center !important;
-                text-align: center !important;
-            }
-            .ag-header-cell-label {
-                display: flex !important;
-                width: 100% !important;
-                align-items: center !important;
-                justify-content: center !important;
-                text-align: center !important;
-            }
-            .ag-header-cell-text {
-                display: flex !important;
-                text-align: center !important;
-                align-items: center !important;
-                width: 100% !important;
-                justify-content: center !important;
-                font-weight: bold !important;
-                white-space: normal !important;
-                line-height: 1.2 !important;
-                overflow: visible !important;
-                font-size: 12px !important;
-            }
-            .centered-header .ag-header-cell-label {
-                justify-content: center !important;
-                text-align: center !important;
-            }
-
-            /* Regras para paginação e container principal */
-            .ag-paging-panel {
-            display: flex !important;
-            text-align: center !important;
-            align-items: center !important;
-            width: 100% !important;
-            justify-content: center !important;
-            }
-
-            .ag-root-wrapper {
-                margin: 0 auto;
-            }
-
-            /* Regras para seleção e hover */
-            .ag-row-selected { 
-                background-color: transparent !important; 
-            }
-
-            .ag-row {
-                background-color: inherit !important;
-            }
-
-            .ag-row:hover {
-                background-color: inherit !important;
-            }
-
-            .ag-row-selected,
-            .ag-row-selected:hover {
-                background-color: transparent !important;
-                border: none !important;
-            }
-
-            /* Regras para células selecionadas */
-            .ag-cell.ag-cell-range-selected,
-            .ag-cell.ag-cell-range-selected-1,
-            .ag-cell.ag-cell-range-selected-2,
-            .ag-cell.ag-cell-range-selected-3,
-            .ag-cell.ag-cell-range-selected-4 {
-                background-color: #e6f2ff !important; 
-                color: #000 !important; 
-            }
-
-            /* Regras para células numéricas */
-            .numeric-cell { 
-                display: flex !important;
-                text-align: center !important;
-                width: 100% !important;
-                justify-content: center !important;
-            }
-        """,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,
-        theme="streamlit",
-        key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
-    )
-
-    js_simplified_fix = """
-    <script>
-        function centralizeHeaders() {
-            try {
-                // Adiciona CSS direto no documento (mais confiável)
-                if (!document.getElementById('aggrid-header-fix')) {
-                    const styleEl = document.createElement('style');
-                    styleEl.id = 'aggrid-header-fix';
-                    styleEl.innerHTML = `
-                        .ag-header-cell-text {
-                            width: 100% !important;
-                            text-align: center !important;
-                            justify-content: center !important;
-                        }
-                        .ag-header-cell-label {
-                            justify-content: center !important;
-                            width: 100% !important;
-                        }
-                    `;
-                    document.head.appendChild(styleEl);
-                }
-
-                // Também aplica inline para casos específicos
-                const headers = document.querySelectorAll('.ag-header-cell-label, .ag-header-cell-text');
-                headers.forEach(el => {
-                    if (el.classList.contains('ag-header-cell-text')) {
-                        el.style.width = '100%';
-                        el.style.textAlign = 'center';
-                    } else if (el.classList.contains('ag-header-cell-label')) {
-                        el.style.display = 'flex';
-                        el.style.justifyContent = 'center';
-                    }
-                });
-            } catch(e) {
-                console.error('Erro na centralização:', e);
-            }
-        }
-
-        // Executa algumas vezes para garantir
-        for (let i = 1; i <= 5; i++) {
-            setTimeout(centralizeHeaders, i * 500);
-        }
-    </script>
-    """
-
-    st.markdown(js_simplified_fix, unsafe_allow_html=True)
-
-    filtered_data = grid_return['data']
-    if len(filtered_data) != len(df_para_exibir):
-        st.info(
-            f"Filtro aplicado: mostrando {formatar_numero(len(filtered_data))} "
-            f"de {formatar_numero(len(df_para_exibir))} registros."
-        )
-
-    return grid_return
 
 # -------------------------------
 # Carregamento de Dados
@@ -1049,14 +677,6 @@ if coluna_dados in df_filtrado.columns:
 
     tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
     tabela_exibicao = tabela_dados.copy()
-    if coluna_dados.startswith("Número de"):
-        # NÃO aplicar formatar_numero() — pois AgGrid já vai formatar como inteiro
-        pass
-    else:
-        # Para colunas que não começam com "Número de", você aplica formatar_numero se quiser
-        tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
-            lambda x: formatar_numero(x) if pd.notnull(x) else "-"
-        )
 else:
     tabela_dados = df_filtrado[colunas_existentes].copy()
     tabela_exibicao = tabela_dados.copy()
@@ -1083,35 +703,31 @@ if coluna_dados and coluna_dados in tabela_com_totais.columns:
         tabela_com_totais[coluna_dados] = tabela_com_totais[coluna_dados].fillna(0)
 
 try:
-    grid_result = exibir_tabela_com_aggrid(
+    grid_result = exibir_tabela_plotly_avancada(
         tabela_com_totais,
         altura=altura_tabela,
         coluna_dados=coluna_dados,
         posicao_totais=posicao_totais_map.get(posicao_totais),
-        # Adicione o parâmetro tipo_visualizacao:
         tipo_visualizacao=tipo_visualizacao
     )
 except Exception as e:
-    st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
+    st.error(f"Erro ao exibir tabela com Plotly: {str(e)}")
     st.dataframe(tabela_com_totais, height=altura_tabela)
 
 tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
 
 with tab1:
     st.write("### Configurações de exibição")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns(2)
 
-    with col4:
+    with col1:
         altura_personalizada = st.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
         if altura_personalizada:
             altura_manual = st.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
         else:
             altura_manual = 600
 
-    with col1:
-        total_registros = len(tabela_exibicao)
-        mostrar_todos = st.checkbox(ROTULO_MOSTRAR_REGISTROS, value=True)
-
+    with col2:
         posicao_totais = st.radio(
             "Linha de totais:",
             ["Rodapé", "Topo", "Nenhum"],
@@ -1119,8 +735,7 @@ with tab1:
             horizontal=True
         )
 
-    with col3:
-        modo_desempenho = st.checkbox(ROTULO_MODO_DESEMPENHO, value=True, help=DICA_MODO_DESEMPENHO)
+    altura_tabela = altura_manual
 
     st.write("### Incluir outras colunas na tabela")
     col5, col6 = st.columns([1, 5])
@@ -1138,17 +753,11 @@ with tab1:
             if colunas_adicionais:
                 colunas_tabela.extend(colunas_adicionais)
                 try:
-                    tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
+                    if 'df_filtrado_tabela' in locals():
+                        tabela_dados = df_filtrado[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
+                    else:
+                        tabela_dados = df_filtrado[colunas_tabela].copy()
                     tabela_exibicao = tabela_dados.copy()
-                    with pd.option_context('mode.chained_assignment', None):
-                        if coluna_dados in tabela_exibicao.columns:
-                            tabela_exibicao[coluna_dados] = tabela_exibicao[coluna_dados].apply(
-                                lambda x: formatar_numero(x) if pd.notnull(x) else "-"
-                            )
-                        if '% do Total' in tabela_exibicao.columns:
-                            tabela_exibicao['% do Total'] = tabela_exibicao['% do Total'].apply(
-                                lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
-                            )
                 except Exception as e:
                     st.error(f"Erro ao adicionar colunas: {str(e)}")
         else:
@@ -1169,8 +778,6 @@ with tab1:
     except Exception as e:
         st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
 
-    altura_tabela = altura_manual
-
     col1, col2 = st.columns(2)
     with col1:
         try:
@@ -1190,11 +797,53 @@ with tab1:
             st.download_button(
                 label=ROTULO_BTN_DOWNLOAD_EXCEL,
                 data=excel_data,
-                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{anos_selecionados}.xlsx',
+                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             )
         except Exception as e:
             st.error(f"Erro ao preparar Excel para download: {str(e)}")
+
+with tab2:
+    st.write("### Resumo Estatístico")
+
+    if coluna_dados and coluna_dados in df_filtrado.columns:
+        try:
+            # Calcular estatísticas para a coluna de dados principal
+            descricao = df_filtrado[coluna_dados].describe()
+
+            # Formatar estatísticas
+            estatisticas = {
+                "Total": formatar_numero(df_filtrado[coluna_dados].sum()),
+                "Média": formatar_numero(descricao["mean"]),
+                "Mediana": formatar_numero(descricao["50%"]),
+                "Desvio Padrão": formatar_numero(descricao["std"]),
+                "Mínimo": formatar_numero(descricao["min"]),
+                "Máximo": formatar_numero(descricao["max"]),
+                "Contagem": formatar_numero(descricao["count"])
+            }
+
+            # Criar DataFrame para exibição
+            df_stats = pd.DataFrame(list(estatisticas.items()), columns=["Estatística", "Valor"])
+
+            # Exibir resumo estatístico em tabela
+            st.table(df_stats)
+
+            # Adicionar gráfico de distribuição
+            st.write("### Distribuição dos Dados")
+            fig = px.histogram(
+                df_filtrado,
+                x=coluna_dados,
+                nbins=30,
+                title=f"Distribuição de {coluna_dados}",
+                labels={coluna_dados: coluna_dados}
+            )
+            fig.update_layout(bargap=0.1)
+            st.plotly_chart(fig, use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Erro ao gerar estatísticas: {str(e)}")
+    else:
+        st.info("Selecione uma coluna de dados para visualizar estatísticas.")
 
 # -------------------------------
 # Rodapé do Dashboard
