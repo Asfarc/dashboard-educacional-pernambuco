@@ -564,6 +564,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
         },
         rowStyle={"textAlign": "center"},
+        enableRangeSelection=True,          # Habilita seleção de intervalo
+        enableRangeHandle=True,             # Habilita alça para arrastar seleção
+        suppressRowClickSelection=True,     # Suprime seleção de linha ao clicar
+        rowSelection="none",                # Desativa seleção de linha
+        rowMultiSelectWithClick=False,      # Desativa multi-seleção de linhas
         enableCellTextSelection=True,
         cellSelection=True,
         clipboardDelimiter='\t',
