@@ -574,7 +574,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         clipboardDelimiter='\t',
         suppressCopyRowsToClipboard=True,
         copyHeadersToClipboard=True,
-        ensureDomOrder=True,
+        ensureDomOrder=False,
         pagination=True,
         paginationAutoPageSize=False,
         paginationPageSize=25,
