@@ -566,7 +566,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         rowStyle={"textAlign": "center"},
         enableCellTextSelection=True,
         cellSelection=True,
-        rowSelection='none',
         clipboardDelimiter='\t',
         ensureDomOrder=True,
         pagination=True,
