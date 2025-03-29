@@ -756,7 +756,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         update_mode=GridUpdateMode.VALUE_CHANGED,
         fit_columns_on_grid_load=True,
         allow_unsafe_jscode=True,
-        theme="streamlit",
+        theme="balham",
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
