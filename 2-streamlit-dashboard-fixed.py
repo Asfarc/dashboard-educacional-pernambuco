@@ -463,7 +463,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     # Ajuste manual de algumas colunas
     ajuste_colunas = {
-        "ANO": 80,
+        "ANO": 50,
         "CODIGO DO MUNICIPIO": 200,
         "NOME DO MUNICIPIO": 220,
         "CODIGO DA ESCOLA": 200,
