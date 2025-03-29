@@ -504,6 +504,14 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 filter="agTextColumnFilter",
             )
 
+        if "ANO" in df_para_exibir.columns:
+            gb.configure_column(
+                "ANO",
+                type=[],  # remove numericColumn
+                filter="agTextColumnFilter",
+                valueFormatter=None
+            )
+
     # Configurações gerais do grid
     gb.configure_grid_options(
         defaultColDef={
