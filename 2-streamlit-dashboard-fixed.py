@@ -639,25 +639,31 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
 
     # Se houver mais de uma página, exibir controles de paginação
     if total_paginas > 1:
-        col1, col2, col3 = st.columns([2, 3, 2])
+        col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
 
         with col1:
-            if pagina_atual > 1:
-                anterior = st.button("« Anterior")
-            else:
-                anterior = st.button("« Anterior", disabled=True)
+            if st.button("⏮️ Primeira"):
+                st.session_state.pagina_atual = 1
 
         with col2:
-            st.write(f"Página {pagina_atual} de {total_paginas} • "
-                     f"Mostrando {(pagina_atual - 1) * itens_por_pagina + 1} a "
-                     f"{min(pagina_atual * itens_por_pagina, total_linhas)} "
-                     f"de {total_linhas} registros")
+            if st.button("◀️ Anterior") and st.session_state.pagina_atual > 1:
+                st.session_state.pagina_atual -= 1
 
         with col3:
-            if pagina_atual < total_paginas:
-                proximo = st.button("Próximo »")
-            else:
-                proximo = st.button("Próximo »", disabled=True)
+            if st.button("Próximo ▶️") and st.session_state.pagina_atual < total_paginas:
+                st.session_state.pagina_atual += 1
+
+        with col4:
+            if st.button("⏭️ Última"):
+                st.session_state.pagina_atual = total_paginas
+
+        # Seletor numérico de página
+        nova_pagina = st.number_input("Ir para página:",
+                                      min_value=1,
+                                      max_value=total_paginas,
+                                      value=st.session_state.pagina_atual)
+        if nova_pagina != st.session_state.pagina_atual:
+            st.session_state.pagina_atual = nova_pagina
 
     # Adicionar estatísticas abaixo da tabela se coluna_dados existir
     if coluna_dados and coluna_dados in df_para_exibir.columns:
