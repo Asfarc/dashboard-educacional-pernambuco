@@ -572,20 +572,28 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         suppressAggFuncInHeader=True,
         onGridReady=JsCode("""
             function(params) {
-                params.api.addEventListener('gridReady', function() {
-                    setTimeout(function() {
+                setTimeout(() => {
+                    try {
                         const gridElement = document.querySelector('.ag-root-wrapper');
-                        if (gridElement) {
-                            gridElement.style.opacity = '1'; // Garante que o grid está visível
+                        const paginationElement = document.querySelector('.ag-paging-panel');
+                        // Ajustar largura da paginação
+                        if (gridElement && paginationElement) {
+                            paginationElement.style.width = gridElement.clientWidth + 'px';
+                        }    
+                        // Chamar função de ajuste de headers
+                        if (typeof adjustHeaders === 'function') {
+                            adjustHeaders();
                         }
-                        adjustHeaders(); // Chama a função de ajuste
-                    }, 500);
-                });
+                        // Forçar redimensionamento inicial
+                        params.api.sizeColumnsToFit();
+                    } catch(e) {
+                        console.error('Erro no onGridReady:', e);
+                    }
+                }, 300);
             }
         """),
         onColumnResized=JsCode("""
             function(params) {
-                console.log('Coluna redimensionada', params);
                 const gridElement = document.querySelector('.ag-root-wrapper');
                 const paginationElement = document.querySelector('.ag-paging-panel');
                 if (gridElement && paginationElement) {
@@ -595,7 +603,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         """),
         onColumnVisibilityChanged=JsCode("""
             function(params) {
-                setTimeout(function() {
+                setTimeout(() => {
                     params.api.sizeColumnsToFit();
                     const gridElement = document.querySelector('.ag-root-wrapper');
                     const paginationElement = document.querySelector('.ag-paging-panel');
@@ -605,18 +613,18 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 }, 100);
             }
         """),
-        onFilterChanged=JsCode("""
-            function(params) {
-                setTimeout(function() {
-                    const gridElement = document.querySelector('.ag-root-wrapper');
-                    const paginationElement = document.querySelector('.ag-paging-panel');
-                    if (gridElement && paginationElement) {
-                        paginationElement.style.width = gridElement.clientWidth + 'px';
-                    }
-                }, 100);
-            }
-        """)
-    )
+            onFilterChanged=JsCode("""
+                function(params) {
+                    setTimeout(() => {
+                        const gridElement = document.querySelector('.ag-root-wrapper');
+                        const paginationElement = document.querySelector('.ag-paging-panel');
+                        if (gridElement && paginationElement) {
+                            paginationElement.style.width = gridElement.clientWidth + 'px';
+                        }
+                    }, 100);
+                }
+            """)
+        )
 
     # Barra de status: soma, média, min, max
     gb.configure_grid_options(
