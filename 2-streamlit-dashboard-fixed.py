@@ -1028,20 +1028,18 @@ if "ANO" in df_filtrado.columns:
 
 if tipo_visualizacao == "Escola":
     colunas_adicionais = [
+        "ANO"
         "CODIGO DA ESCOLA",
         "NOME DA ESCOLA",
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
-        "CODIGO DA UF",
-        "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 elif tipo_visualizacao == "Município":
     colunas_adicionais = [
+        "ANO"
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
-        "CODIGO DA UF",
-        "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 else:
