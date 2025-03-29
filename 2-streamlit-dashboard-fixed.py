@@ -674,6 +674,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         gridOptions=grid_options,
         height=altura,
         custom_css="""
+            /* Adicione esta regra no início do seu CSS */
+            .center-header .ag-header-cell-label {
+                justify-content: center !important;
+                text-align: center !important;
+            }
             /* Regras para cabeçalhos centralizados */
             .ag-header-cell {
                 display: flex !important;
