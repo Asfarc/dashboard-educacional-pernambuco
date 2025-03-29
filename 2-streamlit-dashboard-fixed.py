@@ -634,7 +634,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     # 2) pinned row: texto na coluna "ANO", número puro na coluna de matrículas
     pinned_row_data = {
-        "ANO": f"Total de linhas: {total_linhas:,}",
+        "ANO": f"Total de linhas: {total_linhas:,}".replace(",", "."),
         coluna_dados: soma_valor  # <-- numero puro, sem formatar como string
     }
 
