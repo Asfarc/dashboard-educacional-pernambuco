@@ -911,6 +911,11 @@ tabela_com_totais = tabela_filtrada
 
 altura_tabela = 600
 
+# Código para leitura do estado da paginação atual
+if 'pagina_atual' not in st.session_state:
+    st.session_state.pagina_atual = 1
+
+# Inicialização de variáveis para as novas funcionalidades
 if 'posicao_totais' not in locals():
     posicao_totais = "Rodapé"
 
@@ -920,19 +925,46 @@ posicao_totais_map = {
     "Nenhum": None
 }
 
+# Valores padrão para os novos parâmetros
+alinhamento_valor = None  # Automático
+formatacao_condicional = True
+itens_por_pagina = 50
+cores_personalizadas = {
+    "header_color": "#364b60",
+    "even_row_color": "#f9f9f9",
+    "odd_row_color": "white",
+    "total_row_color": "#e6f2ff",
+    "conditional_color_high": "#e6ffe6",
+    "conditional_color_low": "#fff0f0"
+}
+colunas_nao_somadas = ["ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
+                       "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"]
+
+# Preparação dos dados numéricos
 if coluna_dados and coluna_dados in tabela_com_totais.columns:
     with pd.option_context('mode.chained_assignment', None):
         tabela_com_totais[coluna_dados] = pd.to_numeric(tabela_com_totais[coluna_dados], errors='coerce')
         tabela_com_totais[coluna_dados] = tabela_com_totais[coluna_dados].fillna(0)
 
+# Exibição da tabela com a função aprimorada
 try:
     grid_result = exibir_tabela_plotly_avancada(
         tabela_com_totais,
         altura=altura_tabela,
         coluna_dados=coluna_dados,
         posicao_totais=posicao_totais_map.get(posicao_totais),
-        tipo_visualizacao=tipo_visualizacao
+        alinhamento_padrao=alinhamento_valor,
+        cores_personalizadas=cores_personalizadas,
+        formatacao_condicional=formatacao_condicional,
+        pagina_atual=st.session_state.pagina_atual,
+        itens_por_pagina=itens_por_pagina,
+        colunas_nao_somadas=colunas_nao_somadas,
+        cache_key=f"{tipo_visualizacao}_{etapa_selecionada}_{subetapa_selecionada}_{'-'.join(map(str, anos_selecionados))}"
     )
+
+    # A função já inclui os controles de paginação internamente
+    # então não precisamos gerenciar aqui a navegação
+
 except Exception as e:
     st.error(f"Erro ao exibir tabela com Plotly: {str(e)}")
     st.dataframe(tabela_com_totais, height=altura_tabela)
@@ -958,8 +990,107 @@ with tab1:
             horizontal=True
         )
 
+    # Configurações adicionais para as novas funcionalidades
+    st.write("### Opções avançadas da tabela")
+    col3, col4 = st.columns(2)
+
+    with col3:
+        alinhamento_opcoes = {
+            "Automático": None,
+            "Esquerda": "left",
+            "Centro": "center",
+            "Direita": "right"
+        }
+        alinhamento_selecionado = st.selectbox(
+            "Alinhamento padrão:",
+            options=list(alinhamento_opcoes.keys()),
+            index=0
+        )
+        alinhamento_valor = alinhamento_opcoes[alinhamento_selecionado]
+
+        # Controle de paginação
+        itens_por_pagina = st.select_slider(
+            "Itens por página:",
+            options=[10, 25, 50, 100, 200, 500],
+            value=50
+        )
+
+    with col4:
+        formatacao_condicional = st.checkbox(
+            "Aplicar formatação condicional",
+            value=True,
+            help="Destaca valores acima/abaixo da média"
+        )
+
+        # Esquema de cores
+        esquema_cor = st.selectbox(
+            "Esquema de cores:",
+            ["Padrão", "Alto contraste", "Tons de azul", "Monocromático", "Personalizado"]
+        )
+
+        # Definir as cores com base no esquema selecionado
+        if esquema_cor == "Padrão":
+            cores_personalizadas = {
+                "header_color": "#364b60",
+                "even_row_color": "#f9f9f9",
+                "odd_row_color": "white",
+                "total_row_color": "#e6f2ff",
+                "conditional_color_high": "#e6ffe6",
+                "conditional_color_low": "#fff0f0"
+            }
+        elif esquema_cor == "Alto contraste":
+            cores_personalizadas = {
+                "header_color": "#000000",
+                "even_row_color": "#ffffff",
+                "odd_row_color": "#f0f0f0",
+                "total_row_color": "#dddddd",
+                "conditional_color_high": "#bbffbb",
+                "conditional_color_low": "#ffbbbb"
+            }
+        elif esquema_cor == "Tons de azul":
+            cores_personalizadas = {
+                "header_color": "#1a5276",
+                "even_row_color": "#ebf5fb",
+                "odd_row_color": "#d6eaf8",
+                "total_row_color": "#aed6f1",
+                "conditional_color_high": "#d1f5ff",
+                "conditional_color_low": "#bbdefb"
+            }
+        elif esquema_cor == "Monocromático":
+            cores_personalizadas = {
+                "header_color": "#4a4a4a",
+                "even_row_color": "#f5f5f5",
+                "odd_row_color": "#e0e0e0",
+                "total_row_color": "#bdbdbd",
+                "conditional_color_high": "#e0e0e0",
+                "conditional_color_low": "#f5f5f5"
+            }
+        else:  # Personalizado ou outro valor
+            cores_personalizadas = None
+
+    # Lista de colunas que não devem ser somadas
+    st.write("### Colunas a excluir do cálculo de totais")
+    colunas_disponiveis = [col for col in df_filtrado.columns
+                           if not (col.startswith("Número de") or col == coluna_dados)]
+
+    colunas_nao_somadas = st.multiselect(
+        "Selecione as colunas que NÃO devem ser somadas:",
+        options=colunas_disponiveis,
+        default=["ANO", "CODIGO DA ESCOLA", "NOME DA ESCOLA", "CODIGO DO MUNICIPIO",
+                 "NOME DO MUNICIPIO", "CODIGO DA UF", "NOME DA UF", "DEPENDENCIA ADMINISTRATIVA"],
+        help="Estas colunas não serão incluídas no cálculo de totais"
+    )
+
     altura_tabela = altura_manual
 
+    # Mapeamento entre opções e valores para posicao_totais
+    posicao_totais_map = {
+        "Rodapé": "bottom",
+        "Topo": "top",
+        "Nenhum": None
+    }
+
+    # Continuar com o código original para incluir outras colunas na tabela
     st.write("### Incluir outras colunas na tabela")
     col5, col6 = st.columns([1, 5])
     with col5:
@@ -987,19 +1118,10 @@ with tab1:
             st.write("Não há colunas adicionais disponíveis")
 
     tabela_filtrada = tabela_exibicao.copy()
-    if len(tabela_exibicao) > 1000:
-        col_filtrar = st.columns([1])[0]
-        with col_filtrar:
-            aplicar_filtros = st.button("Aplicar Filtros", type="primary")
-        mostrar_dica = True
-    else:
-        aplicar_filtros = True
-        mostrar_dica = False
 
-    try:
-        tabela_com_totais = tabela_filtrada
-    except Exception as e:
-        st.warning(f"Não foi possível adicionar a linha de totais: {str(e)}")
+    # Adicionar botão para aplicar as configurações
+    if st.button("Aplicar configurações", type="primary"):
+        st.session_state.pagina_atual = 1  # Voltar para a primeira página ao mudar configurações
 
     col1, col2 = st.columns(2)
     with col1:
