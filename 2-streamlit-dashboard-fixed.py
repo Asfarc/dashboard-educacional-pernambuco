@@ -761,6 +761,89 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
+    js_advanced_center = """
+    <script>
+        function forceAllHeaderCenter() {
+            try {
+                // Os cabeçalhos reais podem estar em vários tipos de elementos
+                const selectors = [
+                    '.ag-header-cell-text',                 // Texto principal
+                    '.ag-header-cell-label',                // Container do label
+                    '.ag-header-cell',                      // Célula inteira
+                    '.ag-header-group-cell-label',          // Cabeçalhos agrupados
+                    '.ag-header-group-cell',                // Grupo de cabeçalhos
+                    'div[col-id]'                           // Qualquer div com col-id
+                ];
+
+                let foundElements = false;
+
+                // Tenta cada tipo de seletor
+                selectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    if (elements.length > 0) {
+                        foundElements = true;
+                        elements.forEach(el => {
+                            el.style.display = 'flex';
+                            el.style.justifyContent = 'center';
+                            el.style.alignItems = 'center';
+                            el.style.textAlign = 'center';
+                            el.style.width = '100%';
+
+                            // Se for um container, também centraliza o conteúdo
+                            const children = el.children;
+                            for (let i = 0; i < children.length; i++) {
+                                children[i].style.textAlign = 'center';
+                                children[i].style.justifyContent = 'center';
+                            }
+                        });
+                        console.log('Centralizados ' + elements.length + ' elementos do tipo: ' + selector);
+                    }
+                });
+
+                if (!foundElements) {
+                    console.log('Nenhum elemento de cabeçalho encontrado. Tentando novamente em 100ms...');
+                    setTimeout(forceAllHeaderCenter, 100);
+                }
+
+                // Tenta acessar a API do AgGrid diretamente
+                try {
+                    const gridDiv = document.querySelector('.ag-root-wrapper');
+                    if (gridDiv && gridDiv.gridOptions && gridDiv.gridOptions.api) {
+                        gridDiv.gridOptions.api.refreshHeader();
+                        console.log('Cabeçalho atualizado através da API do AgGrid');
+                    }
+                } catch(apiError) {
+                    console.log('Não foi possível usar a API do AgGrid:', apiError);
+                }
+
+            } catch(e) {
+                console.error('Erro ao centralizar todos os cabeçalhos:', e);
+            }
+        }
+
+        // Executa várias vezes para garantir que vai pegar mesmo após mudanças de visualização
+        setTimeout(forceAllHeaderCenter, 300);
+        setTimeout(forceAllHeaderCenter, 800);
+        setTimeout(forceAllHeaderCenter, 1500);
+        setTimeout(forceAllHeaderCenter, 3000);
+
+        // Observa mudanças no DOM para reagir quando a visualização muda
+        const observer = new MutationObserver(function(mutations) {
+            console.log('Mudanças detectadas no DOM, reaplicando centralização...');
+            setTimeout(forceAllHeaderCenter, 200);
+        });
+
+        setTimeout(function() {
+            const grid = document.querySelector('.ag-root-wrapper');
+            if (grid) {
+                observer.observe(grid, { childList: true, subtree: true });
+                console.log('Observador de mudanças configurado');
+            }
+        }, 1000);
+    </script>
+    """
+
+    st.markdown(js_advanced_center, unsafe_allow_html=True)
     js_force_center = """
     <script>
         function forceAgGridHeadersCenter() {
