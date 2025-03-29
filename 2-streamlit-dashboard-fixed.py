@@ -377,22 +377,6 @@ def exibir_tabela_plotly_avancada(df_para_exibir, altura=600, coluna_dados=None,
             ascending=ascendente
         )
 
-    # No layout da tabela, adicionar:
-    fig.update_layout(
-        updatemenus=[{
-            'type': 'dropdown',
-            'direction': 'down',
-            'x': 1.0,
-            'y': 1.2,
-            'buttons': [
-                {
-                    'args': [{'sort': True, 'sort_column': col}],
-                    'label': f'Ordenar por {col}',
-                    'method': 'restyle'
-                } for col in df_para_exibir.columns
-            ]
-        }]
-    )
     # Verificação inicial dos dados
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
