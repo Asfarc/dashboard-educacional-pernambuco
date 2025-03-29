@@ -657,9 +657,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     # Monta as opções
     grid_options = gb.build()
-    # Configuração para centralizar cabeçalhos
-    grid_options["defaultColDef"] = grid_options.get("defaultColDef", {})
-    grid_options["defaultColDef"]["headerClass"] = "center-header"
 
     # Se pinned_row_data existir
     if pinned_row_data:
@@ -674,11 +671,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         gridOptions=grid_options,
         height=altura,
         custom_css="""
-            /* Adicione esta regra no início do seu CSS */
-            .center-header .ag-header-cell-label {
-                justify-content: center !important;
-                text-align: center !important;
-            }
             /* Regras para cabeçalhos centralizados */
             .ag-header-cell {
                 display: flex !important;
@@ -768,6 +760,50 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         theme="streamlit",
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
+
+    js_force_center = """
+    <script>
+        function forceAgGridHeadersCenter() {
+            try {
+                // Tenta selecionar todos os elementos de cabeçalho
+                var headers = document.querySelectorAll('.ag-header-cell-label');
+
+                // Se não encontrar, tenta novamente em 100ms
+                if (headers.length === 0) {
+                    setTimeout(forceAgGridHeadersCenter, 100);
+                    return;
+                }
+
+                // Aplica estilos diretamente a cada elemento
+                headers.forEach(function(header) {
+                    header.style.display = 'flex';
+                    header.style.justifyContent = 'center';
+                    header.style.width = '100%';
+                    header.style.textAlign = 'center';
+
+                    // Também seleciona e estiliza o texto dentro do cabeçalho
+                    var textElements = header.querySelectorAll('.ag-header-cell-text');
+                    textElements.forEach(function(text) {
+                        text.style.textAlign = 'center';
+                        text.style.width = '100%';
+                    });
+                });
+
+                console.log('Centralizando ' + headers.length + ' cabeçalhos');
+            } catch(e) {
+                console.error('Erro ao centralizar:', e);
+            }
+        }
+
+        // Executa várias vezes para garantir que vai pegar quando o grid estiver carregado
+        setTimeout(forceAgGridHeadersCenter, 300);
+        setTimeout(forceAgGridHeadersCenter, 600);
+        setTimeout(forceAgGridHeadersCenter, 1000);
+        setTimeout(forceAgGridHeadersCenter, 2000);
+    </script>
+    """
+
+    st.markdown(js_force_center, unsafe_allow_html=True)
 
     # Atalhos de teclado: Ctrl+C (copiar) e Ctrl+A (selecionar tudo)
     js_clipboard_helper = """
