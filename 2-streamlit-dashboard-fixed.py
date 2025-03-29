@@ -641,6 +641,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     # Ajustes de desempenho para grandes datasets (opcional)
     if len(df_para_exibir) > 5000:
         gb.configure_grid_options(
+            enableRangeSelection=True,  # Habilita seleção de intervalo
+            enableRangeHandle=True,  # Habilita alça para arrastar seleção
+            suppressRowClickSelection=True,  # Suprime seleção de linha ao clicar
+            rowSelection="none",  # Desativa seleção de linha
+            rowMultiSelectWithClick=False,  # Desativa multi-seleção de linhas
             rowBuffer=100,
             animateRows=False,
             suppressColumnVirtualisation=False,
@@ -648,7 +653,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             enableCellTextSelection=True,
             enableBrowserTooltips=True,
             defaultColDef={"headerClass": "centered-header"},
-            rowStyle={"textAlign": "center"}
+            rowStyle={"textAlign": "center"},
+            cellSelection="multiple",
         )
 
     # --------------------------------------------------------------------------------
