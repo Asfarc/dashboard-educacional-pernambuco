@@ -573,63 +573,12 @@ def converter_df_para_excel(df):
 def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
                              tipo_visualizacao=None):
     """
-    Exibe DataFrame no AgGrid, com opções de paginação, seleção de intervalos,
-    e possibilidade de adicionar uma pinned row com totais no topo ou rodapé.
+    Exibe DataFrame no AgGrid, com filtros digitáveis (floatingFilter),
+    paginação, seleção de intervalos, e pinned row (totais) caso desejado.
     """
     if df_para_exibir is None or df_para_exibir.empty:
         st.warning("Não há dados para exibir na tabela.")
         return {"data": pd.DataFrame()}
-
-    # Função JS para calculo de estatísticas rápidas na barra de status
-    js_agg_functions = JsCode(f"""
-    function(params) {{
-        try {{
-            const dataColumn = "{coluna_dados if coluna_dados else ''}";
-            if (!dataColumn) return 'Coluna de dados não definida';
-
-            let values = [];
-            let totalSum = 0;
-            let count = 0;
-
-            params.api.forEachNodeAfterFilter(node => {{
-                if (!node.data) return;
-                const cellValue = node.data[dataColumn];
-                if (cellValue !== null && cellValue !== undefined) {{
-                    // Tentar converter p/ número
-                    const numValue = parseFloat(
-                      (""+cellValue)
-                        .replaceAll('.', '')     // remove milhares
-                        .replaceAll(',', '.')   // troca vírgula decimal por ponto
-                    );
-                    if (!isNaN(numValue)) {{
-                        values.push(numValue);
-                        totalSum += numValue;
-                        count++;
-                    }}
-                }}
-            }});
-
-            if (values.length === 0) {{
-                return 'Não há dados';
-            }}
-
-            const avg = totalSum / count;
-            const min = Math.min(...values);
-            const max = Math.max(...values);
-
-            // Formato BR
-            const formatBR = num => new Intl.NumberFormat('pt-BR', {{ maximumFractionDigits: 2 }}).format(num);
-
-            return 'Total: ' + formatBR(totalSum)
-                 + ' | Média: ' + formatBR(avg)
-                 + ' | Mín: ' + formatBR(min)
-                 + ' | Máx: ' + formatBR(max);
-        }} catch (error) {{
-            console.error('Erro ao calcular estatísticas:', error);
-            return 'Erro ao calcular estatísticas';
-        }}
-    }}
-    """)
 
     # Constrói o GridOptions
     gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
@@ -703,8 +652,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         editable=False,
         wrapText=True,
         autoHeight=False,
-        filter="agTextColumnFilter",
-        floatingFilter=True,
+        filter="agTextColumnFilter",       # Filtro de texto por padrão
+        floatingFilter=True,               # Habilita o input (filtro digitável) no cabeçalho
         filterParams={
             "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
             "buttons": ["apply", "reset"],
@@ -750,6 +699,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     # Se detectar colunas que começam com "Número de", configurar como numéricas
     for coluna in df_para_exibir.columns:
         if coluna.startswith("Número de"):
+            # Troca para filtro numérico
             gb.configure_column(
                 coluna,
                 type=["numericColumn", "numberColumnFilter"],
@@ -843,16 +793,20 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         rowSelection="none",
         rowMultiSelectWithClick=False,
         cellSelection="multiple",
+        # ---- REMOVE OU SUBSTITUIR O STATUS BAR PERSONALIZADO ----
+        # Use o componente padrão de agregações do Ag-Grid (ou remova se não quiser):
         statusBar={
             'statusPanels': [
                 {
-                    'statusPanel': 'agCustomStatsToolPanel',
+                    # Painel de agregações padrão (sum, avg, min, max etc.)
+                    'statusPanel': 'agAggregationComponent',
                     'statusPanelParams': {
-                        'aggStatFunc': js_agg_functions.js_code
+                        'aggFuncs': ['sum','avg','min','max']
                     }
                 }
             ]
         },
+        # ----------------------------------------------------------
         onGridReady=JsCode("""
             function(params) {
                 setTimeout(() => {
@@ -924,18 +878,23 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         soma_valor = int(df_para_exibir[coluna_dados].sum())
     total_linhas = int(len(df_para_exibir))
 
-    pinned_row_data = {
-        "ANO": f"Total de linhas: {total_linhas:,}".replace(",", "."),
-    }
+    # Monta os dados da pinned row
+    pinned_row_data = {}
+    # Só adiciona "ANO" se ele existir no DF
+    if "ANO" in df_para_exibir.columns:
+        pinned_row_data["ANO"] = f"Total de linhas: {total_linhas:,}".replace(",", ".")
+
     if coluna_dados in df_para_exibir.columns:
         pinned_row_data[coluna_dados] = soma_valor
 
     grid_options = gb.build()
 
     if posicao_totais == "bottom":
-        grid_options["pinnedBottomRowData"] = [pinned_row_data]
+        if pinned_row_data:
+            grid_options["pinnedBottomRowData"] = [pinned_row_data]
     elif posicao_totais == "top":
-        grid_options["pinnedTopRowData"] = [pinned_row_data]
+        if pinned_row_data:
+            grid_options["pinnedTopRowData"] = [pinned_row_data]
 
     # Renderização do grid
     grid_return = AgGrid(
@@ -1081,7 +1040,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         )
 
     return grid_return
-
 
 # -------------------------------
 # Carregamento de Dados
