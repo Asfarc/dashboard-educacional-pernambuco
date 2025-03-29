@@ -569,7 +569,8 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         suppressAggFuncInHeader=True,
         onGridReady=JsCode("""
             function(params) {
-                params.api.sizeColumnsToFit();
+                if (params && params.api) {
+                    params.api.sizeColumnsToFit();
 
                 // Garantir centralização dos cabeçalhos
                 setTimeout(function() {
