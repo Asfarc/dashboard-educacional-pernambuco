@@ -571,31 +571,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             function(params) {
                 if (params && params.api) {
                     params.api.sizeColumnsToFit();
-
-                    // Garantir centralização dos cabeçalhos
-                    setTimeout(function() {
-                        const headerCells = document.querySelectorAll('.ag-header-cell-text');
-                        if (headerCells) {
-                            headerCells.forEach(cell => {
-                                if (cell) {
-                                    cell.style.justifyContent = 'center';
-                                    cell.style.textAlign = 'center';
-
-                                    const parentLabel = cell.closest('.ag-header-cell-label');
-                                    if (parentLabel) {
-                                        parentLabel.style.justifyContent = 'center';
-                                        parentLabel.style.textAlign = 'center';
-                                    }
-
-                                    const headerCell = cell.closest('.ag-header-cell');
-                                    if (headerCell) {
-                                        headerCell.style.justifyContent = 'center';
-                                        headerCell.style.textAlign = 'center';
-                                    }
-                                }
-                            });
-                        }
-                    }, 500);
                 }
             }
         """),
