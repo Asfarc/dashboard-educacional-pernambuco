@@ -620,21 +620,15 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     # --------------------------------------------------------------------------------
     # Pinned Row unificando "Total de linhas" (na primeira coluna) e soma de 'coluna_dados'
     # --------------------------------------------------------------------------------
-    pinned_row_data = None
-    if posicao_totais in ("bottom", "top") and coluna_dados and (coluna_dados in df_para_exibir.columns):
-        soma_valor = df_para_exibir[coluna_dados].sum()
-        total_linhas = len(df_para_exibir)
+    pinned_row_data = {
+        "minha_coluna_texto": "Algum texto",
+        "minha_coluna_numerica": df_para_exibir[coluna_dados].sum()
+    }
 
-        # Se quiser colocar o texto na primeira coluna do seu DF, pegue seu nome
-        # (caso queira escolher outra, basta mudar aqui)
-        primeira_coluna = df_para_exibir.columns[0]
-
-        pinned_row_data = {
-            # Aqui, exibimos "Total de linhas: X" na primeira coluna
-            primeira_coluna: f"Total de linhas: {total_linhas:,}",
-            # E a soma na coluna de dados
-            coluna_dados: soma_valor
-        }
+    # Converte qualquer np.int64 para int normal
+    for k, v in pinned_row_data.items():
+        if isinstance(v, (np.int64, np.integer)):
+            pinned_row_data[k] = int(v)
 
     grid_options = gb.build()
 
