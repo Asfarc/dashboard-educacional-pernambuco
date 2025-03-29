@@ -486,16 +486,39 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 aggFunc="sum",
                 minWidth=largura_padrao_numericas,
                 maxWidth=300,
+                # --- Formatação do Valor (Incluindo Pinned Row) ---
                 valueFormatter=JsCode("""
                     function(params) {
-                        if (params.value == null) return '';
+                        // Se for pinned row, formata o valor mesmo que seja 0
+                        if (params.node.rowPinned) {
+                            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
+                        }
+
+                        // Para células normais
+                        if (params.value == null || params.value === undefined) return '';
                         return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
                     }
                 """).js_code,
-                cellStyle={
-                    'textAlign': 'center',
-                    'fontWeight': '500'
-                }
+                # --- Estilo Condicional (Células Normais + Pinned Row) ---
+                cellStyle=JsCode("""
+                    function(params) {
+                        const baseStyle = {
+                            'text-align': 'center',
+                            'font-weight': '500'
+                        };
+
+                        // Aplica estilo adicional se for pinned row
+                        if (params.node.rowPinned) {
+                            return {
+                                ...baseStyle,
+                                'font-weight': 'bold',
+                                'background-color': '#f2f2f2'
+                            };
+                        }
+
+                        return baseStyle;
+                    }
+                """).js_code
             )
         else:
             # Mantém como texto
@@ -602,13 +625,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                         paginationElement.style.width = gridElement.clientWidth + 'px';
                     }
                 }, 100);
-            }
-        """),
-        getRowStyle=JsCode("""
-            function(params) {
-                if (params.node.rowPinned) {
-                    return { 'font-weight': 'bold', 'background-color': '#f2f2f2' };
-                }
             }
         """),
         onFilterChanged=JsCode("""
