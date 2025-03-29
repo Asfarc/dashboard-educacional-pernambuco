@@ -802,38 +802,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         setTimeout(forceAgGridHeadersCenter, 2000);
     </script>
     """
-    js_fix_headers = """
-    <script>
-        function adjustHeaders() {
-            try {
-                const grid = document.querySelector('.ag-root-wrapper');
-                if (!grid) {
-                    setTimeout(adjustHeaders, 100); // Tenta novamente se o grid não estiver pronto
-                    return;
-                }
-
-                const headerRows = grid.querySelectorAll('.ag-header-row');
-                headerRows.forEach(row => {
-                    row.style.height = 'auto';
-                    row.style.minHeight = '50px';
-                });
-
-                const headerCells = grid.querySelectorAll('.ag-header-cell-text');
-                headerCells.forEach(cell => {
-                    cell.style.whiteSpace = 'normal';
-                    cell.style.overflow = 'visible';
-                });
-            } catch(e) { 
-                console.error('Erro ao ajustar cabeçalhos:', e); 
-            }
-        }
-
-        // Inicia o ajuste e verifica continuamente
-        setTimeout(adjustHeaders, 300);
-    </script>
-    """
-    st.markdown(js_fix_headers, unsafe_allow_html=True)
-
     filtered_data = grid_return['data']
     if len(filtered_data) != len(df_para_exibir):
         st.info(
