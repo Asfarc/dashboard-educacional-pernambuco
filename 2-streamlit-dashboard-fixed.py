@@ -7,6 +7,7 @@ from pathlib import Path
 import io
 import json
 import re
+import concurrent.futures
 from constantes import *
 
 # Biblioteca do AgGrid
@@ -22,103 +23,277 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-css_sidebar = """
-<style>
-    /* Cria um overlay para toda a sidebar */
-    [data-testid="stSidebar"]::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #364b60;
-        z-index: -1;
-        border-radius: 1px;
-        margin: 1rem;
-        padding: 1rem;
+# CSS unificado e otimizado
+css_unificado = """
+/* CSS Unificado e Otimizado para o Dashboard */
+
+/* Estilo da Barra Lateral */
+[data-testid="stSidebar"]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #364b60;
+    z-index: -1;
+    border-radius: 1px;
+    margin: 1rem;
+    padding: 1rem;
+}
+
+[data-testid="stSidebar"] > div {
+    position: relative;
+    z-index: 1;
+}
+
+/* Texto branco para elementos da barra lateral */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
+    color: white !important;
+}
+
+/* Mantém o texto das opções em preto */
+[data-testid="stSidebar"] option,
+[data-testid="stSidebar"] select,
+[data-testid="stSidebar"] [data-baseweb="select"] div {
+    color: black !important;
+}
+
+/* Estilo de itens selecionados na barra lateral */
+[data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
+    background-color: #e37777 !important;
+    color: white !important;
+    border-radius: 1px !important;
+}
+
+/* Estilo do hover */
+[data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
+    background-color: #d66c6c !important;
+    cursor: pointer;
+}
+
+/* Remove a cor azul padrão do Streamlit */
+[data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
+    box-shadow: none !important;
+}
+
+/* Estilo dos pills na barra lateral */
+[data-testid="stSidebar"] div[data-testid="stPills"] {
+    margin-top: 8px;
+}
+
+/* Botões não selecionados (kind="pills") */
+button[kind="pills"][data-testid="stBaseButton-pills"] {
+    background-color: transparent !important;
+    color: white !important;
+    border: 1px solid #e37777 !important;
+    border-radius: 1px !important;
+    transition: all 0.3s ease;
+}
+
+/* Hover em botões não selecionados */
+button[kind="pills"][data-testid="stBaseButton-pills"]:hover {
+    background-color: rgba(227, 119, 119, 0.2) !important;
+}
+
+/* Botões selecionados (kind="pillsActive") */
+button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
+    background-color: #e37777 !important; 
+    color: white !important;          
+    border: none !important;
+    border-radius: 1px !important;
+}
+
+/* Texto nos botões ativos */
+button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Estilo para a área principal do dashboard */
+.main-header {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border-left: 5px solid #364b60;
+}
+
+/* Estilos para a tabela Ag-Grid */
+.aggrid-custom {
+    --ag-header-background-color: #364b60;
+    --ag-header-foreground-color: white;
+    --ag-header-cell-hover-background-color: #25344d;
+    --ag-header-column-separator-color: rgba(255, 255, 255, 0.3);
+    --ag-header-column-separator-width: 1px;
+
+    --ag-odd-row-background-color: rgba(54, 75, 96, 0.05);
+    --ag-row-hover-color: rgba(54, 75, 96, 0.1);
+    --ag-selected-row-background-color: transparent;
+
+    --ag-font-size: 12px;
+    --ag-font-family: Arial, sans-serif;
+}
+
+/* Centralização de cabeçalhos */
+.ag-header-cell {
+    display: flex !important;
+    width: 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.ag-header-cell-label {
+    display: flex !important;
+    width: 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.ag-header-cell-text {
+    display: flex !important;
+    text-align: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    justify-content: center !important;
+    font-weight: bold !important;
+    white-space: normal !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    font-size: 12px !important;
+}
+
+/* Células numéricas */
+.numeric-cell { 
+    display: flex !important;
+    text-align: center !important;
+    width: 100% !important;
+    justify-content: center !important;
+}
+
+/* Pinned rows (totais) */
+.ag-row-pinned {
+    font-weight: bold !important;
+    background-color: #f8dcdc !important;
+}
+
+.ag-row-pinned .ag-cell {
+    text-align: center !important;
+}
+
+/* Células selecionadas - corrigindo o problema da seleção de linhas */
+.ag-cell.ag-cell-range-selected,
+.ag-cell.ag-cell-range-selected-1,
+.ag-cell.ag-cell-range-selected-2,
+.ag-cell.ag-cell-range-selected-3,
+.ag-cell.ag-cell-range-selected-4 {
+    background-color: #e6f2ff !important; 
+    color: #000 !important; 
+}
+
+/* Remove linhas selecionadas por completo */
+.ag-row-selected {
+    background-color: transparent !important;
+}
+
+.ag-row-selected:hover {
+    background-color: rgba(54, 75, 96, 0.1) !important;
+}
+
+/* Garantir que o restante das células permaneça normal */
+.ag-row-selected .ag-cell:not(.ag-cell-range-selected):not(.ag-cell-range-selected-1):not(.ag-cell-range-selected-2):not(.ag-cell-range-selected-3):not(.ag-cell-range-selected-4) {
+    background-color: inherit !important;
+}
+
+/* Estilo para os botões e controles */
+.stButton > button, .stDownloadButton > button {
+    background-color: #364b60 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 3px !important;
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background-color: #25344d !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Títulos de seção */
+h2 {
+    color: #364b60;
+    border-bottom: 1px solid #e37777;
+    padding-bottom: 0.3rem;
+    margin-top: 1.5rem;
+}
+
+/* Containers para KPIs e métricas */
+.metric-container {
+    background-color: white;
+    border-radius: 5px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #364b60;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+/* Paginação centralizada */
+.ag-paging-panel {
+    display: flex !important;
+    text-align: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    justify-content: center !important;
+}
+
+.ag-root-wrapper {
+    margin: 0 auto;
+}
+
+/* Responsividade para telas menores */
+@media screen and (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
     }
 
-    /* Garante que os controles fiquem visíveis acima do overlay */
-    [data-testid="stSidebar"] > div {
-        position: relative;
-        z-index: 1;
+    .metric-label {
+        font-size: 0.8rem;
     }
 
-    /* Texto branco para todos os elementos */
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
-        color: white !important;
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+        margin: 0 !important;
     }
-
-    /* Mantém o texto das opções em preto */
-    [data-testid="stSidebar"] option,
-    [data-testid="stSidebar"] select,
-    [data-testid="stSidebar"] [data-baseweb="select"] div {
-        color: black !important;
-    }
-
-    /* ------ REGRAS ATUALIZADAS ------ */
-    /* Altera TODOS os itens selecionados na sidebar */
-    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
-        background-color: #364b60 !important;
-        color: white !important;
-        border-radius: 1px !important;
-    }
-
-    /* Altera o hover */
-    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
-        background-color: #2a3a4d !important;
-        cursor: pointer;
-    }
-
-    /* Remove a cor azul padrão do Streamlit */
-    [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
-        box-shadow: none !important;
-    }
-</style>
+}
 """
 
-st.markdown(css_sidebar, unsafe_allow_html=True)
+st.markdown(css_unificado, unsafe_allow_html=True)
 
-css_pills = """
-<style>
-    /* Estilo específico para os pills na barra lateral */
-    [data-testid="stSidebar"] div[data-testid="stPills"] {
-        margin-top: 8px;
-    }
-
-    /* Botões não selecionados (kind="pills") */
-    button[kind="pills"][data-testid="stBaseButton-pills"] {
-        background-color: transparent !important;
-        color: white !important;
-        border: 1px solid #e37777 !important;
-        border-radius: 1px !important;
-        /* etc. */
-    }
-
-    /* Botões selecionados (kind="pillsActive") */
-    button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
-        background-color: #e37777 !important; 
-        color: white !important;          
-        border: none !important;
-        border-radius: 1px !important;
-        /* etc. */
-    }
-
-    /* Caso precise estilizar o <p> lá dentro (texto em si) */
-    button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
-        color: white !important;
-        font-weight: bold; /* Exemplo extra */
-    }
-</style>
-"""
-
-st.markdown(css_pills, unsafe_allow_html=True)
 
 # -------------------------------
 # Funções Auxiliares
@@ -146,13 +321,11 @@ def formatar_numero(numero):
     except (ValueError, TypeError):
         return str(numero)
 
-@st.cache_data
+
+@st.cache_data(ttl=3600)  # Cache por 1 hora
 def carregar_dados():
     """
-    Carrega os dados das planilhas no formato Parquet.
-    - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
-    - Converte colunas que começam com 'Número de' para tipo numérico.
-    Em caso de erro, exibe uma mensagem e interrompe a execução.
+    Carrega os dados das planilhas no formato Parquet com cache otimizado.
     """
     try:
         diretorios_possiveis = [".", "data", "dados", os.path.join(os.path.dirname(__file__), "data")]
@@ -164,18 +337,37 @@ def carregar_dados():
             municipio_path = os.path.join(diretorio, "municipio.parquet")
 
             if os.path.exists(escolas_path) and os.path.exists(estado_path) and os.path.exists(municipio_path):
-                escolas_df = pd.read_parquet(escolas_path)
-                estado_df = pd.read_parquet(estado_path)
-                municipio_df = pd.read_parquet(municipio_path)
+                # Usar threads para carregar os arquivos em paralelo
+                def load_parquet(path):
+                    return pd.read_parquet(path)
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = {
+                        'escolas': executor.submit(load_parquet, escolas_path),
+                        'estado': executor.submit(load_parquet, estado_path),
+                        'municipio': executor.submit(load_parquet, municipio_path)
+                    }
+
+                    escolas_df = futures['escolas'].result()
+                    estado_df = futures['estado'].result()
+                    municipio_df = futures['municipio'].result()
                 break
 
         if escolas_df is None or estado_df is None or municipio_df is None:
             raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
 
+        # Otimiza tipos de dados para reduzir uso de memória
         for df_ in [escolas_df, estado_df, municipio_df]:
             for col in df_.columns:
                 if col.startswith("Número de"):
                     df_[col] = pd.to_numeric(df_[col], errors='coerce')
+                elif col == "ANO":
+                    df_[col] = pd.to_numeric(df_[col], errors='coerce', downcast='integer')
+                # Otimiza colunas de texto
+                elif df_[col].dtype == 'object':
+                    # Converte para categoria se tiver poucos valores únicos
+                    if df_[col].nunique() < len(df_) * 0.5:
+                        df_[col] = df_[col].astype('category')
 
         return escolas_df, estado_df, municipio_df
 
@@ -183,6 +375,7 @@ def carregar_dados():
         st.error(ERRO_CARREGAR_DADOS.format(e))
         st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
+
 
 @st.cache_data
 def carregar_mapeamento_colunas():
@@ -237,6 +430,7 @@ def criar_mapeamento_colunas(df):
 
     return mapeamento_ajustado
 
+
 def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
@@ -258,6 +452,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
         return mapeamento[etapa]["subetapas"][subetapa]
 
     return series_subetapa[serie]
+
 
 def verificar_coluna_existe(df, coluna_nome):
     if not coluna_nome:
@@ -291,6 +486,38 @@ def converter_df_para_excel(df):
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Dados')
+
+            # Adiciona formatação para o Excel
+            workbook = writer.book
+            worksheet = writer.sheets['Dados']
+
+            # Formato para números
+            formato_numero = workbook.add_format({'num_format': '#,##0'})
+            formato_cabecalho = workbook.add_format({
+                'bold': True,
+                'text_wrap': True,
+                'valign': 'top',
+                'fg_color': '#364b60',
+                'font_color': 'white',
+                'border': 1
+            })
+
+            # Aplica formato de cabeçalho
+            for col_num, value in enumerate(df.columns.values):
+                worksheet.write(0, col_num, value, formato_cabecalho)
+
+            # Aplica formato numérico para colunas que começam com "Número de"
+            for i, col in enumerate(df.columns):
+                if col.startswith("Número de"):
+                    worksheet.set_column(i, i, 15, formato_numero)
+                else:
+                    worksheet.set_column(i, i, 15)
+
+            # Ajusta a largura das colunas
+            for i, col in enumerate(df.columns):
+                column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.set_column(i, i, column_width)
+
         return output.getvalue()
     except Exception as e:
         st.error(f"Erro ao converter para Excel: {str(e)}")
@@ -298,7 +525,9 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom", tipo_visualizacao=None):
+
+def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
+                             tipo_visualizacao=None):
     """
     Exibe DataFrame no AgGrid, com opções de:
       - Paginação, seleção de intervalos, status bar custom (opcional)
@@ -530,7 +759,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         if "ANO" in df_para_exibir.columns:
             gb.configure_column(
                 "ANO",
-                col,
                 cellStyle=JsCode("""
                     function(params) {
                         if (params.node.rowPinned) {
@@ -538,7 +766,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                         }
                     }
                 """),
-            type=[],  # remove numericColumn
+                type=[],  # remove numericColumn
                 filter="agTextColumnFilter",
                 valueFormatter=None
             )
@@ -564,13 +792,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             }
         },
         rowStyle={"textAlign": "center"},
-        enableRangeSelection=True,          # Habilita seleção de intervalo
-        enableRangeHandle=True,             # Habilita alça para arrastar seleção
-        suppressRowClickSelection=True,     # Suprime seleção de linha ao clicar
-        rowSelection="none",                # Desativa seleção de linha
-        rowMultiSelectWithClick=False,      # Desativa multi-seleção de linhas
         enableCellTextSelection=True,
-        cellSelection=True,
         clipboardDelimiter='\t',
         ensureDomOrder=True,
         pagination=True,
@@ -579,6 +801,15 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         paginationSizeSelector=[5, 10, 25, 50, 100],
         localeText=localeText,
         suppressAggFuncInHeader=True,
+
+        # Configurações para corrigir a seleção de células
+        enableRangeSelection=True,          # Habilita seleção de intervalo
+        enableRangeHandle=True,             # Habilita alça para arrastar seleção
+        suppressRowClickSelection=True,     # Suprime seleção de linha ao clicar
+        rowSelection="none",                # Desativa seleção de linha
+        rowMultiSelectWithClick=False,      # Desativa multi-seleção de linhas
+        cellSelection="multiple",           # Permite selecionar múltiplas células
+
         # Exemplo de manter somente o 'agCustomStatsToolPanel' no status bar (removendo totalRows e filteredRows):
         statusBar={
             'statusPanels': [
@@ -646,11 +877,6 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
     # Ajustes de desempenho para grandes datasets (opcional)
     if len(df_para_exibir) > 5000:
         gb.configure_grid_options(
-            enableRangeSelection=True,  # Habilita seleção de intervalo
-            enableRangeHandle=True,  # Habilita alça para arrastar seleção
-            suppressRowClickSelection=True,  # Suprime seleção de linha ao clicar
-            rowSelection="none",  # Desativa seleção de linha
-            rowMultiSelectWithClick=False,  # Desativa multi-seleção de linhas
             rowBuffer=100,
             animateRows=False,
             suppressColumnVirtualisation=False,
@@ -658,28 +884,30 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             enableCellTextSelection=True,
             enableBrowserTooltips=True,
             defaultColDef={"headerClass": "centered-header"},
-            rowStyle={"textAlign": "center"},
-            cellSelection="multiple",
+            rowStyle={"textAlign": "center"}
         )
 
     # --------------------------------------------------------------------------------
     # Pinned Row unificando "Total de linhas" (na primeira coluna) e soma de 'coluna_dados'
     # --------------------------------------------------------------------------------
     # 1) soma_valor como int
-    soma_valor = int(df_para_exibir[coluna_dados].sum())
+    soma_valor = int(df_para_exibir[coluna_dados].sum()) if coluna_dados in df_para_exibir.columns else 0
     total_linhas = int(len(df_para_exibir))
 
     # 2) pinned row: texto na coluna "ANO", número puro na coluna de matrículas
     pinned_row_data = {
         "ANO": f"Total de linhas: {total_linhas:,}".replace(",", "."),
-        coluna_dados: soma_valor  # <-- numero puro, sem formatar como string
     }
+
+    # Adicionar o valor do coluna_dados se existir
+    if coluna_dados in df_para_exibir.columns:
+        pinned_row_data[coluna_dados] = soma_valor
 
     grid_options = gb.build()
 
     if posicao_totais == "bottom":
         grid_options["pinnedBottomRowData"] = [pinned_row_data]
-    else:
+    elif posicao_totais == "top":
         grid_options["pinnedTopRowData"] = [pinned_row_data]
 
     # --------------------------------------------------------------------------------
@@ -757,7 +985,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 background-color: inherit !important;
             }
             .ag-row:hover {
-                background-color: inherit !important;
+                background-color: rgba(54, 75, 96, 0.1) !important;
             }
             .ag-row-selected,
             .ag-row-selected:hover {
@@ -773,6 +1001,11 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
             .ag-cell.ag-cell-range-selected-4 {
                 background-color: #e6f2ff !important; 
                 color: #000 !important; 
+            }
+
+            /* Remover seleção de linha completa */
+            .ag-row-selected .ag-cell:not(.ag-cell-range-selected):not(.ag-cell-range-selected-1):not(.ag-cell-range-selected-2):not(.ag-cell-range-selected-3):not(.ag-cell-range-selected-4) {
+                background-color: inherit !important;
             }
 
             /* Células numéricas */
@@ -834,6 +1067,246 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
 
     return grid_return
 
+def criar_grafico(df_filtrado, coluna_dados, tipo_grafico="barras", altura=500):
+    """
+    Cria diferentes tipos de gráficos baseados nos dados filtrados.
+
+    Args:
+        df_filtrado: DataFrame com os dados filtrados
+        coluna_dados: Nome da coluna com os valores a serem plotados
+        tipo_grafico: Tipo de gráfico (barras, pizza, linha, mapa de calor)
+        altura: Altura do gráfico em pixels
+
+    Returns:
+        fig: Objeto figura do Plotly
+    """
+    if coluna_dados not in df_filtrado.columns:
+        st.warning(f"Coluna {coluna_dados} não encontrada nos dados.")
+        return None
+
+    if df_filtrado.empty:
+        st.warning("Não há dados para gerar o gráfico.")
+        return None
+
+    try:
+        if tipo_grafico.lower() == "barras":
+            # Para gráfico de barras, agrupamos por dependência administrativa
+            if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+                dados_agg = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].sum().reset_index()
+                dados_agg = dados_agg.sort_values(coluna_dados, ascending=False)
+
+                fig = px.bar(
+                    dados_agg,
+                    x="DEPENDENCIA ADMINISTRATIVA",
+                    y=coluna_dados,
+                    title=f"{coluna_dados} por Dependência Administrativa",
+                    labels={coluna_dados: "Total de Matrículas", "DEPENDENCIA ADMINISTRATIVA": "Dependência"},
+                    color="DEPENDENCIA ADMINISTRATIVA",
+                    color_discrete_sequence=px.colors.qualitative.G10
+                )
+            else:
+                # Caso não tenha dependência administrativa, usamos UF ou Município
+                if "NOME DA UF" in df_filtrado.columns:
+                    dados_agg = df_filtrado.groupby("NOME DA UF")[coluna_dados].sum().reset_index()
+                    x_col = "NOME DA UF"
+                    x_label = "Estado"
+                elif "NOME DO MUNICIPIO" in df_filtrado.columns:
+                    dados_agg = df_filtrado.groupby("NOME DO MUNICIPIO")[coluna_dados].sum().reset_index()
+                    x_col = "NOME DO MUNICIPIO"
+                    x_label = "Município"
+                else:
+                    # Fallback para alguma outra coluna
+                    dados_agg = df_filtrado.copy()
+                    x_col = df_filtrado.columns[0]
+                    x_label = x_col
+
+                dados_agg = dados_agg.sort_values(coluna_dados, ascending=False)
+
+                # Limitamos a exibição para os top 20 para não sobrecarregar o gráfico
+                if len(dados_agg) > 20:
+                    dados_agg = dados_agg.head(20)
+                    titulo = f"Top 20 - {coluna_dados} por {x_label}"
+                else:
+                    titulo = f"{coluna_dados} por {x_label}"
+
+                fig = px.bar(
+                    dados_agg,
+                    x=x_col,
+                    y=coluna_dados,
+                    title=titulo,
+                    labels={coluna_dados: "Total de Matrículas", x_col: x_label},
+                    color=x_col,
+                    color_discrete_sequence=px.colors.qualitative.G10
+                )
+
+            # Personaliza o layout
+            fig.update_layout(
+                height=altura,
+                xaxis_title=x_label,
+                yaxis_title="Total de Matrículas",
+                font=dict(family="Arial", size=12),
+                plot_bgcolor="white",
+                hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
+            )
+
+            # Rotação dos rótulos do eixo x se tiverem muitos caracteres
+            if dados_agg[x_col].str.len().max() > 10:
+                fig.update_xaxes(tickangle=45)
+
+            return fig
+
+        elif tipo_grafico.lower() == "pizza":
+            # Para gráfico de pizza, agrupamos por dependência administrativa
+            if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+                dados_agg = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].sum().reset_index()
+                nome_col = "DEPENDENCIA ADMINISTRATIVA"
+                titulo = f"Distribuição de {coluna_dados} por Dependência Administrativa"
+            elif "NOME DA UF" in df_filtrado.columns:
+                dados_agg = df_filtrado.groupby("NOME DA UF")[coluna_dados].sum().reset_index()
+                nome_col = "NOME DA UF"
+                titulo = f"Distribuição de {coluna_dados} por Estado"
+            else:
+                # Fallback
+                dados_agg = df_filtrado.copy()
+                nome_col = df_filtrado.columns[0]
+                titulo = f"Distribuição de {coluna_dados}"
+
+            # Calcula percentual
+            total = dados_agg[coluna_dados].sum()
+            dados_agg['percentual'] = (dados_agg[coluna_dados] / total * 100).round(1)
+            dados_agg['legenda'] = dados_agg.apply(
+                lambda x: f"{x[nome_col]}: {formatar_numero(x[coluna_dados])} ({x['percentual']}%)",
+                axis=1
+            )
+
+            fig = px.pie(
+                dados_agg,
+                values=coluna_dados,
+                names='legenda',
+                title=titulo,
+                color=nome_col,
+                color_discrete_sequence=px.colors.qualitative.G10
+            )
+
+            # Personaliza o layout
+            fig.update_layout(
+                height=altura,
+                font=dict(family="Arial", size=12),
+                hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
+            )
+
+            # Formata o texto dentro das fatias
+            fig.update_traces(
+                textposition='inside',
+                textinfo='percent',
+                hovertemplate='%{label}<br>%{value:,.0f} (%{percent:.1%})'
+            )
+
+            return fig
+
+        elif tipo_grafico.lower() == "linha":
+            # Para gráfico de linha, precisamos de dados temporais
+            if "ANO" in df_filtrado.columns:
+                # Agrupamos por ANO e dependência administrativa
+                if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+                    dados_agg = df_filtrado.groupby(["ANO", "DEPENDENCIA ADMINISTRATIVA"])[coluna_dados].sum().reset_index()
+                    cor_col = "DEPENDENCIA ADMINISTRATIVA"
+                    titulo = f"Evolução de {coluna_dados} por Dependência Administrativa"
+                else:
+                    dados_agg = df_filtrado.groupby("ANO")[coluna_dados].sum().reset_index()
+                    cor_col = None
+                    titulo = f"Evolução de {coluna_dados} ao longo dos anos"
+
+                fig = px.line(
+                    dados_agg,
+                    x="ANO",
+                    y=coluna_dados,
+                    color=cor_col,
+                    title=titulo,
+                    labels={coluna_dados: "Total de Matrículas", "ANO": "Ano"},
+                    markers=True,
+                    line_shape="linear"
+                )
+
+                # Personaliza o layout
+                fig.update_layout(
+                    height=altura,
+                    xaxis_title="Ano",
+                    yaxis_title="Total de Matrículas",
+                    font=dict(family="Arial", size=12),
+                    plot_bgcolor="white",
+                    hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
+                )
+
+                # Formatação de texto ao passar o mouse
+                fig.update_traces(
+                    hovertemplate='%{x}<br>%{y:,.0f}'
+                )
+
+                return fig
+            else:
+                st.warning("Não foi possível criar um gráfico de linha pois a coluna 'ANO' não está disponível.")
+                return None
+
+        elif tipo_grafico.lower() == "mapa de calor":
+            # Para mapa de calor, usamos diferentes combinações de colunas
+            if "NOME DA UF" in df_filtrado.columns and "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+                # Mapa de calor UF x Dependência
+                dados_agg = df_filtrado.pivot_table(
+                    index="NOME DA UF",
+                    columns="DEPENDENCIA ADMINISTRATIVA",
+                    values=coluna_dados,
+                    aggfunc="sum",
+                    fill_value=0
+                ).reset_index()
+
+                # Convertemos para formato long para o plotly
+                dados_melt = dados_agg.melt(
+                    id_vars="NOME DA UF",
+                    var_name="DEPENDENCIA ADMINISTRATIVA",
+                    value_name=coluna_dados
+                )
+
+                fig = px.density_heatmap(
+                    dados_melt,
+                    x="DEPENDENCIA ADMINISTRATIVA",
+                    y="NOME DA UF",
+                    z=coluna_dados,
+                    title=f"Mapa de Calor: {coluna_dados} por UF e Dependência Administrativa",
+                    labels={
+                        "DEPENDENCIA ADMINISTRATIVA": "Dependência Administrativa",
+                        "NOME DA UF": "Unidade Federativa",
+                        coluna_dados: "Total de Matrículas"
+                    }
+                )
+
+                # Personaliza o layout
+                fig.update_layout(
+                    height=altura,
+                    font=dict(family="Arial", size=12),
+                    hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
+                )
+
+                # Formatação de texto ao passar o mouse
+                fig.update_traces(
+                    hovertemplate='UF: %{y}<br>Dependência: %{x}<br>Matrículas: %{z:,.0f}'
+                )
+
+                # Paleta de cores
+                fig.update_traces(colorscale="Viridis")
+
+                return fig
+            else:
+                st.warning("Não foi possível criar um mapa de calor pois as colunas necessárias não estão disponíveis.")
+                return None
+
+        else:
+            st.warning(f"Tipo de gráfico '{tipo_grafico}' não suportado.")
+            return None
+
+    except Exception as e:
+        st.error(f"Erro ao gerar o gráfico: {str(e)}")
+        return None
 
 # -------------------------------
 # Carregamento de Dados
@@ -866,6 +1339,16 @@ mapeamento_colunas = criar_mapeamento_colunas(df)
 # Filtro do Ano
 if "ANO" in df.columns:
     anos_disponiveis = sorted(df["ANO"].unique(), reverse=True)
+
+    # Adiciona botões para facilitar a seleção
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if st.button("Último Ano", key="btn_ultimo_ano"):
+            anos_selecionados = [anos_disponiveis[0]]
+    with col2:
+        if st.button("Todos Anos", key="btn_todos_anos"):
+            anos_selecionados = anos_disponiveis
+
     anos_selecionados = st.sidebar.multiselect(
         "Ano do Censo:",
         options=anos_disponiveis,
@@ -916,6 +1399,20 @@ else:
 
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].unique())
+
+    # Exibe um contador com o total de opções disponíveis
+    st.sidebar.caption(f"Total de {len(dependencias_disponiveis)} dependências disponíveis")
+
+    # Adiciona botões para facilitar a seleção
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if st.button("Selecionar Todas", key="btn_todas_dep"):
+            dependencia_selecionada = dependencias_disponiveis
+    with col2:
+        if st.button("Limpar Seleção", key="btn_limpar_dep"):
+            dependencia_selecionada = []
+
+    # Usa o componente pills para seleção
     dependencia_selecionada = st.sidebar.pills(
         "DEPENDENCIA ADMINISTRATIVA:",
         options=dependencias_disponiveis,
@@ -923,10 +1420,14 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
         selection_mode="multi",
         label_visibility="visible"
     )
+
+    # Feedback visual sobre a seleção
     if dependencia_selecionada:
+        st.sidebar.success(f"{len(dependencia_selecionada)} dependência(s) selecionada(s)")
         df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
     else:
-        df_filtrado = df_filtrado[0:0]
+        st.sidebar.warning("Nenhuma dependência selecionada. Selecione pelo menos uma.")
+        df_filtrado = df_filtrado[0:0]  # DataFrame vazio
 else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
@@ -951,71 +1452,139 @@ else:
 # Cabeçalho e Informações Iniciais
 # -------------------------------
 st.title(TITULO_DASHBOARD)
-anos_texto = ", ".join(map(str, anos_selecionados))
-st.markdown(f"**Visualização por {tipo_visualizacao} - Anos: {anos_texto}**")
 
-filtro_texto = f"**Etapa:** {etapa_selecionada}"
-if subetapa_selecionada != "Todas":
-    filtro_texto += f" | **Subetapa:** {subetapa_selecionada}"
-    if serie_selecionada != "Todas" and serie_selecionada in series_disponiveis:
-        filtro_texto += f" | **Série:** {serie_selecionada}"
-st.markdown(filtro_texto)
+# Cabeçalho com estilo personalizado
+st.markdown(
+    f"""
+    <div class="main-header">
+        <h3>Visualização por {tipo_visualizacao} - Anos: {', '.join(map(str, anos_selecionados))}</h3>
+        <p>{etapa_selecionada} {f'| {subetapa_selecionada}' if subetapa_selecionada != 'Todas' else ''} {f'| {serie_selecionada}' if serie_selecionada != 'Todas' and serie_selecionada in series_disponiveis else ''}</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
-col1, col2, col3 = st.columns(3)
+st.markdown("## Indicadores")
 
-try:
-    total_matriculas = df_filtrado[coluna_dados].sum()
-    with col1:
-        st.metric(ROTULO_TOTAL_MATRICULAS, formatar_numero(total_matriculas))
-except Exception as e:
-    with col1:
-        st.metric("Total de Matrículas", "-")
-        st.caption(f"Erro ao calcular: {str(e)}")
+# Cria um container com borda e fundo para os KPIs
+kpi_container = st.container()
+with kpi_container:
+    # Adiciona CSS para estilizar o container
+    st.markdown("""
+        <style>
+        .kpi-container {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .kpi-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #364b60;
+        }
+        .kpi-badge {
+            background-color: #e6f2ff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #364b60;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-with col2:
+    col1, col2, col3 = st.columns(3)
+
     try:
-        if tipo_visualizacao == "Escola":
-            if len(df_filtrado) > 0:
-                media_por_escola = df_filtrado[coluna_dados].mean()
-                st.metric(ROTULO_MEDIA_POR_ESCOLA, formatar_numero(media_por_escola))
-            else:
-                st.metric("Média de Matrículas por Escola", "-")
-        else:
-            if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
-                if not media_por_dependencia.empty:
-                    media_geral = media_por_dependencia.mean()
-                    st.metric(ROTULO_MEDIA_MATRICULAS, formatar_numero(media_geral))
+        total_matriculas = df_filtrado[coluna_dados].sum()
+        with col1:
+            st.markdown(f'<div class="kpi-container"><p class="kpi-title">{ROTULO_TOTAL_MATRICULAS}</p><p class="kpi-value">{formatar_numero(total_matriculas)}</p><span class="kpi-badge">Total</span></div>', unsafe_allow_html=True)
+    except Exception as e:
+        with col1:
+            st.markdown(f'<div class="kpi-container"><p class="kpi-title">Total de Matrículas</p><p class="kpi-value">-</p><span class="kpi-badge">Erro</span></div>', unsafe_allow_html=True)
+            st.caption(f"Erro ao calcular: {str(e)}")
+
+    with col2:
+        try:
+            if tipo_visualizacao == "Escola":
+                if len(df_filtrado) > 0:
+                    media_por_escola = df_filtrado[coluna_dados].mean()
+                    st.markdown(f'<div class="kpi-container"><p class="kpi-title">{ROTULO_MEDIA_POR_ESCOLA}</p><p class="kpi-value">{formatar_numero(media_por_escola)}</p><span class="kpi-badge">Média</span></div>', unsafe_allow_html=True)
                 else:
-                    st.metric("Média de Matrículas", "-")
+                    st.markdown('<div class="kpi-container"><p class="kpi-title">Média de Matrículas por Escola</p><p class="kpi-value">-</p><span class="kpi-badge">Sem dados</span></div>', unsafe_allow_html=True)
             else:
-                st.metric("Média de Matrículas", formatar_numero(df_filtrado[coluna_dados].mean()))
-    except Exception as e:
-        st.metric("Média de Matrículas", "-")
-        st.caption(f"Erro ao calcular: {str(e)}")
+                if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+                    media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
+                    if not media_por_dependencia.empty:
+                        media_geral = media_por_dependencia.mean()
+                        st.markdown(f'<div class="kpi-container"><p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p><p class="kpi-value">{formatar_numero(media_geral)}</p><span class="kpi-badge">Média</span></div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<div class="kpi-container"><p class="kpi-title">Média de Matrículas</p><p class="kpi-value">-</p><span class="kpi-badge">Sem dados</span></div>', unsafe_allow_html=True)
+                else:
+                    media_geral = df_filtrado[coluna_dados].mean()
+                    st.markdown(f'<div class="kpi-container"><p class="kpi-title">Média de Matrículas</p><p class="kpi-value">{formatar_numero(media_geral)}</p><span class="kpi-badge">Média</span></div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.markdown('<div class="kpi-container"><p class="kpi-title">Média de Matrículas</p><p class="kpi-value">-</p><span class="kpi-badge">Erro</span></div>', unsafe_allow_html=True)
+            st.caption(f"Erro ao calcular: {str(e)}")
 
-with col3:
+    with col3:
+        try:
+            if tipo_visualizacao == "Escola":
+                total_escolas = len(df_filtrado)
+                st.markdown(f'<div class="kpi-container"><p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p><p class="kpi-value">{formatar_numero(total_escolas)}</p><span class="kpi-badge">Contagem</span></div>', unsafe_allow_html=True)
+            elif tipo_visualizacao == "Município":
+                total_municipios = len(df_filtrado)
+                st.markdown(f'<div class="kpi-container"><p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p><p class="kpi-value">{formatar_numero(total_municipios)}</p><span class="kpi-badge">Contagem</span></div>', unsafe_allow_html=True)
+            else:
+                max_valor = df_filtrado[coluna_dados].max()
+                st.markdown(f'<div class="kpi-container"><p class="kpi-title">{ROTULO_MAXIMO_MATRICULAS}</p><p class="kpi-value">{formatar_numero(max_valor)}</p><span class="kpi-badge">Máximo</span></div>', unsafe_allow_html=True)
+        except Exception as e:
+            if tipo_visualizacao == "Escola":
+                st.markdown('<div class="kpi-container"><p class="kpi-title">Total de Escolas</p><p class="kpi-value">-</p><span class="kpi-badge">Erro</span></div>', unsafe_allow_html=True)
+            elif tipo_visualizacao == "Município":
+                st.markdown('<div class="kpi-container"><p class="kpi-title">Total de Municípios</p><p class="kpi-value">-</p><span class="kpi-badge">Erro</span></div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="kpi-container"><p class="kpi-title">Máximo de Matrículas</p><p class="kpi-value">-</p><span class="kpi-badge">Erro</span></div>', unsafe_allow_html=True)
+            st.caption(f"Erro ao calcular: {str(e)}")
+
+# -------------------------------
+# Seção de Visualização Gráfica
+# -------------------------------
+st.markdown("## Visualização Gráfica")
+tipo_grafico = st.selectbox(
+    "Tipo de Gráfico:",
+    ["Barras", "Pizza", "Linha", "Mapa de Calor"]
+)
+
+# Cria e exibe o gráfico
+fig = criar_grafico(df_filtrado, coluna_dados, tipo_grafico.lower(), altura=500)
+if fig:
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Botão para download da imagem
+    buffer = io.BytesIO()
     try:
-        if tipo_visualizacao == "Escola":
-            total_escolas = len(df_filtrado)
-            st.metric(ROTULO_TOTAL_ESCOLAS, formatar_numero(total_escolas))
-        elif tipo_visualizacao == "Município":
-            total_municipios = len(df_filtrado)
-            st.metric(ROTULO_TOTAL_MUNICIPIOS, formatar_numero(total_municipios))
-        else:
-            max_valor = df_filtrado[coluna_dados].max()
-            st.metric(ROTULO_MAXIMO_MATRICULAS, formatar_numero(max_valor))
+        fig.write_image(buffer, format="png", width=1200, height=600, scale=2)
+        buffer.seek(0)
+
+        st.download_button(
+            label="Baixar Gráfico (PNG)",
+            data=buffer,
+            file_name=f"grafico_{etapa_selecionada.replace(' ', '_')}_{'-'.join(map(str, anos_selecionados))}.png",
+            mime="image/png"
+        )
     except Exception as e:
-        if tipo_visualizacao == "Escola":
-            st.metric("Total de Escolas", "-")
-        elif tipo_visualizacao == "Município":
-            st.metric("Total de Municípios", "-")
-        else:
-            st.metric("Máximo de Matrículas", "-")
-        st.caption(f"Erro ao calcular: {str(e)}")
+        st.warning(f"Não foi possível gerar a imagem para download: {str(e)}")
+        st.info("Dica: Você pode usar o botão de download nativo do Plotly no canto superior direito do gráfico.")
 
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
@@ -1028,18 +1597,20 @@ if "ANO" in df_filtrado.columns:
 
 if tipo_visualizacao == "Escola":
     colunas_adicionais = [
-        "ANO"
         "CODIGO DA ESCOLA",
         "NOME DA ESCOLA",
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
+        "CODIGO DA UF",
+        "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 elif tipo_visualizacao == "Município":
     colunas_adicionais = [
-        "ANO"
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
+        "CODIGO DA UF",
+        "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 else:
@@ -1082,35 +1653,6 @@ tabela_filtrada = tabela_exibicao.copy()
 
 # Por simplicidade, chamamos de 'tabela_com_totais'
 tabela_com_totais = tabela_filtrada
-
-altura_tabela = 600
-
-if 'posicao_totais' not in locals():
-    posicao_totais = "Rodapé"
-
-posicao_totais_map = {
-    "Rodapé": "bottom",
-    "Topo": "top",
-    "Nenhum": None
-}
-
-if coluna_dados and coluna_dados in tabela_com_totais.columns:
-    with pd.option_context('mode.chained_assignment', None):
-        tabela_com_totais[coluna_dados] = pd.to_numeric(tabela_com_totais[coluna_dados], errors='coerce')
-        tabela_com_totais[coluna_dados] = tabela_com_totais[coluna_dados].fillna(0)
-
-try:
-    grid_result = exibir_tabela_com_aggrid(
-        tabela_com_totais,
-        altura=altura_tabela,
-        coluna_dados=coluna_dados,
-        posicao_totais=posicao_totais_map.get(posicao_totais),
-        # Adicione o parâmetro tipo_visualizacao:
-        tipo_visualizacao=tipo_visualizacao
-    )
-except Exception as e:
-    st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
-    st.dataframe(tabela_com_totais, height=altura_tabela)
 
 tab1, tab2 = st.tabs(["Configurações", "Resumo Estatístico"])
 
@@ -1155,7 +1697,7 @@ with tab1:
             if colunas_adicionais:
                 colunas_tabela.extend(colunas_adicionais)
                 try:
-                    tabela_dados = df_filtrado_tabela[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
+                    tabela_dados = df_filtrado[colunas_tabela].sort_values(by=coluna_dados, ascending=False)
                     tabela_exibicao = tabela_dados.copy()
                     with pd.option_context('mode.chained_assignment', None):
                         if coluna_dados in tabela_exibicao.columns:
@@ -1207,11 +1749,90 @@ with tab1:
             st.download_button(
                 label=ROTULO_BTN_DOWNLOAD_EXCEL,
                 data=excel_data,
-                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{anos_selecionados}.xlsx',
+                file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             )
         except Exception as e:
             st.error(f"Erro ao preparar Excel para download: {str(e)}")
+
+with tab2:
+    st.write("### Resumo estatístico")
+
+    if coluna_dados in tabela_dados.columns:
+        # Calcula estatísticas
+        estatisticas = pd.DataFrame({
+            'Estatística': [
+                'Contagem', 'Média', 'Mediana', 'Desvio Padrão',
+                'Mínimo', 'Máximo', 'Soma'
+            ],
+            'Valor': [
+                len(tabela_dados),
+                tabela_dados[coluna_dados].mean(),
+                tabela_dados[coluna_dados].median(),
+                tabela_dados[coluna_dados].std(),
+                tabela_dados[coluna_dados].min(),
+                tabela_dados[coluna_dados].max(),
+                tabela_dados[coluna_dados].sum()
+            ]
+        })
+
+        # Formata os valores
+        estatisticas['Valor'] = estatisticas['Valor'].apply(formatar_numero)
+
+        # Exibe o resumo
+        st.dataframe(
+            estatisticas,
+            column_config={
+                'Estatística': st.column_config.TextColumn('Estatística'),
+                'Valor': st.column_config.TextColumn('Valor')
+            },
+            hide_index=True,
+            use_container_width=True
+        )
+
+        # Adiciona mais análises específicas se houver dados suficientes
+        if len(tabela_dados) > 5:
+            st.write("### Distribuição de matrículas")
+
+            # Gráfico de distribuição (histograma)
+            fig_hist = px.histogram(
+                tabela_dados,
+                x=coluna_dados,
+                nbins=20,
+                title=f"Distribuição de {coluna_dados}",
+                labels={coluna_dados: "Valor"},
+                opacity=0.8
+            )
+
+            fig_hist.update_layout(
+                xaxis_title=coluna_dados,
+                yaxis_title="Frequência",
+                bargap=0.1,
+                plot_bgcolor="white"
+            )
+
+            st.plotly_chart(fig_hist, use_container_width=True)
+    else:
+        st.info(f"A coluna de dados '{coluna_dados}' não está disponível para análise estatística.")
+
+# Exibe a tabela configurada com AgGrid
+posicao_totais_map = {
+    "Rodapé": "bottom",
+    "Topo": "top",
+    "Nenhum": None
+}
+
+try:
+    grid_result = exibir_tabela_com_aggrid(
+        tabela_com_totais,
+        altura=altura_tabela,
+        coluna_dados=coluna_dados,
+        posicao_totais=posicao_totais_map.get(posicao_totais),
+        tipo_visualizacao=tipo_visualizacao
+    )
+except Exception as e:
+    st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
+    st.dataframe(tabela_com_totais, height=altura_tabela)
 
 # -------------------------------
 # Rodapé do Dashboard
@@ -1219,3 +1840,10 @@ with tab1:
 st.markdown("---")
 st.markdown(RODAPE_NOTA)
 
+# Adiciona informações sobre o tempo de execução
+import time
+tempo_final = time.time()
+tempo_total = round(tempo_final - st.session_state.get('tempo_inicio', tempo_final), 2)
+st.session_state['tempo_inicio'] = tempo_final
+
+st.caption(f"Tempo de processamento: {tempo_total} segundos")
