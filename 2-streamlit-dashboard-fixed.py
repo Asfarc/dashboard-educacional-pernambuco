@@ -472,6 +472,10 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         "CODIGO DA UF": 200,
         "NOME DA UF": 200
     }
+
+    # Defina uma largura padrão para as colunas numéricas
+    largura_padrao_numericas = 80  # ou outro valor que você considere adequado
+
     for col, largura in ajuste_colunas.items():
         if col in df_para_exibir.columns:
             gb.configure_column(
@@ -497,7 +501,7 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
                 type=["numericColumn", "numberColumnFilter"],  # AgGrid reconhece como número
                 filter="agNumberColumnFilter",
                 aggFunc="sum",  # se quiser somar no rodapé ou no status bar
-                minWidth=largura,  # Largura mínima conforme o seu ajuste
+                minWidth=largura_padrao_numericas,  # Usando a nova variável padronizada
                 maxWidth=300,  # Largura máxima fixa em 300 pixels
                 valueFormatter=JsCode("""
                     function(params) {
