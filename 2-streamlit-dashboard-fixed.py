@@ -760,6 +760,71 @@ def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posi
         key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
     )
 
+    js_direct_headers_fix = """
+    <script>
+        function fixAgGridHeaders() {
+            try {
+                // Espera o grid ser renderizado completamente
+                const grid = document.querySelector('.ag-header');
+                if (!grid) {
+                    console.log('Grid ainda não renderizado, aguardando...');
+                    setTimeout(fixAgGridHeaders, 200);
+                    return;
+                }
+
+                // Abordagem direta: inserir CSS inline
+                const style = document.createElement('style');
+                style.textContent = `
+                    .ag-header-cell-text {
+                        width: 100% !important;
+                        text-align: center !important;
+                        display: block !important;
+                    }
+
+                    .ag-header-cell-label {
+                        display: flex !important;
+                        justify-content: center !important;
+                        width: 100% !important;
+                    }
+
+                    .ag-header-cell {
+                        text-align: center !important;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                console.log('CSS de centralização adicionado diretamente ao documento');
+
+                // Força atualizações adicionais
+                setTimeout(() => {
+                    const headerCells = document.querySelectorAll('.ag-header-cell-text');
+                    console.log(`Atualizando ${headerCells.length} textos de cabeçalho`);
+
+                    headerCells.forEach(cell => {
+                        cell.style.cssText += 'width: 100% !important; text-align: center !important; display: block !important;';
+                        // Também tenta o elemento pai
+                        if (cell.parentElement) {
+                            cell.parentElement.style.cssText += 'display: flex !important; justify-content: center !important; width: 100% !important;';
+                        }
+                    });
+                }, 500);
+
+            } catch(e) {
+                console.error('Erro ao corrigir cabeçalhos:', e);
+            }
+        }
+
+        // Executar inicialmente
+        fixAgGridHeaders();
+
+        // Continuar tentando para garantir que pegue após recarregamentos
+        setInterval(fixAgGridHeaders, 2000);
+    </script>
+    """
+
+    st.markdown(js_direct_headers_fix, unsafe_allow_html=True)
+
+
     js_header_inspector = """
     <script>
         function inspectAgGridHeaders() {
