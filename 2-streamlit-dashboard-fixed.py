@@ -451,7 +451,7 @@ def procurar_coluna_matriculas_por_etapa(etapa, subetapa, serie, mapeamento):
     return series_subetapa[serie]
 
 
-def confirmar_existencia_coluna_matriculas_por_etapa(df, coluna_nome):
+def confirmar_existencia_colunas_apos_normalizacao(df, coluna_nome):
     """
     Verifica se a coluna existe no DataFrame,
     levando em conta variações de maiúsculas/minúsculas e quebras de linha.
@@ -702,7 +702,7 @@ else:
 
 # Identifica a coluna de dados baseada em Etapa / Subetapa / Série
 coluna_matriculas_por_etapa = procurar_coluna_matriculas_por_etapa(etapa_ensino_selecionada, subetapa_selecionada, serie_selecionada, dicionario_das_etapas_de_ensino)
-coluna_existe, coluna_real = confirmar_existencia_coluna_matriculas_por_etapa(df_filtrado, coluna_matriculas_por_etapa)
+coluna_existe, coluna_real = confirmar_existencia_colunas_apos_normalizacao(df_filtrado, coluna_matriculas_por_etapa)
 
 # Verificar se a coluna de dados existe e tratar adequadamente
 if coluna_existe:
