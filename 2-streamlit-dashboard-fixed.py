@@ -1125,30 +1125,37 @@ else:
                         st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
 
             # Agora definimos o "Page Size" e dividimos o DF em páginas
+            # 1) Defina o Page Size e faça a paginação, mas NÃO peça a página ainda.
             left_col, right_col = st.columns([1, 3])
             with left_col:
                 page_size = st.selectbox("Page Size", options=[10, 25, 50, 100], index=0)
             with right_col:
                 st.write(f"**Total de Registros após filtros:** {len(df_texto_filtrado)}")
 
-            # Usar a função split_frame
+            # Divide em chunks, mas ainda não define a página
             paginated_frames = split_frame(df_texto_filtrado, page_size)
             total_pages = len(paginated_frames)
             if total_pages == 0:
                 st.warning("Nenhum registro para exibir após filtragem.")
-            else:
-                current_page = st.number_input(
-                    "Página",
-                    min_value=1,
-                    max_value=total_pages,
-                    value=1,
-                    step=1
-                )
-                st.markdown(f"**Exibindo Página {current_page} de {total_pages}**")
+                st.stop()
 
-                # Exibe o chunk atual
-                df_pagina_atual = paginated_frames[current_page - 1]
-                st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
+            # 2) Por ora, podemos definir uma página padrão
+            if "current_page" not in st.session_state:
+                st.session_state["current_page"] = 1
+
+            # 3) MOSTRA A TABELA DA PÁGINA ATUAL
+            df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
+            st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
+
+            # 4) AGORA, ABAIXO da tabela, pede a página:
+            st.session_state["current_page"] = st.number_input(
+                "Página",
+                min_value=1,
+                max_value=total_pages,
+                value=st.session_state["current_page"],
+                step=1
+            )
+            st.markdown(f"**Exibindo Página {st.session_state['current_page']} de {total_pages}**")
 
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
