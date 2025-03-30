@@ -696,7 +696,9 @@ elif tipo_visualizacao == "Município":
     ]
 else:  # Estado
     colunas_base = [
-        "DEPENDENCIA ADMINISTRATIVA"
+        "DEPENDENCIA ADMINISTRATIVA",
+        "CODIGO DA UF",
+        "NOME DA UF",
     ]
 
 # Adicionar apenas colunas que existem no DataFrame
