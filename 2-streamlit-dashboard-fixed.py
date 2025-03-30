@@ -574,12 +574,12 @@ if df.empty:
     st.error(f"Não há dados disponíveis para o nível de agregação '{tipo_nivel_agregacao_selecionado}'.")
     st.stop()
 
-# Debug: mostrar as primeiras linhas e colunas do DataFrame
-if st.sidebar.checkbox("Mostrar informações de debug", value=False):
-    st.sidebar.write(f"Colunas no DataFrame de {tipo_nivel_agregacao_selecionado}:")
-    st.sidebar.write(df.columns.tolist())
-    st.sidebar.write(f"Primeiras linhas do DataFrame de {tipo_nivel_agregacao_selecionado}:")
-    st.sidebar.write(df.head(2))
+# Debug: mostrar as primeiras linhas e colunas do DataFrame usando expander
+with st.sidebar.expander("Mostrar informações de debug", expanded=False):
+    st.write(f"Colunas no DataFrame de {tipo_nivel_agregacao_selecionado}:")
+    st.write(df.columns.tolist())
+    st.write(f"Primeiras linhas do DataFrame de {tipo_nivel_agregacao_selecionado}:")
+    st.write(df.head(2))
 
 dicionario_das_etapas_de_ensino = padronizar_dicionario_de_etapas(df)
 
