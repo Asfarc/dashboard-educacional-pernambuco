@@ -1327,6 +1327,7 @@ else:
     )
 
 # Tempo de execução
+
 registro_conclusao_processamento = time.time()
 tempo_total_processamento_segundos = round(registro_conclusao_processamento - st.session_state.get('tempo_inicio', registro_conclusao_processamento), 2)
 st.session_state['tempo_inicio'] = registro_conclusao_processamento
