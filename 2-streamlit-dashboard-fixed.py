@@ -1112,6 +1112,7 @@ with kpi_container:
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
 # -------------------------------
+
 st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 
 # Verificar se há dados para exibir
@@ -1166,190 +1167,23 @@ else:
     # Caso para nível "Escola" ou "Município"
     else:
         try:
-            # ------------------------------------
-            # Filtros avançados para coluna-matrículas
-            # ------------------------------------
+            # Identificar coluna de matrículas para filtros especiais
             coluna_matriculas = None
             for col in tabela_exibicao.columns:
                 if "número de" in col.lower() and coluna_real == col:
                     coluna_matriculas = col
                     break
 
-            if coluna_matriculas:
-                st.markdown("### Filtros avançados")
+            # Inicialização de variáveis para filtros
+            df_filtrado_final = tabela_exibicao.copy()
+            tipo_filtro = st.session_state.filtro_matriculas_tipo
+            valor_min = None
+            valor_max = None
+            top_n = None
 
-                filtro_container = st.container()
-                with filtro_container:
-                    col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 3])
-
-                    with col1:
-                        if st.button("🚫",
-                                     key="btn_sem_filtro",
-                                     help="Remover filtros",
-                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Sem filtro" else "secondary"):
-                            st.session_state.filtro_matriculas_tipo = "Sem filtro"
-                            st.experimental_rerun()
-
-                    with col2:
-                        if st.button("↗️",
-                                     key="btn_acima",
-                                     help="Mostrar valores acima de um limite",
-                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Acima de" else "secondary"):
-                            st.session_state.filtro_matriculas_tipo = "Acima de"
-                            st.experimental_rerun()
-
-                    with col3:
-                        if st.button("↘️",
-                                     key="btn_abaixo",
-                                     help="Mostrar valores abaixo de um limite",
-                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Abaixo de" else "secondary"):
-                            st.session_state.filtro_matriculas_tipo = "Abaixo de"
-                            st.experimental_rerun()
-
-                    with col4:
-                        if st.button("↔️",
-                                     key="btn_entre",
-                                     help="Mostrar valores entre dois limites",
-                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Entre" else "secondary"):
-                            st.session_state.filtro_matriculas_tipo = "Entre"
-                            st.experimental_rerun()
-
-                    with col5:
-                        if st.button("🔝",
-                                     key="btn_top",
-                                     help="Mostrar os maiores valores",
-                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Top maiores" else "secondary"):
-                            st.session_state.filtro_matriculas_tipo = "Top maiores"
-                            st.experimental_rerun()
-
-                    with col6:
-                        if st.button("↙️",
-                                     key="btn_bottom",
-                                     help="Mostrar os menores valores",
-                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Top menores" else "secondary"):
-                            st.session_state.filtro_matriculas_tipo = "Top menores"
-                            st.experimental_rerun()
-
-                    with col7:
-                        # Campo(s) para definir limites/top_n
-                        tipo_filtro = st.session_state.filtro_matriculas_tipo
-
-                        if tipo_filtro == "Acima de":
-                            st.markdown("**Valor mínimo:**")
-                            valor_min = st.number_input("",
-                                                        min_value=0,
-                                                        max_value=int(tabela_dados[coluna_matriculas].max()),
-                                                        value=1000,
-                                                        label_visibility="collapsed")
-                            valor_max = None
-                            top_n = None
-
-                        elif tipo_filtro == "Abaixo de":
-                            st.markdown("**Valor máximo:**")
-                            valor_max = st.number_input("",
-                                                        min_value=0,
-                                                        max_value=int(tabela_dados[coluna_matriculas].max()),
-                                                        value=5000,
-                                                        label_visibility="collapsed")
-                            valor_min = None
-                            top_n = None
-
-                        elif tipo_filtro == "Entre":
-                            col7a, col7b = st.columns(2)
-                            with col7a:
-                                st.markdown("**Mínimo:**")
-                                valor_min = st.number_input("Min",
-                                                            min_value=0,
-                                                            max_value=int(tabela_dados[coluna_matriculas].max()),
-                                                            value=1000,
-                                                            label_visibility="collapsed")
-                            with col7b:
-                                st.markdown("**Máximo:**")
-                                valor_max = st.number_input("Max",
-                                                            min_value=0,
-                                                            max_value=int(tabela_dados[coluna_matriculas].max()),
-                                                            value=5000,
-                                                            label_visibility="collapsed")
-                            top_n = None
-
-                        elif tipo_filtro in ["Top maiores", "Top menores"]:
-                            st.markdown("**Quantidade:**")
-                            top_n = st.number_input("",
-                                                    min_value=1,
-                                                    max_value=min(100, len(tabela_dados)),
-                                                    value=10,
-                                                    label_visibility="collapsed")
-                            valor_min = None
-                            valor_max = None
-
-                        else:
-                            valor_min = None
-                            valor_max = None
-                            top_n = None
-
-                # Aplica o filtro avançado
-                df_filtrado_final = tabela_exibicao.copy()
-
-                # Precisamos filtrar usando valores numéricos (tabela_dados) em paralelo
-                tipo_filtro = st.session_state.filtro_matriculas_tipo
-
-                # Converter a coluna na tabela_dados para numérico
-                tabela_dados[coluna_matriculas] = pd.to_numeric(tabela_dados[coluna_matriculas], errors='coerce')
-
-                if tipo_filtro == "Acima de" and valor_min is not None:
-                    # Precisamos identificar linhas acima de valor_min
-                    indices = tabela_dados[tabela_dados[coluna_matriculas] > valor_min].index
-                    df_filtrado_final = df_filtrado_final.loc[indices]
-
-                elif tipo_filtro == "Abaixo de" and valor_max is not None:
-                    indices = tabela_dados[tabela_dados[coluna_matriculas] < valor_max].index
-                    df_filtrado_final = df_filtrado_final.loc[indices]
-
-                elif tipo_filtro == "Entre" and valor_min is not None and valor_max is not None:
-                    indices = tabela_dados[
-                        (tabela_dados[coluna_matriculas] >= valor_min) &
-                        (tabela_dados[coluna_matriculas] <= valor_max)
-                    ].index
-                    df_filtrado_final = df_filtrado_final.loc[indices]
-
-                elif tipo_filtro == "Top maiores" and top_n is not None:
-                    df_temp = tabela_dados.sort_values(by=coluna_matriculas, ascending=False)
-                    top_indices = df_temp.head(top_n).index
-                    df_filtrado_final = df_filtrado_final.loc[top_indices]
-
-                elif tipo_filtro == "Top menores" and top_n is not None:
-                    df_temp = tabela_dados.sort_values(by=coluna_matriculas, ascending=True)
-                    top_indices = df_temp.head(top_n).index
-                    df_filtrado_final = df_filtrado_final.loc[top_indices]
-
-                else:
-                    df_filtrado_final = tabela_exibicao.copy()
-
-                # Exibir informação sobre o tipo de filtro
-                if tipo_filtro != "Sem filtro":
-                    filtro_info = f"Filtro aplicado: {tipo_filtro}"
-                    if tipo_filtro == "Acima de":
-                        filtro_info += f" {valor_min:,}".replace(",", ".")
-                    elif tipo_filtro == "Abaixo de":
-                        filtro_info += f" {valor_max:,}".replace(",", ".")
-                    elif tipo_filtro == "Entre":
-                        filtro_info += f" {valor_min:,} e {valor_max:,}".replace(",", ".")
-                    elif tipo_filtro in ["Top maiores", "Top menores"]:
-                        filtro_info += f" {top_n} registro(s)"
-
-                    st.markdown(f'<div class="info-text">ℹ️ {filtro_info}</div>', unsafe_allow_html=True)
-                    st.caption(f"Exibindo {len(df_filtrado_final)} de {len(tabela_exibicao)} registro(s) após este filtro.")
-
-            else:
-                # Se não há coluna de matrículas identificada
-                df_filtrado_final = tabela_exibicao.copy()
-
-            # ------------------------------------
-            # Filtros de texto por coluna
-            # ------------------------------------
-            # Layout em colunas para os filtros de texto
-            st.markdown("### Filtros por coluna")
-
+            # ------------------------------------------------
+            # Filtros por coluna - Alinhados com as colunas
+            # ------------------------------------------------
             # Criar colunas para cada campo da tabela
             header_cols = st.columns(len(df_filtrado_final.columns))
             col_filters = {}
@@ -1358,29 +1192,98 @@ else:
             for i, col_name in enumerate(df_filtrado_final.columns):
                 with header_cols[i]:
                     st.markdown(f"**{col_name}**")
-                    col_filters[col_name] = st.text_input(
-                        "",
-                        key=f"filter_{col_name}",
-                        label_visibility="collapsed",
-                        placeholder=f"Filtrar {col_name}..."
-                    )
 
+                    # Tratamento especial para a coluna de matrículas
+                    if col_name == coluna_matriculas:
+                        # Botões de filtro compactos para matrículas
+                        c1, c2, c3 = st.columns([1, 1, 1])
+                        with c1:
+                            if st.button("🚫", key="btn_sem_filtro_compact",
+                                         help="Remover filtros",
+                                         type="primary" if tipo_filtro == "Sem filtro" else "secondary"):
+                                st.session_state.filtro_matriculas_tipo = "Sem filtro"
+                                st.experimental_rerun()
+                        with c2:
+                            if st.button("↗️", key="btn_acima_compact",
+                                         help="Acima de",
+                                         type="primary" if tipo_filtro == "Acima de" else "secondary"):
+                                st.session_state.filtro_matriculas_tipo = "Acima de"
+                                st.experimental_rerun()
+                        with c3:
+                            if st.button("🔝", key="btn_top_compact",
+                                         help="Top maiores",
+                                         type="primary" if tipo_filtro == "Top maiores" else "secondary"):
+                                st.session_state.filtro_matriculas_tipo = "Top maiores"
+                                st.experimental_rerun()
+
+                        # Campo de entrada para o valor do filtro
+                        if tipo_filtro == "Acima de":
+                            valor_min = st.number_input("Mín", min_value=0,
+                                                        max_value=int(tabela_dados[coluna_matriculas].max()),
+                                                        value=1000, label_visibility="collapsed")
+                        elif tipo_filtro == "Top maiores":
+                            top_n = st.number_input("Top", min_value=1,
+                                                    max_value=min(100, len(tabela_dados)),
+                                                    value=10, label_visibility="collapsed")
+                        else:
+                            # Filtro de texto simples quando não há filtro avançado ativo
+                            col_filters[col_name] = st.text_input("", key=f"filter_{col_name}",
+                                                                  label_visibility="collapsed",
+                                                                  placeholder=f"Filtrar {col_name}...")
+                    else:
+                        # Filtro de texto padrão para outras colunas
+                        col_filters[col_name] = st.text_input("", key=f"filter_{col_name}",
+                                                              label_visibility="collapsed",
+                                                              placeholder=f"Filtrar {col_name}...")
+
+            # ------------------------------------------------
+            # Aplicar filtros avançados para matrículas
+            # ------------------------------------------------
+            if coluna_matriculas and tipo_filtro != "Sem filtro":
+                # Converter para numérico para filtrar
+                tabela_dados[coluna_matriculas] = pd.to_numeric(tabela_dados[coluna_matriculas], errors='coerce')
+
+                if tipo_filtro == "Acima de" and valor_min is not None:
+                    indices = tabela_dados[tabela_dados[coluna_matriculas] > valor_min].index
+                    df_filtrado_final = df_filtrado_final.loc[indices]
+
+                elif tipo_filtro == "Top maiores" and top_n is not None:
+                    df_temp = tabela_dados.sort_values(by=coluna_matriculas, ascending=False)
+                    top_indices = df_temp.head(top_n).index
+                    df_filtrado_final = df_filtrado_final.loc[top_indices]
+
+                # Exibir informação sobre o filtro aplicado
+                filtro_info = f"Filtro aplicado: {tipo_filtro}"
+                if tipo_filtro == "Acima de":
+                    filtro_info += f" {valor_min:,}".replace(",", ".")
+                elif tipo_filtro == "Top maiores":
+                    filtro_info += f" {top_n} registro(s)"
+
+                st.markdown(f'<div class="info-text">ℹ️ {filtro_info}</div>', unsafe_allow_html=True)
+                st.caption(f"Exibindo {len(df_filtrado_final)} de {len(tabela_exibicao)} registro(s) após este filtro.")
+
+            # ------------------------------------------------
+            # Aplicar filtros de texto
+            # ------------------------------------------------
             df_texto_filtrado = df_filtrado_final.copy()
+            filtros_ativos = False
+
             for col_name, filter_text in col_filters.items():
                 if filter_text:
+                    filtros_ativos = True
                     df_texto_filtrado = df_texto_filtrado[
                         df_texto_filtrado[col_name].astype(str).str.contains(filter_text, case=False)
                     ]
 
-            if len(col_filters) > 0 and any(col_filters.values()):
+            if filtros_ativos:
                 st.markdown(
                     f'<div class="info-text">📋 Filtros de texto aplicados. Exibindo {len(df_texto_filtrado)} de {len(df_filtrado_final)} registros.</div>',
                     unsafe_allow_html=True
                 )
 
-            # ------------------------------------
-            # Paginação
-            # ------------------------------------
+            # ------------------------------------------------
+            # Opções de paginação e ordenação
+            # ------------------------------------------------
             if len(df_texto_filtrado) > 0:
                 col_pag1, col_pag2 = st.columns([1, 3])
 
@@ -1407,11 +1310,13 @@ else:
 
                         if ordem_tabela == "Maior valor":
                             # Converter para numérico se necessário
-                            df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real], errors='coerce')
+                            df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real],
+                                                                           errors='coerce')
                             df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=False)
 
                         elif ordem_tabela == "Menor valor":
-                            df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real], errors='coerce')
+                            df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real],
+                                                                           errors='coerce')
                             df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=True)
 
                         elif ordem_tabela == "Alfabético (A-Z) por Escola" and "NOME DA ESCOLA" in df_texto_filtrado.columns:
@@ -1426,6 +1331,9 @@ else:
                         elif ordem_tabela == "Alfabético (Z-A) por Município" and "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
                             df_texto_filtrado = df_texto_filtrado.sort_values(by="NOME DO MUNICIPIO", ascending=False)
 
+                # ------------------------------------------------
+                # Paginação e Exibição da Tabela
+                # ------------------------------------------------
                 if registros_por_pagina != "Todos":
                     registros_por_pagina = int(registros_por_pagina)
                     num_paginas = max(1, (len(df_texto_filtrado) - 1) // registros_por_pagina + 1)
@@ -1455,11 +1363,16 @@ else:
                 # Linha de total (se for coluna numérica)
                 if coluna_real in df_texto_filtrado.columns:
                     try:
-                        df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real], errors='coerce')
-                        total_col = df_texto_filtrado[coluna_real].sum()
+                        if isinstance(df_texto_filtrado[coluna_real].iloc[0], str):
+                            # Buscar soma nos dados originais
+                            indices = df_texto_filtrado.index
+                            total_col = tabela_dados.loc[indices, coluna_real].sum()
+                        else:
+                            total_col = df_texto_filtrado[coluna_real].sum()
+
                         st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        st.warning(f"Não foi possível calcular o total: {e}")
             else:
                 st.markdown(
                     '<div class="warning-text">⚠️ Nenhum registro encontrado com os filtros aplicados.</div>',
@@ -1471,7 +1384,7 @@ else:
             st.write("Tentando exibir tabela simplificada...")
             try:
                 st.dataframe(tabela_exibicao.head(100), height=altura_tabela, use_container_width=True)
-            except:
+            except Exception:
                 st.error("Não foi possível exibir a tabela mesmo em formato simplificado.")
 
     st.markdown('</div>', unsafe_allow_html=True)
