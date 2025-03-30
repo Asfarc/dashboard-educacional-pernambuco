@@ -8,6 +8,10 @@ import json
 import re
 from constantes import *  # Importa constantes (rótulos, textos, etc.)
 
+# Configuração para suprimir impressão de docstrings e avisos
+st.set_option('deprecation.showfileUploaderEncoding', False)
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
 # Inicialização do tempo de execução
 import time
 
@@ -305,7 +309,6 @@ def aplicar_padrao_numerico_brasileiro(numero):
 
 @st.cache_data(ttl=3600)  # Cache por 1 hora
 def importar_arquivos_parquet():
-    print("Função importar_arquivos_parquet foi chamada")
     """
     Carrega os dados das planilhas no formato Parquet.
     - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
@@ -524,33 +527,34 @@ def gerar_planilha_excel(df):
 # -------------------------------
 # Carregamento de Dados
 # -------------------------------
-try:
-    # Tentar carregar os dados diretamente
-    # (Sem inicializar as variáveis primeiro)
-    escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
+# Usar um container para isolar potenciais mensagens
+with st.container():
+    try:
+        # Tentar carregar os dados diretamente
+        escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
 
-    # Verificação adicional para garantir que os DataFrames não estão vazios
-    if escolas_df.empty:
-        st.error("O DataFrame de escolas está vazio.")
-    if municipio_df.empty:
-        st.error("O DataFrame de municípios está vazio.")
-    if estado_df.empty:
-        st.error("O DataFrame de estados está vazio.")
+        # Verificação adicional para garantir que os DataFrames não estão vazios
+        if escolas_df.empty:
+            st.error("O DataFrame de escolas está vazio.")
+        if municipio_df.empty:
+            st.error("O DataFrame de municípios está vazio.")
+        if estado_df.empty:
+            st.error("O DataFrame de estados está vazio.")
 
-    # Verificar colunas críticas em cada DataFrame
-    for df_nome, df in [("escolas", escolas_df), ("município", municipio_df), ("estado", estado_df)]:
-        if "ANO" not in df.columns:
-            st.error(f"Coluna 'ANO' não encontrada no DataFrame de {df_nome}.")
+        # Verificar colunas críticas em cada DataFrame
+        for df_nome, df in [("escolas", escolas_df), ("município", municipio_df), ("estado", estado_df)]:
+            if "ANO" not in df.columns:
+                st.error(f"Coluna 'ANO' não encontrada no DataFrame de {df_nome}.")
 
-except Exception as e:
-    st.error(f"Erro ao carregar dados: {str(e)}")
+    except Exception as e:
+        st.error(f"Erro ao carregar dados: {str(e)}")
 
-    # Criar DataFrames vazios em caso de erro
-    escolas_df = pd.DataFrame()
-    estado_df = pd.DataFrame()
-    municipio_df = pd.DataFrame()
+        # Criar DataFrames vazios em caso de erro
+        escolas_df = pd.DataFrame()
+        estado_df = pd.DataFrame()
+        municipio_df = pd.DataFrame()
 
-    st.stop()
+        st.stop()
 
 # ======================================
 # CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)
@@ -603,8 +607,12 @@ if "ANO" in df.columns:
         "Ano do Censo:",
         options=anos_disponiveis,
         default=st.session_state["anos_multiselect"],
-        key="anos_multiselect"
+        key="anos_multiselect_widget"  # Use uma key diferente do session_state
     )
+
+    # Atualizar o session_state com a nova seleção
+    st.session_state["anos_multiselect"] = anos_selecionados
+
     if not anos_selecionados:
         st.warning("Por favor, selecione pelo menos um ano.")
         st.stop()
