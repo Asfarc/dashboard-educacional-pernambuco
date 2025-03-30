@@ -695,83 +695,80 @@ else:
 # ------------------------------
 # Configurações da Tabela
 # ------------------------------
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Configurações da tabela")
+# Agrupar as configurações da tabela em um expander
+with st.sidebar.expander("Configurações avançadas da tabela", expanded=False):
+    st.markdown("### Configurações da tabela")
 
-modificar_altura_tabela = st.sidebar.checkbox(
-    "Ajustar altura da tabela",
-    value=False,
-    help="Permite ajustar a altura da tabela de dados"
-)
-if modificar_altura_tabela:
-    altura_tabela = st.sidebar.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
-else:
-    altura_tabela = 600
-
-# Colunas para exibir
-st.sidebar.markdown("### Colunas adicionais")
-colunas_selecionadas_para_exibicao = []
-
-# Campos básicos
-if "ANO" in df_filtrado.columns:
-    colunas_selecionadas_para_exibicao.append("ANO")
-
-if tipo_nivel_agregacao_selecionado == "Escola":
-    colunas_base = [
-        "CODIGO DA ESCOLA",
-        "NOME DA ESCOLA",
-        "CODIGO DO MUNICIPIO",
-        "NOME DO MUNICIPIO",
-        "DEPENDENCIA ADMINISTRATIVA"
-    ]
-elif tipo_nivel_agregacao_selecionado == "Município":
-    colunas_base = [
-        "CODIGO DO MUNICIPIO",
-        "NOME DO MUNICIPIO",
-        "DEPENDENCIA ADMINISTRATIVA"
-    ]
-else:
-    colunas_base = [
-        "DEPENDENCIA ADMINISTRATIVA",
-        "CODIGO DA UF",
-        "NOME DA UF",
-    ]
-
-for col in colunas_base:
-    if col in df_filtrado.columns:
-        colunas_selecionadas_para_exibicao.append(col)
+    modificar_altura_tabela = st.checkbox("Ajustar altura da tabela", value=False,
+                                          help="Permite ajustar a altura da tabela de dados")
+    if modificar_altura_tabela:
+        altura_tabela = st.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
     else:
-        st.sidebar.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_nivel_agregacao_selecionado}")
+        altura_tabela = 600
 
-for col in df_filtrado.columns:
-    if "número de matrículas da educação básica" in col.lower().replace('\n', ''):
-        if col not in colunas_selecionadas_para_exibicao:
+    # Colunas para exibir na tabela
+    st.markdown("### Colunas adicionais")
+    colunas_selecionadas_para_exibicao = []
+
+    # Campos básicos
+    if "ANO" in df_filtrado.columns:
+        colunas_selecionadas_para_exibicao.append("ANO")
+
+    # Definir colunas base de acordo com o tipo de visualização
+    if tipo_nivel_agregacao_selecionado == "Escola":
+        colunas_base = [
+            "CODIGO DA ESCOLA",
+            "NOME DA ESCOLA",
+            "CODIGO DO MUNICIPIO",
+            "NOME DO MUNICIPIO",
+            "DEPENDENCIA ADMINISTRATIVA"
+        ]
+    elif tipo_nivel_agregacao_selecionado == "Município":
+        colunas_base = [
+            "CODIGO DO MUNICIPIO",
+            "NOME DO MUNICIPIO",
+            "DEPENDENCIA ADMINISTRATIVA"
+        ]
+    else:  # Estado
+        colunas_base = [
+            "DEPENDENCIA ADMINISTRATIVA",
+            "CODIGO DA UF",
+            "NOME DA UF",
+        ]
+
+    # Adicionar apenas colunas que existem no DataFrame
+    for col in colunas_base:
+        if col in df_filtrado.columns:
             colunas_selecionadas_para_exibicao.append(col)
-            break
+        else:
+            st.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_nivel_agregacao_selecionado}")
 
-if (coluna_matriculas_por_etapa in df_filtrado.columns and
-    coluna_matriculas_por_etapa not in colunas_selecionadas_para_exibicao):
-    colunas_selecionadas_para_exibicao.append(coluna_matriculas_por_etapa)
+    # Tentar encontrar a coluna de matrículas principal independentemente da formatação
+    for col in df_filtrado.columns:
+        if "número de matrículas da educação básica" in col.lower().replace('\n', ''):
+            if col not in colunas_selecionadas_para_exibicao:
+                colunas_selecionadas_para_exibicao.append(col)
+                break
 
-conjunto_total_de_colunas = [
-    c for c in df_filtrado.columns
-    if c not in colunas_selecionadas_para_exibicao
-]
+    # Inclui a coluna de dados principal (caso exista)
+    if coluna_matriculas_por_etapa in df_filtrado.columns and coluna_matriculas_por_etapa not in colunas_selecionadas_para_exibicao:
+        colunas_selecionadas_para_exibicao.append(coluna_matriculas_por_etapa)
 
-colunas_adicionais_selecionadas_para_exibicao = st.sidebar.multiselect(
-    "Selecionar colunas adicionais:",
-    conjunto_total_de_colunas,
-    placeholder="Selecionar colunas adicionais..."
-)
-if colunas_adicionais_selecionadas_para_exibicao:
-    colunas_selecionadas_para_exibicao.extend(colunas_adicionais_selecionadas_para_exibicao)
+    # Multiselect de colunas opcionais
+    conjunto_total_de_colunas = [c for c in df_filtrado.columns if c not in colunas_selecionadas_para_exibicao]
+    colunas_adicionais_selecionadas_para_exibicao = st.multiselect(
+        "Selecionar colunas adicionais:",
+        conjunto_total_de_colunas,
+        placeholder="Selecionar colunas adicionais..."
+    )
+    if colunas_adicionais_selecionadas_para_exibicao:
+        colunas_selecionadas_para_exibicao.extend(colunas_adicionais_selecionadas_para_exibicao)
 
-colunas_matriculas_por_etapa_existentes = [
-    c for c in colunas_selecionadas_para_exibicao
-    if c in df_filtrado.columns
-]
-if len(colunas_matriculas_por_etapa_existentes) != len(colunas_selecionadas_para_exibicao):
-    st.sidebar.warning("Algumas colunas selecionadas não existem no DataFrame atual.")
+    # Garantir que todas as colunas selecionadas existam no DataFrame
+    colunas_matriculas_por_etapa_existentes = [c for c in colunas_selecionadas_para_exibicao if
+                                               c in df_filtrado.columns]
+    if len(colunas_matriculas_por_etapa_existentes) != len(colunas_selecionadas_para_exibicao):
+        st.warning("Algumas colunas selecionadas não existem no DataFrame atual.")
 
 # -------------------------------
 # Botões de Download
