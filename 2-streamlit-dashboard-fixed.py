@@ -1125,12 +1125,12 @@ else:
     if tipo_visualizacao != "Estado":
         config_col1, config_col2 = st.columns([1, 3])
 
-        with config_col1:
-            registros_por_pagina = st.selectbox(
-                "Registros por página:",
-                options=[10, 25, 50, 100, "Todos"],
-                index=1  # Padrão: 25
-            )
+        # with config_col1:
+        #     registros_por_pagina = st.selectbox(
+        #         "Registros por página:",
+        #         options=[10, 25, 50, 100, "Todos"],
+        #         index=1  # Padrão: 25
+        #     )
 
         with config_col2:
             opcoes_ordenacao = ["Maior valor", "Menor valor"]
