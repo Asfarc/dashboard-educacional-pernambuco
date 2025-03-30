@@ -275,7 +275,7 @@ st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
-def formatar_numero(numero):
+def aplicar_padrao_numerico_brasileiro(numero):
     """
     Formata números grandes adicionando separadores de milhar em padrão BR:
     Ex.: 1234567 -> '1.234.567'
@@ -305,7 +305,7 @@ def formatar_numero(numero):
 
 
 @st.cache_data(ttl=3600)  # Cache por 1 hora
-def carregar_dados():
+def importar_arquivos_parquet():
     """
     Carrega os dados das planilhas no formato Parquet.
     - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
@@ -356,7 +356,7 @@ def carregar_dados():
 
 
 @st.cache_data
-def carregar_mapeamento_colunas():
+def ler_dicionario_de_etapas():
     """
     Carrega o mapeamento de colunas a partir do arquivo JSON.
     """
@@ -369,19 +369,18 @@ def carregar_mapeamento_colunas():
         ]
 
         for diretorio in diretorios_possiveis:
-            json_path = os.path.join(diretorio, "mapeamento_colunas.json")
+            json_path = os.path.join(diretorio, "dicionario_das_etapas_de_ensino.json")
             if os.path.exists(json_path):
                 with open(json_path, "r", encoding="utf-8") as f:
                     return json.load(f)
 
-        raise FileNotFoundError("Arquivo mapeamento_colunas.json não encontrado")
+        raise FileNotFoundError("Arquivo dicionario_das_etapas_de_ensino.json não encontrado")
 
     except Exception as e:
         st.error(f"Erro ao carregar o mapeamento de colunas: {e}")
         st.stop()
 
-
-def criar_mapeamento_colunas(df):
+def padronizar_dicionario_de_etapas(df):
     """
     Ajusta o mapeamento de colunas original para considerar
     possíveis variações de nome nas colunas do DF real.
@@ -404,7 +403,7 @@ def criar_mapeamento_colunas(df):
 
         return nome_padrao
 
-    mapeamento_base = carregar_mapeamento_colunas()
+    mapeamento_base = ler_dicionario_de_etapas()
     mapeamento_ajustado = {}
 
     for etapa, config in mapeamento_base.items():
@@ -425,8 +424,7 @@ def criar_mapeamento_colunas(df):
 
     return mapeamento_ajustado
 
-
-def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
+def procurar_coluna_matriculas_por_etapa(etapa, subetapa, serie, mapeamento):
     """
     Retorna o nome da coluna que contém os dados de matrículas
     de acordo com a etapa, subetapa e série.
@@ -453,7 +451,7 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
     return series_subetapa[serie]
 
 
-def verificar_coluna_existe(df, coluna_nome):
+def confirmar_existencia_coluna_matriculas_por_etapa(df, coluna_nome):
     """
     Verifica se a coluna existe no DataFrame,
     levando em conta variações de maiúsculas/minúsculas e quebras de linha.
@@ -474,7 +472,7 @@ def verificar_coluna_existe(df, coluna_nome):
     return False, coluna_nome
 
 
-def converter_df_para_csv(df):
+def gerar_arquivo_csv(df):
     """
     Converte o DataFrame para CSV em memória e retorna como bytes.
     """
@@ -487,7 +485,7 @@ def converter_df_para_csv(df):
         return "Erro na conversão".encode('utf-8')
 
 
-def converter_df_para_excel(df):
+def gerar_planilha_excel(df):
     """
     Converte o DataFrame para Excel em memória e retorna como bytes.
     Adiciona formatações específicas na planilha.
@@ -551,7 +549,7 @@ try:
     municipio_df = pd.DataFrame()
 
     # Carregar os dados
-    escolas_df, estado_df, municipio_df = carregar_dados()
+    escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
 
     # Verificação adicional para garantir que os DataFrames não estão vazios
     if escolas_df.empty:
@@ -584,31 +582,31 @@ except Exception as e:
 # ======================================
 st.sidebar.title("Filtros")
 
-tipo_visualizacao = st.sidebar.radio(
+tipo_nivel_agregacao_selecionado = st.sidebar.radio(
     "Nível de Agregação:",
     ["Escola", "Município", "Estado"]
 )
 
-if tipo_visualizacao == "Escola":
+if tipo_nivel_agregacao_selecionado == "Escola":
     df = escolas_df.copy()  # Usar .copy() para evitar SettingWithCopyWarning
-elif tipo_visualizacao == "Município":
+elif tipo_nivel_agregacao_selecionado == "Município":
     df = municipio_df.copy()
 else:  # Estado
     df = estado_df.copy()
 
 # Verificar se o DataFrame selecionado não está vazio
 if df.empty:
-    st.error(f"Não há dados disponíveis para o nível de agregação '{tipo_visualizacao}'.")
+    st.error(f"Não há dados disponíveis para o nível de agregação '{tipo_nivel_agregacao_selecionado}'.")
     st.stop()
 
 # Debug: mostrar as primeiras linhas e colunas do DataFrame
 if st.sidebar.checkbox("Mostrar informações de debug", value=False):
-    st.sidebar.write(f"Colunas no DataFrame de {tipo_visualizacao}:")
+    st.sidebar.write(f"Colunas no DataFrame de {tipo_nivel_agregacao_selecionado}:")
     st.sidebar.write(df.columns.tolist())
-    st.sidebar.write(f"Primeiras linhas do DataFrame de {tipo_visualizacao}:")
+    st.sidebar.write(f"Primeiras linhas do DataFrame de {tipo_nivel_agregacao_selecionado}:")
     st.sidebar.write(df.head(2))
 
-mapeamento_colunas = criar_mapeamento_colunas(df)
+dicionario_das_etapas_de_ensino = padronizar_dicionario_de_etapas(df)
 
 # Filtro do Ano
 if "ANO" in df.columns:
@@ -642,18 +640,18 @@ else:
     st.stop()
 
 # Filtro de Etapa, Subetapa e Série
-etapas_disponiveis = list(mapeamento_colunas.keys())
-etapa_selecionada = st.sidebar.selectbox(
+lista_etapas_ensino = list(dicionario_das_etapas_de_ensino.keys())
+etapa_ensino_selecionada = st.sidebar.selectbox(
     "Etapa de Ensino:",
-    etapas_disponiveis
+    lista_etapas_ensino
 )
 
-if etapa_selecionada not in mapeamento_colunas:
-    st.error(f"A etapa '{etapa_selecionada}' não foi encontrada no mapeamento de colunas.")
+if etapa_ensino_selecionada not in dicionario_das_etapas_de_ensino:
+    st.error(f"A etapa '{etapa_ensino_selecionada}' não foi encontrada no mapeamento de colunas.")
     st.stop()
 
-if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[etapa_selecionada]["subetapas"]:
-    subetapas_disponiveis = list(mapeamento_colunas[etapa_selecionada]["subetapas"].keys())
+if "subetapas" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada] and dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"]:
+    subetapas_disponiveis = list(dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"].keys())
     subetapa_selecionada = st.sidebar.selectbox(
         "Subetapa:",
         ["Todas"] + subetapas_disponiveis
@@ -661,16 +659,16 @@ if "subetapas" in mapeamento_colunas[etapa_selecionada] and mapeamento_colunas[e
 else:
     subetapa_selecionada = "Todas"
 
-series_disponiveis = []
+lista_de_series_das_etapas_de_ensino = []
 if (
     subetapa_selecionada != "Todas"
-    and "series" in mapeamento_colunas[etapa_selecionada]
-    and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]
+    and "series" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]
+    and subetapa_selecionada in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"]
 ):
-    series_disponiveis = list(mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada].keys())
+    lista_de_series_das_etapas_de_ensino = list(dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"][subetapa_selecionada].keys())
     serie_selecionada = st.sidebar.selectbox(
         "Série:",
-        ["Todas"] + series_disponiveis
+        ["Todas"] + lista_de_series_das_etapas_de_ensino
     )
 else:
     serie_selecionada = "Todas"
@@ -710,15 +708,15 @@ else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
 # Identifica a coluna de dados baseada em Etapa / Subetapa / Série
-coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
-coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
+coluna_matriculas_por_etapa = procurar_coluna_matriculas_por_etapa(etapa_ensino_selecionada, subetapa_selecionada, serie_selecionada, dicionario_das_etapas_de_ensino)
+coluna_existe, coluna_real = confirmar_existencia_coluna_matriculas_por_etapa(df_filtrado, coluna_matriculas_por_etapa)
 
 # Verificar se a coluna de dados existe e tratar adequadamente
 if coluna_existe:
-    coluna_dados = coluna_real
+    coluna_matriculas_por_etapa = coluna_real
     try:
         # Filtrar apenas matrículas > 0 (se numérico)
-        df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
+        df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_matriculas_por_etapa], errors='coerce') > 0]
         if df_filtrado.empty:
             st.error("Não foi possível encontrar dados para a etapa selecionada.")
             st.stop()
@@ -735,23 +733,23 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Configurações da tabela")
 
-ajustar_altura = st.sidebar.checkbox("Ajustar altura da tabela", value=False,
+modificar_altura_tabela = st.sidebar.checkbox("Ajustar altura da tabela", value=False,
                                      help="Permite ajustar a altura da tabela de dados")
-if ajustar_altura:
+if modificar_altura_tabela:
     altura_tabela = st.sidebar.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
 else:
     altura_tabela = 600
 
 # Colunas para exibir na tabela
 st.sidebar.markdown("### Colunas adicionais")
-colunas_tabela = []
+colunas_selecionadas_para_exibicao = []
 
 # Campos básicos
 if "ANO" in df_filtrado.columns:
-    colunas_tabela.append("ANO")
+    colunas_selecionadas_para_exibicao.append("ANO")
 
 # Definir colunas base de acordo com o tipo de visualização
-if tipo_visualizacao == "Escola":
+if tipo_nivel_agregacao_selecionado == "Escola":
     colunas_base = [
         "CODIGO DA ESCOLA",
         "NOME DA ESCOLA",
@@ -759,7 +757,7 @@ if tipo_visualizacao == "Escola":
         "NOME DO MUNICIPIO",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
-elif tipo_visualizacao == "Município":
+elif tipo_nivel_agregacao_selecionado == "Município":
     colunas_base = [
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
@@ -775,34 +773,34 @@ else:  # Estado
 # Adicionar apenas colunas que existem no DataFrame
 for col in colunas_base:
     if col in df_filtrado.columns:
-        colunas_tabela.append(col)
+        colunas_selecionadas_para_exibicao.append(col)
     else:
-        st.sidebar.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_visualizacao}")
+        st.sidebar.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_nivel_agregacao_selecionado}")
 
 # Tentar encontrar a coluna de matrículas principal independentemente da formatação
 for col in df_filtrado.columns:
     if "número de matrículas da educação básica" in col.lower().replace('\n', ''):
-        if col not in colunas_tabela:
-            colunas_tabela.append(col)
+        if col not in colunas_selecionadas_para_exibicao:
+            colunas_selecionadas_para_exibicao.append(col)
             break
 
 # Inclui a coluna de dados principal (caso exista)
-if coluna_dados in df_filtrado.columns and coluna_dados not in colunas_tabela:
-    colunas_tabela.append(coluna_dados)
+if coluna_matriculas_por_etapa in df_filtrado.columns and coluna_matriculas_por_etapa not in colunas_selecionadas_para_exibicao:
+    colunas_selecionadas_para_exibicao.append(coluna_matriculas_por_etapa)
 
 # Multiselect de colunas opcionais
-todas_colunas_possiveis = [c for c in df_filtrado.columns if c not in colunas_tabela]
-colunas_adicionais_selecionadas = st.sidebar.multiselect(
+conjunto_total_de_colunas = [c for c in df_filtrado.columns if c not in colunas_selecionadas_para_exibicao]
+colunas_adicionais_selecionadas_para_exibicao = st.sidebar.multiselect(
     "Selecionar colunas adicionais:",
-    todas_colunas_possiveis,
+    conjunto_total_de_colunas,
     placeholder="Selecionar colunas adicionais..."
 )
-if colunas_adicionais_selecionadas:
-    colunas_tabela.extend(colunas_adicionais_selecionadas)
+if colunas_adicionais_selecionadas_para_exibicao:
+    colunas_selecionadas_para_exibicao.extend(colunas_adicionais_selecionadas_para_exibicao)
 
 # Garantir que todas as colunas selecionadas existam no DataFrame
-colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
-if len(colunas_existentes) != len(colunas_tabela):
+colunas_matriculas_por_etapa_existentes = [c for c in colunas_selecionadas_para_exibicao if c in df_filtrado.columns]
+if len(colunas_matriculas_por_etapa_existentes) != len(colunas_selecionadas_para_exibicao):
     st.sidebar.warning("Algumas colunas selecionadas não existem no DataFrame atual.")
 
 # -------------------------------
@@ -819,13 +817,13 @@ if 'filtro_matriculas_tipo' not in st.session_state:
 try:
     # Verificar se a coluna de dados existe, considerando possíveis variações no nome
     coluna_existe = False
-    coluna_real = coluna_dados
+    coluna_real = coluna_matriculas_por_etapa
 
-    if coluna_dados in df_filtrado.columns:
+    if coluna_matriculas_por_etapa in df_filtrado.columns:
         coluna_existe = True
     else:
         # Busca alternativa considerando quebras de linha
-        coluna_normalizada = coluna_dados.replace('\n', '').lower().strip()
+        coluna_normalizada = coluna_matriculas_por_etapa.replace('\n', '').lower().strip()
         for col in df_filtrado.columns:
             if col.replace('\n', '').lower().strip() == coluna_normalizada:
                 coluna_existe = True
@@ -834,7 +832,7 @@ try:
 
     # Criar cópia do DataFrame para exibição e downloads
     with pd.option_context('mode.chained_assignment', None):
-        df_filtrado_tabela = df_filtrado[colunas_existentes].copy()
+        df_filtrado_tabela = df_filtrado[colunas_matriculas_por_etapa_existentes].copy()
 
         # Converter apenas colunas de dados para numérico
         for col in df_filtrado_tabela.columns:
@@ -854,7 +852,7 @@ try:
         for col in tabela_exibicao.columns:
             if col.startswith("Número de"):
                 tabela_exibicao[col] = tabela_exibicao[col].apply(
-                    lambda x: formatar_numero(x) if pd.notnull(x) else "-"
+                    lambda x: aplicar_padrao_numerico_brasileiro(x) if pd.notnull(x) else "-"
                 )
 
     # Verificar se a tabela está vazia
@@ -863,12 +861,12 @@ try:
     else:
         # Preparar para download CSV
         try:
-            csv_data = converter_df_para_csv(tabela_dados)
+            csv_data = gerar_arquivo_csv(tabela_dados)
             with col1:
                 st.download_button(
                     label="Baixar CSV",
                     data=csv_data,
-                    file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.csv',
+                    file_name=f'dados_{etapa_ensino_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.csv',
                     mime='text/csv',
                 )
         except Exception as e:
@@ -876,12 +874,12 @@ try:
 
         # Preparar para download Excel
         try:
-            excel_data = converter_df_para_excel(tabela_dados)
+            excel_data = gerar_planilha_excel(tabela_dados)
             with col2:
                 st.download_button(
                     label="Baixar Excel",
                     data=excel_data,
-                    file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
+                    file_name=f'dados_{etapa_ensino_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 )
         except Exception as e:
@@ -890,7 +888,7 @@ try:
 except Exception as e:
     st.error(f"Erro ao preparar dados para download: {str(e)}")
     if 'tabela_dados' not in locals() or 'tabela_exibicao' not in locals():
-        tabela_dados = df_filtrado[colunas_existentes].copy() if not df_filtrado.empty else pd.DataFrame()
+        tabela_dados = df_filtrado[colunas_matriculas_por_etapa_existentes].copy() if not df_filtrado.empty else pd.DataFrame()
         tabela_exibicao = tabela_dados.copy()
 
 # -------------------------------
@@ -902,19 +900,19 @@ st.title(TITULO_DASHBOARD)
 # Seção de Indicadores (KPIs)
 # -------------------------------
 st.markdown("## Indicadores")
-kpi_container = st.container()
-with kpi_container:
+container_indicadores_principais = st.container()
+with container_indicadores_principais:
     col1, col2, col3 = st.columns(3)
 
     # KPI 1: Total de Matrículas
     try:
-        if coluna_dados in df_filtrado.columns:
-            total_matriculas = df_filtrado[coluna_dados].sum()
+        if coluna_matriculas_por_etapa in df_filtrado.columns:
+            total_matriculas = df_filtrado[coluna_matriculas_por_etapa].sum()
             with col1:
                 st.markdown(
                     f'<div class="kpi-container">'
                     f'<p class="kpi-title">{ROTULO_TOTAL_MATRICULAS}</p>'
-                    f'<p class="kpi-value">{formatar_numero(total_matriculas)}</p>'
+                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_matriculas)}</p>'
                     f'<span class="kpi-badge">Total</span>'
                     f'</div>', unsafe_allow_html=True
                 )
@@ -943,14 +941,14 @@ with kpi_container:
     # KPI 2: Média
     with col2:
         try:
-            if coluna_dados in df_filtrado.columns:
-                if tipo_visualizacao == "Escola":
+            if coluna_matriculas_por_etapa in df_filtrado.columns:
+                if tipo_nivel_agregacao_selecionado == "Escola":
                     if len(df_filtrado) > 0:
-                        media_por_escola = df_filtrado[coluna_dados].mean()
+                        media_por_escola = df_filtrado[coluna_matriculas_por_etapa].mean()
                         st.markdown(
                             f'<div class="kpi-container">'
                             f'<p class="kpi-title">{ROTULO_MEDIA_POR_ESCOLA}</p>'
-                            f'<p class="kpi-value">{formatar_numero(media_por_escola)}</p>'
+                            f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(media_por_escola)}</p>'
                             f'<span class="kpi-badge">Média</span>'
                             f'</div>',
                             unsafe_allow_html=True
@@ -966,14 +964,14 @@ with kpi_container:
                         )
                 else:
                     if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                        if not df_filtrado.empty and coluna_dados in df_filtrado.columns:
-                            media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
+                        if not df_filtrado.empty and coluna_matriculas_por_etapa in df_filtrado.columns:
+                            media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_matriculas_por_etapa].mean()
                             if not media_por_dependencia.empty:
                                 media_geral = media_por_dependencia.mean()
                                 st.markdown(
                                     f'<div class="kpi-container">'
                                     f'<p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p>'
-                                    f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
+                                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(media_geral)}</p>'
                                     f'<span class="kpi-badge">Média</span>'
                                     f'</div>',
                                     unsafe_allow_html=True
@@ -997,12 +995,12 @@ with kpi_container:
                                 unsafe_allow_html=True
                             )
                     else:
-                        if not df_filtrado.empty and coluna_dados in df_filtrado.columns:
-                            media_geral = df_filtrado[coluna_dados].mean()
+                        if not df_filtrado.empty and coluna_matriculas_por_etapa in df_filtrado.columns:
+                            media_geral = df_filtrado[coluna_matriculas_por_etapa].mean()
                             st.markdown(
                                 f'<div class="kpi-container">'
                                 f'<p class="kpi-title">Média de Matrículas</p>'
-                                f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
+                                f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(media_geral)}</p>'
                                 f'<span class="kpi-badge">Média</span>'
                                 f'</div>',
                                 unsafe_allow_html=True
@@ -1039,33 +1037,33 @@ with kpi_container:
     # KPI 3: Depende do tipo de visualização
     with col3:
         try:
-            if tipo_visualizacao == "Escola":
+            if tipo_nivel_agregacao_selecionado == "Escola":
                 total_escolas = len(df_filtrado)
                 st.markdown(
                     f'<div class="kpi-container">'
                     f'<p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p>'
-                    f'<p class="kpi-value">{formatar_numero(total_escolas)}</p>'
+                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_escolas)}</p>'
                     f'<span class="kpi-badge">Contagem</span>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
-            elif tipo_visualizacao == "Município":
+            elif tipo_nivel_agregacao_selecionado == "Município":
                 total_municipios = len(df_filtrado)
                 st.markdown(
                     f'<div class="kpi-container">'
                     f'<p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p>'
-                    f'<p class="kpi-value">{formatar_numero(total_municipios)}</p>'
+                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_municipios)}</p>'
                     f'<span class="kpi-badge">Contagem</span>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
             else:  # Estado
-                if coluna_dados in df_filtrado.columns:
-                    max_valor = df_filtrado[coluna_dados].max()
+                if coluna_matriculas_por_etapa in df_filtrado.columns:
+                    max_valor = df_filtrado[coluna_matriculas_por_etapa].max()
                     st.markdown(
                         f'<div class="kpi-container">'
                         f'<p class="kpi-title">{ROTULO_MAXIMO_MATRICULAS}</p>'
-                        f'<p class="kpi-value">{formatar_numero(max_valor)}</p>'
+                        f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(max_valor)}</p>'
                         f'<span class="kpi-badge">Máximo</span>'
                         f'</div>',
                         unsafe_allow_html=True
@@ -1080,7 +1078,7 @@ with kpi_container:
                         unsafe_allow_html=True
                     )
         except Exception as e:
-            if tipo_visualizacao == "Escola":
+            if tipo_nivel_agregacao_selecionado == "Escola":
                 st.markdown(
                     '<div class="kpi-container">'
                     '<p class="kpi-title">Total de Escolas</p>'
@@ -1089,7 +1087,7 @@ with kpi_container:
                     '</div>',
                     unsafe_allow_html=True
                 )
-            elif tipo_visualizacao == "Município":
+            elif tipo_nivel_agregacao_selecionado == "Município":
                 st.markdown(
                     '<div class="kpi-container">'
                     '<p class="kpi-title">Total de Municípios</p>'
@@ -1119,10 +1117,10 @@ if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
     st.warning("Não há dados para exibir com os filtros selecionados.")
 else:
     st.markdown('<div class="table-container">', unsafe_allow_html=True)
-    st.markdown(f'<div class="table-header">Dados Detalhados - {tipo_visualizacao}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="table-header">Dados Detalhados - {tipo_nivel_agregacao_selecionado}</div>', unsafe_allow_html=True)
 
     # Configurações de paginação e ordenação ANTES dos filtros
-    if tipo_visualizacao != "Estado":
+    if tipo_nivel_agregacao_selecionado != "Estado":
         config_col1, config_col2 = st.columns([1, 3])
 
         with config_col1:
@@ -1161,7 +1159,7 @@ else:
                                                                   ascending=("A-Z" in ordem_tabela))
 
     # Caso específico para nível "Estado"
-    if tipo_visualizacao == "Estado":
+    if tipo_nivel_agregacao_selecionado == "Estado":
         # [Código para Estado permanece igual]
         pass
 
@@ -1173,7 +1171,6 @@ else:
 
             # Aplicar filtros de texto por coluna alinhados diretamente acima da tabela
             # -----------------------------------------------------------------------
-            import re  # Certifique-se de ter import re no topo do seu código
 
             col_filters = {}
 
@@ -1292,7 +1289,7 @@ else:
     #             if coluna_real in df_texto_filtrado.columns:
     #                 total_col = pd.to_numeric(tabela_dados.loc[df_texto_filtrado.index, coluna_real],
     #                                           errors='coerce').sum()
-    #                 st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
+    #                 st.markdown(f"**Total de {coluna_real}:** {aplicar_padrao_numerico_brasileiro(total_col)}")
     #         else:
     #             st.warning("Nenhum registro encontrado com os filtros aplicados.")
     #
@@ -1330,7 +1327,7 @@ else:
     )
 
 # Tempo de execução
-tempo_final = time.time()
-tempo_total = round(tempo_final - st.session_state.get('tempo_inicio', tempo_final), 2)
-st.session_state['tempo_inicio'] = tempo_final
-st.caption(f"Tempo de processamento: {tempo_total} segundos")
+registro_conclusao_processamento = time.time()
+tempo_total_processamento_segundos = round(registro_conclusao_processamento - st.session_state.get('tempo_inicio', registro_conclusao_processamento), 2)
+st.session_state['tempo_inicio'] = registro_conclusao_processamento
+st.caption(f"Tempo de processamento: {tempo_total_processamento_segundos} segundos")
