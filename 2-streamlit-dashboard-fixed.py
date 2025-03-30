@@ -220,6 +220,7 @@ h2 {
 
 st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
 
+
 # -------------------------------
 # Funções Auxiliares
 # -------------------------------
@@ -460,16 +461,31 @@ def converter_df_para_excel(df):
 
         return output.getvalue()
     except Exception as e:
-        st.error(f"Erro ao converter para Excel: {str(e)}")
+        st.error(f"Erro ao preparar Excel para download: {str(e)}")
         output = io.BytesIO()
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
+
 
 # -------------------------------
 # Carregamento de Dados
 # -------------------------------
 try:
     escolas_df, estado_df, municipio_df = carregar_dados()
+
+    # Verificação adicional para garantir que os DataFrames não estão vazios
+    if escolas_df.empty:
+        st.error("O DataFrame de escolas está vazio.")
+    if municipio_df.empty:
+        st.error("O DataFrame de municípios está vazio.")
+    if estado_df.empty:
+        st.error("O DataFrame de estados está vazio.")
+
+    # Verificar colunas críticas em cada DataFrame
+    for df_nome, df in [("escolas", escolas_df), ("município", municipio_df), ("estado", estado_df)]:
+        if "ANO" not in df.columns:
+            st.error(f"Coluna 'ANO' não encontrada no DataFrame de {df_nome}.")
+
 except Exception as e:
     st.error(f"Erro ao carregar dados: {str(e)}")
     st.stop()
@@ -485,11 +501,23 @@ tipo_visualizacao = st.sidebar.radio(
 )
 
 if tipo_visualizacao == "Escola":
-    df = escolas_df
+    df = escolas_df.copy()  # Usar .copy() para evitar SettingWithCopyWarning
 elif tipo_visualizacao == "Município":
-    df = municipio_df
-else:
-    df = estado_df
+    df = municipio_df.copy()
+else:  # Estado
+    df = estado_df.copy()
+
+# Verificar se o DataFrame selecionado não está vazio
+if df.empty:
+    st.error(f"Não há dados disponíveis para o nível de agregação '{tipo_visualizacao}'.")
+    st.stop()
+
+# Debug: mostrar as primeiras linhas e colunas do DataFrame
+if st.sidebar.checkbox("Mostrar informações de debug", value=False):
+    st.sidebar.write(f"Colunas no DataFrame de {tipo_visualizacao}:")
+    st.sidebar.write(df.columns.tolist())
+    st.sidebar.write(f"Primeiras linhas do DataFrame de {tipo_visualizacao}:")
+    st.sidebar.write(df.head(2))
 
 mapeamento_colunas = criar_mapeamento_colunas(df)
 
@@ -594,9 +622,15 @@ else:
 coluna_dados = obter_coluna_dados(etapa_selecionada, subetapa_selecionada, serie_selecionada, mapeamento_colunas)
 coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
 
+# Verificar se a coluna de dados existe e tratar adequadamente
 if coluna_existe:
     coluna_dados = coluna_real
-    df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
+    # Verificar se há dados válidos antes de filtrar
+    try:
+        df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
+    except Exception as e:
+        st.warning(f"Erro ao filtrar dados por valor positivo: {e}")
+        # Em caso de erro, não filtra
 else:
     st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
     coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
@@ -604,7 +638,11 @@ else:
     if coluna_existe:
         coluna_dados = coluna_principal_real
         st.info(f"Usando '{coluna_dados}' como alternativa")
-        df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
+        try:
+            df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
+        except Exception as e:
+            st.warning(f"Erro ao filtrar dados por valor positivo: {e}")
+            # Em caso de erro, não filtra
     else:
         st.error("Não foi possível encontrar dados para a etapa selecionada.")
         st.stop()
@@ -615,7 +653,8 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Configurações da tabela")
 
-ajustar_altura = st.sidebar.checkbox("Ajustar altura da tabela", value=False, help="Permite ajustar a altura da tabela de dados")
+ajustar_altura = st.sidebar.checkbox("Ajustar altura da tabela", value=False,
+                                     help="Permite ajustar a altura da tabela de dados")
 if ajustar_altura:
     altura_tabela = st.sidebar.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
 else:
@@ -629,6 +668,7 @@ colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
 
+# Definir colunas base de acordo com o tipo de visualização
 if tipo_visualizacao == "Escola":
     colunas_base = [
         "CODIGO DA ESCOLA",
@@ -647,16 +687,19 @@ elif tipo_visualizacao == "Município":
         "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
-else:
+else:  # Estado
     colunas_base = [
         "CODIGO DA UF",
         "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
 
+# Adicionar apenas colunas que existem no DataFrame
 for col in colunas_base:
     if col in df_filtrado.columns:
         colunas_tabela.append(col)
+    else:
+        st.sidebar.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_visualizacao}")
 
 # Inclui a coluna de dados principal (caso exista)
 if coluna_dados in df_filtrado.columns:
@@ -672,47 +715,62 @@ colunas_adicionais_selecionadas = st.sidebar.multiselect(
 if colunas_adicionais_selecionadas:
     colunas_tabela.extend(colunas_adicionais_selecionadas)
 
+# Garantir que todas as colunas selecionadas existam no DataFrame
+colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
+if len(colunas_existentes) != len(colunas_tabela):
+    st.sidebar.warning("Algumas colunas selecionadas não existem no DataFrame atual.")
+
 # -------------------------------
 # Botões de Download
 # -------------------------------
 st.sidebar.markdown("### Download dos dados")
 col1, col2 = st.sidebar.columns(2)
 
-colunas_existentes = [c for c in colunas_tabela if c in df_filtrado.columns]
-
-if coluna_dados in df_filtrado.columns:
-    with pd.option_context('mode.chained_assignment', None):
-        df_filtrado_tabela = df_filtrado[colunas_existentes].copy()
-        df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
-    tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
-    tabela_exibicao = tabela_dados.copy()
-else:
-    tabela_dados = df_filtrado[colunas_existentes].copy()
-    tabela_exibicao = tabela_dados.copy()
-
+# Preparar tabela para exibição e download
 try:
-    csv_data = converter_df_para_csv(tabela_dados)
-    with col1:
-        st.download_button(
-            label="Baixar CSV",
-            data=csv_data,
-            file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.csv',
-            mime='text/csv',
-        )
-except Exception as e:
-    st.error(f"Erro ao preparar CSV para download: {str(e)}")
+    if coluna_dados in df_filtrado.columns:
+        with pd.option_context('mode.chained_assignment', None):
+            df_filtrado_tabela = df_filtrado[colunas_existentes].copy()
+            # Converter coluna de dados para numérico se existir
+            df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
+        # Ordenar por coluna de dados (descrescente)
+        tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
+        tabela_exibicao = tabela_dados.copy()
+    else:
+        tabela_dados = df_filtrado[colunas_existentes].copy()
+        tabela_exibicao = tabela_dados.copy()
 
-try:
-    excel_data = converter_df_para_excel(tabela_dados)
-    with col2:
-        st.download_button(
-            label="Baixar Excel",
-            data=excel_data,
-            file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        )
+    # Verificar se a tabela está vazia
+    if tabela_dados.empty:
+        st.sidebar.warning("Não há dados para download com os filtros atuais.")
+    else:
+        # Preparar para download CSV
+        try:
+            csv_data = converter_df_para_csv(tabela_dados)
+            with col1:
+                st.download_button(
+                    label="Baixar CSV",
+                    data=csv_data,
+                    file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.csv',
+                    mime='text/csv',
+                )
+        except Exception as e:
+            st.error(f"Erro ao preparar CSV para download: {str(e)}")
+
+        # Preparar para download Excel
+        try:
+            excel_data = converter_df_para_excel(tabela_dados)
+            with col2:
+                st.download_button(
+                    label="Baixar Excel",
+                    data=excel_data,
+                    file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                )
+        except Exception as e:
+            st.error(f"Erro ao preparar Excel para download: {str(e)}")
 except Exception as e:
-    st.error(f"Erro ao preparar Excel para download: {str(e)}")
+    st.error(f"Erro ao preparar dados para download: {str(e)}")
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
@@ -728,15 +786,26 @@ with kpi_container:
 
     # KPI 1: Total de Matrículas
     try:
-        total_matriculas = df_filtrado[coluna_dados].sum()
-        with col1:
-            st.markdown(
-                f'<div class="kpi-container">'
-                f'<p class="kpi-title">{ROTULO_TOTAL_MATRICULAS}</p>'
-                f'<p class="kpi-value">{formatar_numero(total_matriculas)}</p>'
-                f'<span class="kpi-badge">Total</span>'
-                f'</div>', unsafe_allow_html=True
-            )
+        if coluna_dados in df_filtrado.columns:
+            total_matriculas = df_filtrado[coluna_dados].sum()
+            with col1:
+                st.markdown(
+                    f'<div class="kpi-container">'
+                    f'<p class="kpi-title">{ROTULO_TOTAL_MATRICULAS}</p>'
+                    f'<p class="kpi-value">{formatar_numero(total_matriculas)}</p>'
+                    f'<span class="kpi-badge">Total</span>'
+                    f'</div>', unsafe_allow_html=True
+                )
+        else:
+            with col1:
+                st.markdown(
+                    '<div class="kpi-container">'
+                    '<p class="kpi-title">Total de Matrículas</p>'
+                    '<p class="kpi-value">-</p>'
+                    '<span class="kpi-badge">Coluna não disponível</span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
     except Exception as e:
         with col1:
             st.markdown(
@@ -748,9 +817,11 @@ with kpi_container:
                 unsafe_allow_html=True
             )
             st.caption(f"Erro ao calcular: {str(e)}")
-        # KPI 2: Média
-        with col2:
-            try:
+
+    # KPI 2: Média
+    with col2:
+        try:
+            if coluna_dados in df_filtrado.columns:
                 if tipo_visualizacao == "Escola":
                     if len(df_filtrado) > 0:
                         media_por_escola = df_filtrado[coluna_dados].mean()
@@ -773,12 +844,44 @@ with kpi_container:
                         )
                 else:
                     if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                        media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
-                        if not media_por_dependencia.empty:
-                            media_geral = media_por_dependencia.mean()
+                        # Verificar se há dados suficientes para o agrupamento
+                        if not df_filtrado.empty and coluna_dados in df_filtrado.columns:
+                            media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[
+                                coluna_dados].mean()
+                            if not media_por_dependencia.empty:
+                                media_geral = media_por_dependencia.mean()
+                                st.markdown(
+                                    f'<div class="kpi-container">'
+                                    f'<p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p>'
+                                    f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
+                                    f'<span class="kpi-badge">Média</span>'
+                                    f'</div>',
+                                    unsafe_allow_html=True
+                                )
+                            else:
+                                st.markdown(
+                                    '<div class="kpi-container">'
+                                    '<p class="kpi-title">Média de Matrículas</p>'
+                                    '<p class="kpi-value">-</p>'
+                                    '<span class="kpi-badge">Sem dados</span>'
+                                    '</div>',
+                                    unsafe_allow_html=True
+                                )
+                        else:
+                            st.markdown(
+                                '<div class="kpi-container">'
+                                '<p class="kpi-title">Média de Matrículas</p>'
+                                '<p class="kpi-value">-</p>'
+                                '<span class="kpi-badge">Dados insuficientes</span>'
+                                '</div>',
+                                unsafe_allow_html=True
+                            )
+                    else:
+                        if not df_filtrado.empty and coluna_dados in df_filtrado.columns:
+                            media_geral = df_filtrado[coluna_dados].mean()
                             st.markdown(
                                 f'<div class="kpi-container">'
-                                f'<p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p>'
+                                f'<p class="kpi-title">Média de Matrículas</p>'
                                 f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
                                 f'<span class="kpi-badge">Média</span>'
                                 f'</div>',
@@ -789,55 +892,55 @@ with kpi_container:
                                 '<div class="kpi-container">'
                                 '<p class="kpi-title">Média de Matrículas</p>'
                                 '<p class="kpi-value">-</p>'
-                                '<span class="kpi-badge">Sem dados</span>'
+                                '<span class="kpi-badge">Dados insuficientes</span>'
                                 '</div>',
                                 unsafe_allow_html=True
                             )
-                    else:
-                        media_geral = df_filtrado[coluna_dados].mean()
-                        st.markdown(
-                            f'<div class="kpi-container">'
-                            f'<p class="kpi-title">Média de Matrículas</p>'
-                            f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
-                            f'<span class="kpi-badge">Média</span>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-            except Exception as e:
+            else:
                 st.markdown(
                     '<div class="kpi-container">'
                     '<p class="kpi-title">Média de Matrículas</p>'
                     '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
+                    '<span class="kpi-badge">Coluna não disponível</span>'
                     '</div>',
                     unsafe_allow_html=True
                 )
-                st.caption(f"Erro ao calcular: {str(e)}")
+        except Exception as e:
+            st.markdown(
+                '<div class="kpi-container">'
+                '<p class="kpi-title">Média de Matrículas</p>'
+                '<p class="kpi-value">-</p>'
+                '<span class="kpi-badge">Erro</span>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+            st.caption(f"Erro ao calcular: {str(e)}")
 
-        # KPI 3: Depende do tipo de visualização
-        with col3:
-            try:
-                if tipo_visualizacao == "Escola":
-                    total_escolas = len(df_filtrado)
-                    st.markdown(
-                        f'<div class="kpi-container">'
-                        f'<p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p>'
-                        f'<p class="kpi-value">{formatar_numero(total_escolas)}</p>'
-                        f'<span class="kpi-badge">Contagem</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                elif tipo_visualizacao == "Município":
-                    total_municipios = len(df_filtrado)
-                    st.markdown(
-                        f'<div class="kpi-container">'
-                        f'<p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p>'
-                        f'<p class="kpi-value">{formatar_numero(total_municipios)}</p>'
-                        f'<span class="kpi-badge">Contagem</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                else:  # Estado
+    # KPI 3: Depende do tipo de visualização
+    with col3:
+        try:
+            if tipo_visualizacao == "Escola":
+                total_escolas = len(df_filtrado)
+                st.markdown(
+                    f'<div class="kpi-container">'
+                    f'<p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p>'
+                    f'<p class="kpi-value">{formatar_numero(total_escolas)}</p>'
+                    f'<span class="kpi-badge">Contagem</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+            elif tipo_visualizacao == "Município":
+                total_municipios = len(df_filtrado)
+                st.markdown(
+                    f'<div class="kpi-container">'
+                    f'<p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p>'
+                    f'<p class="kpi-value">{formatar_numero(total_municipios)}</p>'
+                    f'<span class="kpi-badge">Contagem</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+            else:  # Estado
+                if coluna_dados in df_filtrado.columns:
                     max_valor = df_filtrado[coluna_dados].max()
                     st.markdown(
                         f'<div class="kpi-container">'
@@ -847,44 +950,55 @@ with kpi_container:
                         f'</div>',
                         unsafe_allow_html=True
                     )
-            except Exception as e:
-                if tipo_visualizacao == "Escola":
-                    st.markdown(
-                        '<div class="kpi-container">'
-                        '<p class="kpi-title">Total de Escolas</p>'
-                        '<p class="kpi-value">-</p>'
-                        '<span class="kpi-badge">Erro</span>'
-                        '</div>',
-                        unsafe_allow_html=True
-                    )
-                elif tipo_visualizacao == "Município":
-                    st.markdown(
-                        '<div class="kpi-container">'
-                        '<p class="kpi-title">Total de Municípios</p>'
-                        '<p class="kpi-value">-</p>'
-                        '<span class="kpi-badge">Erro</span>'
-                        '</div>',
-                        unsafe_allow_html=True
-                    )
                 else:
                     st.markdown(
                         '<div class="kpi-container">'
                         '<p class="kpi-title">Máximo de Matrículas</p>'
                         '<p class="kpi-value">-</p>'
-                        '<span class="kpi-badge">Erro</span>'
+                        '<span class="kpi-badge">Coluna não disponível</span>'
                         '</div>',
                         unsafe_allow_html=True
                     )
-                st.caption(f"Erro ao calcular: {str(e)}")
+        except Exception as e:
+            if tipo_visualizacao == "Escola":
+                st.markdown(
+                    '<div class="kpi-container">'
+                    '<p class="kpi-title">Total de Escolas</p>'
+                    '<p class="kpi-value">-</p>'
+                    '<span class="kpi-badge">Erro</span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+            elif tipo_visualizacao == "Município":
+                st.markdown(
+                    '<div class="kpi-container">'
+                    '<p class="kpi-title">Total de Municípios</p>'
+                    '<p class="kpi-value">-</p>'
+                    '<span class="kpi-badge">Erro</span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    '<div class="kpi-container">'
+                    '<p class="kpi-title">Máximo de Matrículas</p>'
+                    '<p class="kpi-value">-</p>'
+                    '<span class="kpi-badge">Erro</span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+            st.caption(f"Erro ao calcular: {str(e)}")
 
-    # -------------------------------
-    # Seção de Tabela de Dados Detalhados
-    # -------------------------------
-    st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
+# -------------------------------
+# Seção de Tabela de Dados Detalhados
+# -------------------------------
+st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 
-    if tabela_exibicao.empty:
-        st.warning("Não há dados para exibir com os filtros selecionados.")
-    else:
+# Verificar se há dados para exibir
+if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
+    st.warning("Não há dados para exibir com os filtros selecionados.")
+else:
+    try:
         # Adicionar opções de filtragem acima da tabela
         filtro_col1, filtro_col2 = st.columns([1, 3])
 
@@ -896,10 +1010,20 @@ with kpi_container:
             )
 
         with filtro_col2:
-            if len(tabela_exibicao) > 0 and coluna_dados in tabela_exibicao.columns:
+            opcoes_ordenacao = ["Maior valor", "Menor valor"]
+
+            # Opções adicionais de ordenação baseadas nas colunas disponíveis
+            if "NOME DA ESCOLA" in tabela_exibicao.columns:
+                opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
+            elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
+                opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
+            elif "NOME DA UF" in tabela_exibicao.columns:
+                opcoes_ordenacao.extend(["Alfabético (A-Z) por UF", "Alfabético (Z-A) por UF"])
+
+            if len(opcoes_ordenacao) > 2 and coluna_dados in tabela_exibicao.columns:
                 ordem_tabela = st.radio(
                     "Ordenar por:",
-                    ["Maior valor", "Menor valor", "Alfabético (A-Z)", "Alfabético (Z-A)"],
+                    opcoes_ordenacao,
                     horizontal=True
                 )
 
@@ -907,20 +1031,21 @@ with kpi_container:
                     tabela_exibicao = tabela_exibicao.sort_values(by=coluna_dados, ascending=False)
                 elif ordem_tabela == "Menor valor":
                     tabela_exibicao = tabela_exibicao.sort_values(by=coluna_dados, ascending=True)
-                elif ordem_tabela == "Alfabético (A-Z)":
-                    if "NOME DA ESCOLA" in tabela_exibicao.columns:
-                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA ESCOLA", ascending=True)
-                    elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
-                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DO MUNICIPIO", ascending=True)
-                    elif "NOME DA UF" in tabela_exibicao.columns:
-                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA UF", ascending=True)
-                elif ordem_tabela == "Alfabético (Z-A)":
-                    if "NOME DA ESCOLA" in tabela_exibicao.columns:
-                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA ESCOLA", ascending=False)
-                    elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
-                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DO MUNICIPIO", ascending=False)
-                    elif "NOME DA UF" in tabela_exibicao.columns:
-                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA UF", ascending=False)
+                elif "por Escola" in ordem_tabela:
+                    tabela_exibicao = tabela_exibicao.sort_values(
+                        by="NOME DA ESCOLA",
+                        ascending=("A-Z" in ordem_tabela)
+                    )
+                elif "por Município" in ordem_tabela:
+                    tabela_exibicao = tabela_exibicao.sort_values(
+                        by="NOME DO MUNICIPIO",
+                        ascending=("A-Z" in ordem_tabela)
+                    )
+                elif "por UF" in ordem_tabela:
+                    tabela_exibicao = tabela_exibicao.sort_values(
+                        by="NOME DA UF",
+                        ascending=("A-Z" in ordem_tabela)
+                    )
 
         # Total de registros
         st.caption(f"Total de registros: {len(tabela_exibicao):,}".replace(",", "."))
@@ -928,24 +1053,34 @@ with kpi_container:
         # Implementar paginação
         if registros_por_pagina != "Todos":
             registros_por_pagina = int(registros_por_pagina)
-            num_paginas = (len(tabela_exibicao) - 1) // registros_por_pagina + 1
+            num_paginas = max(1, (len(tabela_exibicao) - 1) // registros_por_pagina + 1)
 
-            pagina_atual = st.number_input(
-                "Página",
-                min_value=1,
-                max_value=num_paginas,
-                value=1,
-                step=1
-            )
+            # Garantir que não haja erro se não houver registros
+            if num_paginas > 0:
+                pagina_atual = st.number_input(
+                    "Página",
+                    min_value=1,
+                    max_value=num_paginas,
+                    value=1,
+                    step=1
+                )
 
-            inicio = (pagina_atual - 1) * registros_por_pagina
-            fim = min(inicio + registros_por_pagina, len(tabela_exibicao))
+                inicio = (pagina_atual - 1) * registros_por_pagina
+                fim = min(inicio + registros_por_pagina, len(tabela_exibicao))
 
-            df_paginado = tabela_exibicao.iloc[inicio:fim]
-            st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
+                # Garantir que os índices sejam válidos
+                if inicio < len(tabela_exibicao):
+                    df_paginado = tabela_exibicao.iloc[inicio:fim]
+                    st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
 
-            # Informação da paginação
-            st.caption(f"Exibindo registros {inicio + 1} a {fim} de {len(tabela_exibicao):,}".replace(",", "."))
+                    # Informação da paginação
+                    st.caption(f"Exibindo registros {inicio + 1} a {fim} de {len(tabela_exibicao):,}".replace(",", "."))
+                else:
+                    st.warning("Índice de paginação inválido.")
+                    st.dataframe(tabela_exibicao.head(registros_por_pagina), height=altura_tabela,
+                                 use_container_width=True)
+            else:
+                st.warning("Não há páginas para exibir.")
         else:
             st.dataframe(tabela_exibicao, height=altura_tabela, use_container_width=True)
 
@@ -954,21 +1089,30 @@ with kpi_container:
             total_col = tabela_exibicao[coluna_dados].sum()
             st.markdown(f"**Total de {coluna_dados}:** {formatar_numero(total_col)}")
 
-    # -------------------------------
-    # Rodapé do Dashboard
-    # -------------------------------
-    st.markdown("---")
+    except Exception as e:
+        st.error(f"Erro ao exibir a tabela: {str(e)}")
+        st.write("Detalhes do erro para depuração:")
+        st.exception(e)
+
+        # Tentativa alternativa de visualização
+        st.write("Tentando exibir tabela simplificada...")
+        try:
+            # Mostrar apenas as primeiras 100 linhas como fallback
+            st.dataframe(tabela_exibicao.head(100), height=altura_tabela)
+        except:
+            st.error("Não foi possível exibir a tabela mesmo em formato simplificado.")
+
+# -------------------------------
+# Rodapé do Dashboard
+# -------------------------------
+st.markdown("---")
+if 'RODAPE_NOTA' in globals():
     st.markdown(RODAPE_NOTA)
+else:
+    st.markdown("© Dashboard Educacional - Desenvolvido para visualização de dados do Censo Escolar")
 
-    # Tempo de execução
-    tempo_final = time.time()
-    tempo_total = round(tempo_final - st.session_state.get('tempo_inicio', tempo_final), 2)
-    st.session_state['tempo_inicio'] = tempo_final
-    st.caption(f"Tempo de processamento: {tempo_total} segundos")
-
-
-
-
-
-
-
+# Tempo de execução
+tempo_final = time.time()
+tempo_total = round(tempo_final - st.session_state.get('tempo_inicio', tempo_final), 2)
+st.session_state['tempo_inicio'] = tempo_final
+st.caption(f"Tempo de processamento: {tempo_total} segundos")
