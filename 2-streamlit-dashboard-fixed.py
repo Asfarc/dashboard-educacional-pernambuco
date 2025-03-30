@@ -1123,7 +1123,7 @@ else:
 
     # Configurações de paginação e ordenação ANTES dos filtros
     if tipo_visualizacao != "Estado":
-        config_col1, config_col2 = st.columns([1, 3])
+        config_col2 = st.columns([1, 3])
 
         # with config_col1:
         #     registros_por_pagina = st.selectbox(
