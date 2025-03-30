@@ -1068,154 +1068,144 @@ else:
         # ------------------------------------------------------------
         df_sem_filtros_texto = tabela_exibicao.copy()  # Base inicial
 
-        # Inicialização do session_state para paginação
-        if "page_size" not in st.session_state:
-            st.session_state["page_size"] = 10
-
-        if "current_page" not in st.session_state:
-            st.session_state["current_page"] = 1
-
-        # Filtros manuais acima das colunas
+        # Filtros manuais acima das colunas (opcional)
         col_filters = {}
-        filtro_cols = st.columns(len(df_sem_filtros_texto.columns))
-        for i, col_name in enumerate(df_sem_filtros_texto.columns):
-            with filtro_cols[i]:
-                st.write(f"**{col_name}**")
-                col_filters[col_name] = st.text_input(
-                    label=f"Filtro para {col_name}",
-                    key=f"filter_{col_name}",
-                    label_visibility="collapsed",
-                    placeholder=f"Filtrar {col_name}..."
-                )
+        if len(df_sem_filtros_texto.columns) > 0:
+            filtro_cols = st.columns(len(df_sem_filtros_texto.columns))
+            for i, col_name in enumerate(df_sem_filtros_texto.columns):
+                with filtro_cols[i]:
+                    st.write(f"**{col_name}**")
+                    col_filters[col_name] = st.text_input(
+                        label=f"Filtro para {col_name}",
+                        key=f"filter_{col_name}",
+                        label_visibility="collapsed",
+                        placeholder=f"Filtrar {col_name}..."
+                    )
 
-        # Aplicação de filtros em uma única passagem
         df_texto_filtrado = df_sem_filtros_texto.copy()
-        try:
-            for col_name, filter_text in col_filters.items():
-                if not filter_text:
-                    continue
 
-                # Determina se a coluna é numérica
-                is_numeric = pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name])
+        # Aplicação dos filtros
+        for col_name, filter_text in col_filters.items():
+            if filter_text:
+                try:
+                    filter_text_escaped = re.escape(filter_text)
+                    # Verifica se a coluna deve ser tratada como numérica
+                    if (col_name.startswith("Número de") or
+                            pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name])):
 
-                if is_numeric:
-                    # Tenta processar o filtro como valor numérico
-                    try:
                         filter_text_ponto = filter_text.replace(',', '.')
-                        if (filter_text_ponto.replace('.', '', 1).isdigit() and
-                                filter_text_ponto.count('.') <= 1):
-                            num_value = float(filter_text_ponto)
-                            df_texto_filtrado = df_texto_filtrado[
-                                df_texto_filtrado[col_name] == num_value
+                        # Tenta converter para float
+                        try:
+                            # Se for número válido (com no máximo um ponto)
+                            if (filter_text_ponto.replace('.', '', 1).isdigit() and
+                                    filter_text_ponto.count('.') <= 1):
+                                num_value = float(filter_text_ponto)
+                                df_texto_filtrado = df_texto_filtrado[
+                                    df_texto_filtrado[col_name] == num_value
+                                    ]
+                            else:
+                                # Se não for número, tenta filtrar como texto
+                                df_texto_filtrado = df_texto_filtrado[
+                                    df_texto_filtrado[col_name].astype(str).str.contains(
+                                        filter_text_escaped,
+                                        case=False,
+                                        regex=True
+                                    )
                                 ]
-                        else:
-                            # Trata como texto mesmo sendo coluna numérica
+                        except ValueError:
+                            # Se der erro na conversão, filtra como texto
                             df_texto_filtrado = df_texto_filtrado[
                                 df_texto_filtrado[col_name].astype(str).str.contains(
-                                    filter_text,
+                                    filter_text_escaped,
                                     case=False,
-                                    na=False
+                                    regex=True
                                 )
                             ]
-                    except ValueError:
-                        # Se falhar a conversão, trata como texto
+                    else:
+                        # Caso não seja numérica, faz filtragem por texto
                         df_texto_filtrado = df_texto_filtrado[
                             df_texto_filtrado[col_name].astype(str).str.contains(
-                                filter_text,
+                                filter_text_escaped,
                                 case=False,
-                                na=False
+                                regex=True
                             )
                         ]
-                else:
-                    # Para colunas não-numéricas, aplicamos filtro de texto diretamente
-                    df_texto_filtrado = df_texto_filtrado[
-                        df_texto_filtrado[col_name].astype(str).str.contains(
-                            filter_text,
-                            case=False,
-                            na=False
-                        )
-                    ]
-        except Exception as e:
-            st.warning(f"Erro ao aplicar filtros: {str(e)}")
+                except Exception as e:
+                    st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
 
-        # Interface de controle de paginação superior
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            page_size = st.selectbox(
-                "Itens por página",
-                options=[10, 25, 50, 100],
-                index=[10, 25, 50, 100].index(st.session_state["page_size"]),
-                key="page_size_selector"
-            )
-            # Atualiza o session_state e reinicia para página 1 se o tamanho mudar
-            if page_size != st.session_state["page_size"]:
-                st.session_state["page_size"] = page_size
-                st.session_state["current_page"] = 1
-
-        with col2:
+        # Agora definimos o "Page Size" e dividimos o DF em páginas
+        try:
             st.write(f"**Total de Registros após filtros:** {len(df_texto_filtrado)}")
 
-        # Paginação do DataFrame
-        try:
-            # Divide em chunks
-            paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
+            paginated_frames = split_frame(df_texto_filtrado,
+                                           st.session_state.get("page_size", 10))
             total_pages = len(paginated_frames)
 
             if total_pages == 0:
                 st.warning("Nenhum registro para exibir após filtragem.")
                 st.stop()
 
-            # Verifica se a página atual ainda é válida após a filtragem
+            # Inicializa a página corrente se não existir
+            if "current_page" not in st.session_state:
+                st.session_state["current_page"] = 1
+
+            # Garante que a página atual seja válida após a filtragem
             if st.session_state["current_page"] > total_pages:
-                st.session_state["current_page"] = 1  # Redefine para página 1
+                st.session_state["current_page"] = 1
 
-            # Exibe a tabela da página atual
-            if paginated_frames:
-                df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
-                st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
+            # Mostra a tabela da página atual
+            df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
+            st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
 
-                # Menu de navegação na parte inferior
-                nav_cols = st.columns([4, 1])
+            # Menu inferior: info de paginação, navegação e tamanho da página
+            menu_inferior = st.columns((4, 1, 1))
 
-                with nav_cols[0]:
-                    # Informação sobre registros e páginas
-                    st.markdown(
-                        f"**Total: {len(df_texto_filtrado)} registros | Página {st.session_state['current_page']} de {total_pages}**"
-                    )
-
-                    # Botões de navegação anterior/próximo em linha
-                    btn_cols = st.columns(2)
-                    with btn_cols[0]:
-                        if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1):
-                            st.session_state["current_page"] -= 1
-                            st.rerun()
-
-                    with btn_cols[1]:
-                        if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages):
-                            st.session_state["current_page"] += 1
-                            st.rerun()
-
-                with nav_cols[1]:
-                    # Input de número da página
-                    new_page = st.number_input(
-                        "Página",
-                        min_value=1,
-                        max_value=total_pages,
-                        value=st.session_state["current_page"],
-                        step=1,
-                        key="page_number_input"
-                    )
-
-                    # Atualiza a página atual se o usuário mudar o valor
-                    if new_page != st.session_state["current_page"]:
-                        st.session_state["current_page"] = new_page
+            with menu_inferior[0]:
+                st.markdown(
+                    f"**Total: {len(df_texto_filtrado)} registros | "
+                    f"Página {st.session_state['current_page']} de {total_pages}**"
+                )
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1):
+                        st.session_state["current_page"] -= 1
                         st.rerun()
-            else:
-                st.warning("Não há dados para exibir.")
+                with col_btn2:
+                    if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages):
+                        st.session_state["current_page"] += 1
+                        st.rerun()
+
+            with menu_inferior[1]:
+                # Input de número da página
+                nova_pagina = st.number_input(
+                    "Página",
+                    min_value=1,
+                    max_value=total_pages,
+                    value=st.session_state["current_page"],
+                    step=1
+                )
+                if nova_pagina != st.session_state["current_page"]:
+                    st.session_state["current_page"] = nova_pagina
+                    st.rerun()
+
+            with menu_inferior[2]:
+                # Escolha de itens por página (unificado)
+                if "page_size" not in st.session_state:
+                    st.session_state["page_size"] = 10
+
+                novo_page_size = st.selectbox(
+                    "Itens por página",
+                    options=[10, 25, 50, 100],
+                    index=[10, 25, 50, 100].index(st.session_state["page_size"])
+                )
+                if novo_page_size != st.session_state["page_size"]:
+                    st.session_state["page_size"] = novo_page_size
+                    # Resetar para página 1 ao mudar tamanho
+                    st.session_state["current_page"] = 1
+                    st.rerun()
 
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
-            # Exibe uma visualização padrão em caso de erro
             st.dataframe(tabela_exibicao.head(50))
 # -------------------------------
 # Rodapé do Dashboard
