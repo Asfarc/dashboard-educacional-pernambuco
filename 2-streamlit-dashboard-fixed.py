@@ -1172,9 +1172,10 @@ else:
             st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
 
             # --------------------------------------------------------
-            # Layout em uma única linha
+            # Layout em uma única linha para controles de paginação
             # --------------------------------------------------------
-            linha = st.columns([2, 0.8, 0.8, 1, 1])
+            # Criação das colunas para a navegação da tabela
+            linha = st.columns([2, 0.8, 0.8, 1, 1], gap="small", vertical_alignment="top")
 
             # 1) Texto: "Total: 6.883 registros | Página 1 de 689"
             with linha[0]:
@@ -1224,7 +1225,6 @@ else:
 
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
-            st.dataframe(tabela_exibicao.head(50))
 # -------------------------------
 # Rodapé do Dashboard
 # -------------------------------
