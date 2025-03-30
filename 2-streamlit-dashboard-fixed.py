@@ -1063,7 +1063,6 @@ else:
                 st.error("Não foi possível exibir dados mesmo no formato simplificado.")
 
     else:
-        try:
             # ------------------------------------------------------------
             # Exemplo de Paginação manual por 'chunk' (split_frame)
             # ------------------------------------------------------------
@@ -1125,43 +1124,81 @@ else:
                         st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
 
             # Agora definimos o "Page Size" e dividimos o DF em páginas
-            # 1) Defina o Page Size e faça a paginação, mas NÃO peça a página ainda.
-            left_col, right_col = st.columns([1, 3])
-            with left_col:
-                page_size = st.selectbox("Page Size", options=[10, 25, 50, 100], index=0)
-            with right_col:
-                st.write(f"**Total de Registros após filtros:** {len(df_texto_filtrado)}")
+            try:
+                # 1) Defina o Page Size e faça a paginação, mas NÃO peça a página ainda.
+                left_col, right_col = st.columns([1, 3])
+                with left_col:
+                    # Usa session_state para manter o valor entre reruns
+                    if "page_size" not in st.session_state:
+                        st.session_state["page_size"] = 10
 
-            # Divide em chunks, mas ainda não define a página
-            paginated_frames = split_frame(df_texto_filtrado, page_size)
-            total_pages = len(paginated_frames)
-            if total_pages == 0:
-                st.warning("Nenhum registro para exibir após filtragem.")
-                st.stop()
+                    page_size = st.selectbox(
+                        "Page Size",
+                        options=[10, 25, 50, 100],
+                        index=0,
+                        key="page_size"  # Usa key para conectar ao session_state
+                    )
 
-            # 2) Por ora, podemos definir uma página padrão
-            if "current_page" not in st.session_state:
-                st.session_state["current_page"] = 1
+                with right_col:
+                    st.write(f"**Total de Registros após filtros:** {len(df_texto_filtrado)}")
 
-            # 3) MOSTRA A TABELA DA PÁGINA ATUAL
-            df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
-            st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
+                # Divide em chunks, mas ainda não define a página
+                paginated_frames = split_frame(df_texto_filtrado, page_size)
+                total_pages = len(paginated_frames)
 
-            # 4) AGORA, ABAIXO da tabela, pede a página:
-            st.session_state["current_page"] = st.number_input(
-                "Página",
-                min_value=1,
-                max_value=total_pages,
-                value=st.session_state["current_page"],
-                step=1
-            )
-            st.markdown(f"**Exibindo Página {st.session_state['current_page']} de {total_pages}**")
+                if total_pages == 0:
+                    st.warning("Nenhum registro para exibir após filtragem.")
+                    st.stop()
 
-        except Exception as e:
-            st.error(f"Erro ao exibir a tabela: {str(e)}")
-            st.dataframe(tabela_exibicao.head(50))
+                # 2) Inicialização e verificação da página atual
+                if "current_page" not in st.session_state:
+                    st.session_state["current_page"] = 1
 
-    st.markdown('</div>', unsafe_allow_html=True)
+                # Verifica se a página atual ainda é válida após a filtragem
+                if st.session_state["current_page"] > total_pages:
+                    st.session_state["current_page"] = 1  # Redefine para página 1
+                    st.rerun()  # Força o rerun para atualizar a interface
+
+                # 3) MOSTRA A TABELA DA PÁGINA ATUAL
+                df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
+                st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
+
+                # 4) Controles de navegação abaixo da tabela
+                col1, col2, col3 = st.columns([2, 1, 1])
+
+                with col1:
+                    # Exibe informação sobre página atual/total
+                    st.markdown(f"**Exibindo Página {st.session_state['current_page']} de {total_pages}**")
+
+                with col2:
+                    # Adiciona botões de navegação anterior/próximo
+                    cols_nav = st.columns(2)
+                    with cols_nav[0]:
+                        if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1):
+                            st.session_state["current_page"] -= 1
+                            st.rerun()
+
+                    with cols_nav[1]:
+                        if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages):
+                            st.session_state["current_page"] += 1
+                            st.rerun()
+
+                with col3:
+                    # Input de número da página conectado diretamente ao session_state
+                    st.session_state["current_page"] = st.number_input(
+                        "Página",
+                        min_value=1,
+                        max_value=total_pages,
+                        value=st.session_state["current_page"],
+                        step=1
+                    )
+
+            except Exception as e:
+                st.error(f"Erro ao exibir a tabela: {str(e)}")
+                st.dataframe(tabela_exibicao.head(50))
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
 
 # -------------------------------
 # Rodapé do Dashboard
