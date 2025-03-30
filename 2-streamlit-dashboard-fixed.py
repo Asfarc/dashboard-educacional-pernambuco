@@ -314,28 +314,17 @@ def importar_arquivos_parquet():
     Em caso de erro, exibe uma mensagem e interrompe a execução.
     """
     try:
-        # Possíveis diretórios onde os arquivos podem estar
-        diretorios_possiveis = [
-            ".",
-            "data",
-            "dados",
-            os.path.join(os.path.dirname(__file__), "data")
-        ]
+        # Caminho dos arquivos no diretório atual
+        escolas_path = "escolas.parquet"
+        estado_path = "estado.parquet"
+        municipio_path = "municipio.parquet"
 
-        escolas_df = estado_df = municipio_df = None
-        for diretorio in diretorios_possiveis:
-            escolas_path = os.path.join(diretorio, "escolas.parquet")
-            estado_path = os.path.join(diretorio, "estado.parquet")
-            municipio_path = os.path.join(diretorio, "municipio.parquet")
-
-            if os.path.exists(escolas_path) and os.path.exists(estado_path) and os.path.exists(municipio_path):
-                escolas_df = pd.read_parquet(escolas_path)
-                estado_df = pd.read_parquet(estado_path)
-                municipio_df = pd.read_parquet(municipio_path)
-                break
-
-        if escolas_df is None or estado_df is None or municipio_df is None:
+        if not all(os.path.exists(path) for path in [escolas_path, estado_path, municipio_path]):
             raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
+
+        escolas_df = pd.read_parquet(escolas_path)
+        estado_df = pd.read_parquet(estado_path)
+        municipio_df = pd.read_parquet(municipio_path)
 
         # Agora o processamento das colunas
         for df_ in [escolas_df, estado_df, municipio_df]:
@@ -354,32 +343,25 @@ def importar_arquivos_parquet():
         st.info(INFO_VERIFICAR_ARQUIVOS)
         st.stop()
 
-
 @st.cache_data
 def ler_dicionario_de_etapas():
     """
     Carrega o mapeamento de colunas a partir do arquivo JSON.
     """
     try:
-        diretorios_possiveis = [
-            ".",
-            "data",
-            "dados",
-            os.path.join(os.path.dirname(__file__), "data")
-        ]
+        json_path = "dicionario_das_etapas_de_ensino.json"
 
-        for diretorio in diretorios_possiveis:
-            json_path = os.path.join(diretorio, "dicionario_das_etapas_de_ensino.json")
-            if os.path.exists(json_path):
-                with open(json_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+        if not os.path.exists(json_path):
+            raise FileNotFoundError("Arquivo dicionario_das_etapas_de_ensino.json não encontrado")
 
-        raise FileNotFoundError("Arquivo dicionario_das_etapas_de_ensino.json não encontrado")
+        with open(json_path, "r", encoding="utf-8") as f:
+            return json.load(f)
 
     except Exception as e:
         st.error(f"Erro ao carregar o mapeamento de colunas: {e}")
         st.stop()
 
+@st.cache_data
 def padronizar_dicionario_de_etapas(df):
     """
     Ajusta o mapeamento de colunas original para considerar
@@ -1153,8 +1135,46 @@ else:
 
     # Caso específico para nível "Estado"
     if tipo_nivel_agregacao_selecionado == "Estado":
-        # [Código para Estado permanece igual]
-        pass
+        try:
+            # Limitar o número de linhas/colunas para exibição
+            colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
+            if coluna_real in tabela_exibicao.columns:
+                colunas_essenciais.append(coluna_real)
+
+            for col in ["ANO", "CODIGO DA UF", "NOME DA UF"]:
+                if col in tabela_exibicao.columns:
+                    colunas_essenciais.append(col)
+
+            tabela_simplificada = tabela_exibicao[colunas_essenciais].copy()
+
+            st.write("Dados por Dependência Administrativa:")
+            st.dataframe(tabela_simplificada, height=altura_tabela, use_container_width=True)
+
+            # Exibir total
+            if coluna_real in tabela_simplificada.columns:
+                total_col = 0
+                # Como a exibição está formatada, precisamos buscar a soma em tabela_dados
+                if coluna_real in tabela_dados.columns:
+                    total_col = tabela_dados[coluna_real].sum()
+
+                st.markdown(f"**Total de {coluna_real}:** {aplicar_padrao_numerico_brasileiro(total_col)}")
+
+        except Exception as e:
+            st.error(f"Erro ao exibir tabela para nível Estado: {str(e)}")
+            st.write("Tentando exibição alternativa...")
+
+            try:
+                # Agrupar por dependência administrativa para simplificar
+                if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and coluna_matriculas_por_etapa in df_filtrado.columns:
+                    resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[
+                        coluna_matriculas_por_etapa].sum().reset_index()
+                    st.write("Resumo por Dependência Administrativa:")
+                    st.dataframe(resumo, use_container_width=True)
+                else:
+                    st.write("Dados disponíveis:")
+                    st.dataframe(df_filtrado.head(100), use_container_width=True)
+            except:
+                st.error("Não foi possível exibir os dados mesmo no formato simplificado.")
 
     # Caso para nível "Escola" ou "Município"
     else:
