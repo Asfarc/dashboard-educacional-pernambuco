@@ -8,9 +8,6 @@ import json
 import re
 from constantes import *  # Importa constantes (rótulos, textos, etc.)
 
-# Biblioteca do AgGrid
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
-
 # Inicialização do tempo de execução
 import time
 
@@ -128,94 +125,6 @@ button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
     border-left: 5px solid #364b60;
 }
 
-/* Estilos para a tabela Ag-Grid */
-.aggrid-custom {
-    --ag-header-background-color: #364b60;
-    --ag-header-foreground-color: white;
-    --ag-header-cell-hover-background-color: #25344d;
-    --ag-header-column-separator-color: rgba(255, 255, 255, 0.3);
-    --ag-header-column-separator-width: 1px;
-
-    --ag-odd-row-background-color: rgba(54, 75, 96, 0.05);
-    --ag-row-hover-color: rgba(54, 75, 96, 0.1);
-    --ag-selected-row-background-color: transparent;
-
-    --ag-font-size: 12px;
-    --ag-font-family: Arial, sans-serif;
-}
-
-/* Centralização de cabeçalhos */
-.ag-header-cell {
-    display: flex !important;
-    width: 100% !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-}
-
-.ag-header-cell-label {
-    display: flex !important;
-    width: 100% !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-}
-
-.ag-header-cell-text {
-    display: flex !important;
-    text-align: center !important;
-    align-items: center !important;
-    width: 100% !important;
-    justify-content: center !important;
-    font-weight: bold !important;
-    white-space: normal !important;
-    line-height: 1.2 !important;
-    overflow: visible !important;
-    font-size: 12px !important;
-}
-
-/* Células numéricas */
-.numeric-cell { 
-    display: flex !important;
-    text-align: center !important;
-    width: 100% !important;
-    justify-content: center !important;
-}
-
-/* Pinned rows (totais) */
-.ag-row-pinned {
-    font-weight: bold !important;
-    background-color: #f8dcdc !important;
-}
-
-.ag-row-pinned .ag-cell {
-    text-align: center !important;
-}
-
-/* Células selecionadas - corrigindo o problema da seleção de linhas */
-.ag-cell.ag-cell-range-selected,
-.ag-cell.ag-cell-range-selected-1,
-.ag-cell.ag-cell-range-selected-2,
-.ag-cell.ag-cell-range-selected-3,
-.ag-cell.ag-cell-range-selected-4 {
-    background-color: #e6f2ff !important; 
-    color: #000 !important; 
-}
-
-/* Remove linhas selecionadas por completo */
-.ag-row-selected {
-    background-color: transparent !important;
-}
-
-.ag-row-selected:hover {
-    background-color: rgba(54, 75, 96, 0.1) !important;
-}
-
-/* Garantir que o restante das células permaneça normal */
-.ag-row-selected .ag-cell:not(.ag-cell-range-selected):not(.ag-cell-range-selected-1):not(.ag-cell-range-selected-2):not(.ag-cell-range-selected-3):not(.ag-cell-range-selected-4) {
-    background-color: inherit !important;
-}
-
 /* Estilo para os botões e controles */
 .stButton > button, .stDownloadButton > button {
     background-color: #364b60 !important;
@@ -264,19 +173,6 @@ h2 {
     font-size: 0.9rem;
     color: #666;
     margin-top: 0.5rem;
-}
-
-/* Paginação centralizada */
-.ag-paging-panel {
-    display: flex !important;
-    text-align: center !important;
-    align-items: center !important;
-    width: 100% !important;
-    justify-content: center !important;
-}
-
-.ag-root-wrapper {
-    margin: 0 auto;
 }
 
 /* Responsividade para telas menores */
@@ -569,478 +465,6 @@ def converter_df_para_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
-
-def exibir_tabela_com_aggrid(df_para_exibir, altura=600, coluna_dados=None, posicao_totais="bottom",
-                             tipo_visualizacao=None):
-    """
-    Exibe DataFrame no AgGrid, com filtros digitáveis (floatingFilter),
-    paginação, seleção de intervalos, e pinned row (totais) caso desejado.
-    """
-    if df_para_exibir is None or df_para_exibir.empty:
-        st.warning("Não há dados para exibir na tabela.")
-        return {"data": pd.DataFrame()}
-
-    # Constrói o GridOptions
-    gb = GridOptionsBuilder.from_dataframe(df_para_exibir)
-
-    # Texto de tradução (localeText)
-    localeText = dict(
-        contains="Contém",
-        notContains="Não contém",
-        equals="Igual a",
-        notEqual="Diferente de",
-        startsWith="Começa com",
-        endsWith="Termina com",
-        blank="Em branco",
-        notBlank="Não em branco",
-        thousandSeparator=".",
-        decimalSeparator=",",
-        applyFilter="Aplicar",
-        resetFilter="Limpar",
-        clearFilter="Limpar",
-        cancelFilter="Cancelar",
-        lessThan="Menor que",
-        greaterThan="Maior que",
-        lessThanOrEqual="Menor ou igual a",
-        greaterThanOrEqual="Maior ou igual a",
-        inRange="No intervalo",
-        filterOoo="Filtrado",
-        noRowsToShow="Sem dados para exibir",
-        enabled="Habilitado",
-        search="Buscar",
-        selectAll="Selecionar todos",
-        searchOoo="Buscar...",
-        blanks="Em branco",
-        noMatches="Sem correspondência",
-        columns="Colunas",
-        filters="Filtros",
-        rowGroupColumns="Agrupar por",
-        rowGroupColumnsEmptyMessage="Arraste colunas aqui para agrupar",
-        valueColumns="Valores",
-        pivotMode="Modo Pivot",
-        groups="Grupos",
-        values="Valores",
-        pivots="Pivôs",
-        valueColumnsEmptyMessage="Arraste aqui para agregar",
-        pivotColumnsEmptyMessage="Arraste aqui para definir pivô",
-        toolPanelButton="Painéis",
-        loadingOoo="Carregando...",
-        page="Página",
-        PageSize="Tamanho da Página",
-        next="Próximo",
-        last="Último",
-        first="Primeiro",
-        previous="Anterior",
-        of="de",
-        to="até",
-        rows="linhas",
-        loading="Carregando...",
-        totalRows="Total de linhas",
-        totalAndFilteredRows="Linhas",
-        selectedRows="Selecionadas",
-        filteredRows="Filtradas",
-        sum="Soma",
-        min="Mínimo",
-        max="Máximo",
-        average="Média",
-        count="Contagem"
-    )
-
-    # Configurações padrão de cada coluna
-    gb.configure_default_column(
-        groupable=True,
-        editable=False,
-        wrapText=True,
-        autoHeight=False,
-        filter="agTextColumnFilter",       # Filtro de texto por padrão
-        floatingFilter=True,               # Habilita o input (filtro digitável) no cabeçalho
-        filterParams={
-            "filterOptions": ["contains", "equals", "startsWith", "endsWith"],
-            "buttons": ["apply", "reset"],
-            "closeOnApply": False
-        },
-        resizable=True,
-        sortable=True,
-        suppressMenu=False,
-        headerWrapText=True,
-        autoHeaderHeight=True
-    )
-
-    # Ajuste de colunas específicas
-    ajuste_colunas = {
-        "ANO": 50,
-        "CODIGO DO MUNICIPIO": 200,
-        "NOME DO MUNICIPIO": 220,
-        "CODIGO DA ESCOLA": 200,
-        "NOME DA ESCOLA": 300,
-        "DEPENDENCIA ADMINISTRATIVA": 200,
-        "CODIGO DA UF": 200,
-        "NOME DA UF": 200
-    }
-    largura_padrao_numericas = 50
-
-    for col, largura in ajuste_colunas.items():
-        if col in df_para_exibir.columns:
-            gb.configure_column(
-                col,
-                minWidth=largura,
-                maxWidth=800,
-                suppressSizeToFit=False,
-                wrapText=False,
-                cellStyle={
-                    'overflow': 'hidden',
-                    'textAlign': 'left',
-                    'text-overflow': 'ellipsis',
-                    'white-space': 'nowrap',
-                },
-                headerClass="centered-header",
-            )
-
-    # Se detectar colunas que começam com "Número de", configurar como numéricas
-    for coluna in df_para_exibir.columns:
-        if coluna.startswith("Número de"):
-            # Troca para filtro numérico
-            gb.configure_column(
-                coluna,
-                type=["numericColumn", "numberColumnFilter"],
-                filter="agNumberColumnFilter",
-                aggFunc="sum",
-                minWidth=largura_padrao_numericas,
-                maxWidth=300,
-                valueFormatter=JsCode("""
-                    function(params) {
-                        // Se for pinned row, formata mesmo que 0
-                        if (params.node && params.node.rowPinned) {
-                            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
-                        }
-                        if (params.value == null || params.value === undefined) return '';
-                        return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(params.value);
-                    }
-                """).js_code,
-                cellStyle=JsCode("""
-                    function(params) {
-                        const baseStyle = {
-                            'text-align': 'center',
-                            'font-weight': '500'
-                        };
-                        if (params.node && params.node.rowPinned) {
-                            return {
-                                ...baseStyle,
-                                'font-weight': 'bold',
-                                'background-color': '#F8DCDC'
-                            };
-                        }
-                        return baseStyle;
-                    }
-                """).js_code
-            )
-        else:
-            # Mantém como texto
-            gb.configure_column(
-                coluna,
-                filter="agTextColumnFilter",
-            )
-
-        # Ajustes se houver coluna "ANO"
-        if "ANO" in df_para_exibir.columns:
-            gb.configure_column(
-                "ANO",
-                cellStyle=JsCode("""
-                    function(params) {
-                        if (params.node && params.node.rowPinned) {
-                            return { 'font-weight': 'bold', 'background-color': '#F8DCDC' };
-                        }
-                    }
-                """),
-                type=[],
-                filter="agTextColumnFilter",
-                valueFormatter=None
-            )
-
-    # Configurações gerais do grid
-    gb.configure_grid_options(
-        defaultColDef={
-            "headerClass": "centered-header",
-            "suppressMovable": False,
-            "headerComponentParams": {
-                "template":
-                    '<div class="ag-cell-label-container" role="presentation">'
-                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>'
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="display: flex; justify-content: center; text-align: center;">'
-                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="text-align: center;"></span>'
-                    '    <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>'
-                    '    <span ref="eSortOrder" class="ag-header-icon ag-header-label-icon ag-sort-order"></span>'
-                    '    <span ref="eSortAsc" class="ag-header-icon ag-header-label-icon ag-sort-ascending-icon"></span>'
-                    '    <span ref="eSortDesc" class="ag-header-icon ag-header-label-icon ag-sort-descending-icon"></span>'
-                    '    <span ref="eSortNone" class="ag-header-icon ag-header-label-icon ag-sort-none-icon"></span>'
-                    '  </div>'
-                    '</div>'
-            }
-        },
-        rowStyle={"textAlign": "center"},
-        enableCellTextSelection=True,
-        clipboardDelimiter='\t',
-        ensureDomOrder=True,
-        pagination=True,
-        paginationAutoPageSize=False,
-        paginationPageSize=25,
-        paginationSizeSelector=[5, 10, 25, 50, 100],
-        localeText=localeText,
-        suppressAggFuncInHeader=True,
-        enableRangeSelection=True,
-        enableRangeHandle=True,
-        suppressRowClickSelection=True,
-        rowSelection="none",
-        rowMultiSelectWithClick=False,
-        cellSelection="multiple",
-        # ---- REMOVE OU SUBSTITUIR O STATUS BAR PERSONALIZADO ----
-        # Use o componente padrão de agregações do Ag-Grid (ou remova se não quiser):
-        statusBar={
-            'statusPanels': [
-                {
-                    # Painel de agregações padrão (sum, avg, min, max etc.)
-                    'statusPanel': 'agAggregationComponent',
-                    'statusPanelParams': {
-                        'aggFuncs': ['sum','avg','min','max']
-                    }
-                }
-            ]
-        },
-        # ----------------------------------------------------------
-        onGridReady=JsCode("""
-            function(params) {
-                setTimeout(() => {
-                    try {
-                        const gridElement = document.querySelector('.ag-root-wrapper');
-                        const paginationElement = document.querySelector('.ag-paging-panel');
-                        if (gridElement && paginationElement) {
-                            paginationElement.style.width = gridElement.clientWidth + 'px';
-                        }
-                        params.api.sizeColumnsToFit();
-                    } catch(e) {
-                        console.error('Erro no onGridReady:', e);
-                    }
-                }, 300);
-            }
-        """),
-        onColumnResized=JsCode("""
-            function(params) {
-                const gridElement = document.querySelector('.ag-root-wrapper');
-                const paginationElement = document.querySelector('.ag-paging-panel');
-                if (gridElement && paginationElement) {
-                    paginationElement.style.width = gridElement.clientWidth + 'px';
-                }
-            }
-        """),
-        onColumnVisibilityChanged=JsCode("""
-            function(params) {
-                setTimeout(() => {
-                    params.api.sizeColumnsToFit();
-                    const gridElement = document.querySelector('.ag-root-wrapper');
-                    const paginationElement = document.querySelector('.ag-paging-panel');
-                    if (gridElement && paginationElement) {
-                        paginationElement.style.width = gridElement.clientWidth + 'px';
-                    }
-                }, 100);
-            }
-        """),
-        onFilterChanged=JsCode("""
-            function(params) {
-                setTimeout(() => {
-                    const gridElement = document.querySelector('.ag-root-wrapper');
-                    const paginationElement = document.querySelector('.ag-paging-panel');
-                    if (gridElement && paginationElement) {
-                        paginationElement.style.width = gridElement.clientWidth + 'px';
-                    }
-                }, 100);
-            }
-        """)
-    )
-
-    gb.configure_side_bar()
-
-    # Ajustes de desempenho para grandes datasets (opcional)
-    if len(df_para_exibir) > 5000:
-        gb.configure_grid_options(
-            rowBuffer=100,
-            animateRows=False,
-            suppressColumnVirtualisation=False,
-            suppressRowVirtualisation=False,
-            enableCellTextSelection=True,
-            enableBrowserTooltips=True,
-            defaultColDef={"headerClass": "centered-header"},
-            rowStyle={"textAlign": "center"}
-        )
-
-    # Cria pinned row (totais) se houver coluna_dados
-    soma_valor = 0
-    if coluna_dados in df_para_exibir.columns:
-        soma_valor = int(df_para_exibir[coluna_dados].sum())
-    total_linhas = int(len(df_para_exibir))
-
-    # Monta os dados da pinned row
-    pinned_row_data = {}
-    # Só adiciona "ANO" se ele existir no DF
-    if "ANO" in df_para_exibir.columns:
-        pinned_row_data["ANO"] = f"Total de linhas: {total_linhas:,}".replace(",", ".")
-
-    if coluna_dados in df_para_exibir.columns:
-        pinned_row_data[coluna_dados] = soma_valor
-
-    grid_options = gb.build()
-
-    if posicao_totais == "bottom":
-        if pinned_row_data:
-            grid_options["pinnedBottomRowData"] = [pinned_row_data]
-    elif posicao_totais == "top":
-        if pinned_row_data:
-            grid_options["pinnedTopRowData"] = [pinned_row_data]
-
-    # Renderização do grid
-    grid_return = AgGrid(
-        df_para_exibir,
-        gridOptions=grid_options,
-        height=altura,
-        custom_css="""
-            /* Estilo para todas as pinned rows */
-            .ag-row-pinned {
-                font-weight: bold !important;
-                background-color: #f2f2f2 !important;
-            }
-            .ag-row-pinned .ag-cell {
-                text-align: center !important;
-            }
-            .ag-row-pinned .ag-cell[col-id='NOME DA ESCOLA'] {
-                text-align: left !important;
-            }
-            /* Centralização de cabeçalhos */
-            .ag-header-cell {
-                display: flex !important;
-                width: 100% !important;
-                align-items: center !important;
-                justify-content: center !important;
-                text-align: center !important;
-            }
-            .ag-header-cell-label {
-                display: flex !important;
-                width: 100% !important;
-                align-items: center !important;
-                justify-content: center !important;
-                text-align: center !important;
-            }
-            .ag-header-cell-text {
-                display: flex !important;
-                text-align: center !important;
-                align-items: center !important;
-                width: 100% !important;
-                justify-content: center !important;
-                font-weight: bold !important;
-                white-space: normal !important;
-                line-height: 1.2 !important;
-                overflow: visible !important;
-                font-size: 12px !important;
-            }
-            .centered-header .ag-header-cell-label {
-                justify-content: center !important;
-                text-align: center !important;
-            }
-            /* Paginação centralizada */
-            .ag-paging-panel {
-                display: flex !important;
-                text-align: center !important;
-                align-items: center !important;
-                width: 100% !important;
-                justify-content: center !important;
-            }
-            .ag-root-wrapper {
-                margin: 0 auto;
-            }
-            /* Seleção e hover */
-            .ag-row-selected { 
-                background-color: transparent !important; 
-            }
-            .ag-row {
-                background-color: inherit !important;
-            }
-            .ag-row:hover {
-                background-color: rgba(54, 75, 96, 0.1) !important;
-            }
-            .ag-row-selected,
-            .ag-row-selected:hover {
-                background-color: transparent !important;
-                border: none !important;
-            }
-            /* Células selecionadas (range selection) */
-            .ag-cell.ag-cell-range-selected,
-            .ag-cell.ag-cell-range-selected-1,
-            .ag-cell.ag-cell-range-selected-2,
-            .ag-cell.ag-cell-range-selected-3,
-            .ag-cell.ag-cell-range-selected-4 {
-                background-color: #e6f2ff !important; 
-                color: #000 !important; 
-            }
-            /* Remover seleção de linha completa */
-            .ag-row-selected .ag-cell:not(.ag-cell-range-selected):not(.ag-cell-range-selected-1):not(.ag-cell-range-selected-2):not(.ag-cell-range-selected-3):not(.ag-cell-range-selected-4) {
-                background-color: inherit !important;
-            }
-            /* Células numéricas */
-            .numeric-cell { 
-                display: flex !important;
-                text-align: center !important;
-                width: 100% !important;
-                justify-content: center !important;
-            }
-        """,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,
-        theme="balham",
-        key=f"aggrid_{tipo_visualizacao}_{id(df_para_exibir)}"
-    )
-
-    # Ajuste final via JS
-    js_simplified_fix = """
-    <script>
-        function centralizeHeaders() {
-            try {
-                if (!document.getElementById('aggrid-header-fix')) {
-                    const styleEl = document.createElement('style');
-                    styleEl.id = 'aggrid-header-fix';
-                    styleEl.innerHTML = `
-                        .ag-header-cell-text {
-                            width: 100% !important;
-                            text-align: center !important;
-                            justify-content: center !important;
-                        }
-                        .ag-header-cell-label {
-                            justify-content: center !important;
-                            width: 100% !important;
-                        }
-                    `;
-                    document.head.appendChild(styleEl);
-                }
-            } catch(e) {
-                console.error('Erro na centralização:', e);
-            }
-        }
-
-        for (let i = 1; i <= 5; i++) {
-            setTimeout(centralizeHeaders, i * 500);
-        }
-    </script>
-    """
-    st.markdown(js_simplified_fix, unsafe_allow_html=True)
-
-    filtered_data = grid_return['data']
-    if len(filtered_data) != len(df_para_exibir):
-        st.info(
-            f"Filtro aplicado: mostrando {len(filtered_data):,} "
-            f"de {len(df_para_exibir):,} registros."
-        )
-
-    return grid_return
-
 # -------------------------------
 # Carregamento de Dados
 # -------------------------------
@@ -1191,21 +615,11 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Configurações da tabela")
 
-ajustar_altura = st.sidebar.checkbox(ROTULO_AJUSTAR_ALTURA, value=False, help=DICA_ALTURA_TABELA)
+ajustar_altura = st.sidebar.checkbox("Ajustar altura da tabela", value=False, help="Permite ajustar a altura da tabela de dados")
 if ajustar_altura:
     altura_tabela = st.sidebar.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
 else:
     altura_tabela = 600
-
-posicao_totais = st.sidebar.radio(
-    "Linha de totais:",
-    ["Rodapé", "Topo", "Nenhum"],
-    index=0,
-    horizontal=True
-)
-
-# (Opcional) Desempenho – apenas exibição de checkbox
-modo_desempenho = st.sidebar.checkbox(ROTULO_MODO_DESEMPENHO, value=True, help=DICA_MODO_DESEMPENHO)
 
 # Colunas para exibir na tabela
 st.sidebar.markdown("### Colunas adicionais")
@@ -1280,7 +694,7 @@ try:
     csv_data = converter_df_para_csv(tabela_dados)
     with col1:
         st.download_button(
-            label=ROTULO_BTN_DOWNLOAD_CSV,
+            label="Baixar CSV",
             data=csv_data,
             file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.csv',
             mime='text/csv',
@@ -1292,7 +706,7 @@ try:
     excel_data = converter_df_para_excel(tabela_dados)
     with col2:
         st.download_button(
-            label=ROTULO_BTN_DOWNLOAD_EXCEL,
+            label="Baixar Excel",
             data=excel_data,
             file_name=f'dados_{etapa_selecionada.replace(" ", "_")}_{"-".join(map(str, anos_selecionados))}.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1334,39 +748,16 @@ with kpi_container:
                 unsafe_allow_html=True
             )
             st.caption(f"Erro ao calcular: {str(e)}")
-
-    # KPI 2: Média
-    with col2:
-        try:
-            if tipo_visualizacao == "Escola":
-                if len(df_filtrado) > 0:
-                    media_por_escola = df_filtrado[coluna_dados].mean()
-                    st.markdown(
-                        f'<div class="kpi-container">'
-                        f'<p class="kpi-title">{ROTULO_MEDIA_POR_ESCOLA}</p>'
-                        f'<p class="kpi-value">{formatar_numero(media_por_escola)}</p>'
-                        f'<span class="kpi-badge">Média</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(
-                        '<div class="kpi-container">'
-                        '<p class="kpi-title">Média de Matrículas por Escola</p>'
-                        '<p class="kpi-value">-</p>'
-                        '<span class="kpi-badge">Sem dados</span>'
-                        '</div>',
-                        unsafe_allow_html=True
-                    )
-            else:
-                if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                    media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
-                    if not media_por_dependencia.empty:
-                        media_geral = media_por_dependencia.mean()
+        # KPI 2: Média
+        with col2:
+            try:
+                if tipo_visualizacao == "Escola":
+                    if len(df_filtrado) > 0:
+                        media_por_escola = df_filtrado[coluna_dados].mean()
                         st.markdown(
                             f'<div class="kpi-container">'
-                            f'<p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p>'
-                            f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
+                            f'<p class="kpi-title">{ROTULO_MEDIA_POR_ESCOLA}</p>'
+                            f'<p class="kpi-value">{formatar_numero(media_por_escola)}</p>'
                             f'<span class="kpi-badge">Média</span>'
                             f'</div>',
                             unsafe_allow_html=True
@@ -1374,136 +765,210 @@ with kpi_container:
                     else:
                         st.markdown(
                             '<div class="kpi-container">'
-                            '<p class="kpi-title">Média de Matrículas</p>'
+                            '<p class="kpi-title">Média de Matrículas por Escola</p>'
                             '<p class="kpi-value">-</p>'
                             '<span class="kpi-badge">Sem dados</span>'
                             '</div>',
                             unsafe_allow_html=True
                         )
                 else:
-                    media_geral = df_filtrado[coluna_dados].mean()
+                    if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
+                        media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
+                        if not media_por_dependencia.empty:
+                            media_geral = media_por_dependencia.mean()
+                            st.markdown(
+                                f'<div class="kpi-container">'
+                                f'<p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p>'
+                                f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
+                                f'<span class="kpi-badge">Média</span>'
+                                f'</div>',
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.markdown(
+                                '<div class="kpi-container">'
+                                '<p class="kpi-title">Média de Matrículas</p>'
+                                '<p class="kpi-value">-</p>'
+                                '<span class="kpi-badge">Sem dados</span>'
+                                '</div>',
+                                unsafe_allow_html=True
+                            )
+                    else:
+                        media_geral = df_filtrado[coluna_dados].mean()
+                        st.markdown(
+                            f'<div class="kpi-container">'
+                            f'<p class="kpi-title">Média de Matrículas</p>'
+                            f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
+                            f'<span class="kpi-badge">Média</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+            except Exception as e:
+                st.markdown(
+                    '<div class="kpi-container">'
+                    '<p class="kpi-title">Média de Matrículas</p>'
+                    '<p class="kpi-value">-</p>'
+                    '<span class="kpi-badge">Erro</span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+                st.caption(f"Erro ao calcular: {str(e)}")
+
+        # KPI 3: Depende do tipo de visualização
+        with col3:
+            try:
+                if tipo_visualizacao == "Escola":
+                    total_escolas = len(df_filtrado)
                     st.markdown(
                         f'<div class="kpi-container">'
-                        f'<p class="kpi-title">Média de Matrículas</p>'
-                        f'<p class="kpi-value">{formatar_numero(media_geral)}</p>'
-                        f'<span class="kpi-badge">Média</span>'
+                        f'<p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p>'
+                        f'<p class="kpi-value">{formatar_numero(total_escolas)}</p>'
+                        f'<span class="kpi-badge">Contagem</span>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
-        except Exception as e:
-            st.markdown(
-                '<div class="kpi-container">'
-                '<p class="kpi-title">Média de Matrículas</p>'
-                '<p class="kpi-value">-</p>'
-                '<span class="kpi-badge">Erro</span>'
-                '</div>',
-                unsafe_allow_html=True
+                elif tipo_visualizacao == "Município":
+                    total_municipios = len(df_filtrado)
+                    st.markdown(
+                        f'<div class="kpi-container">'
+                        f'<p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p>'
+                        f'<p class="kpi-value">{formatar_numero(total_municipios)}</p>'
+                        f'<span class="kpi-badge">Contagem</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                else:  # Estado
+                    max_valor = df_filtrado[coluna_dados].max()
+                    st.markdown(
+                        f'<div class="kpi-container">'
+                        f'<p class="kpi-title">{ROTULO_MAXIMO_MATRICULAS}</p>'
+                        f'<p class="kpi-value">{formatar_numero(max_valor)}</p>'
+                        f'<span class="kpi-badge">Máximo</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+            except Exception as e:
+                if tipo_visualizacao == "Escola":
+                    st.markdown(
+                        '<div class="kpi-container">'
+                        '<p class="kpi-title">Total de Escolas</p>'
+                        '<p class="kpi-value">-</p>'
+                        '<span class="kpi-badge">Erro</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+                elif tipo_visualizacao == "Município":
+                    st.markdown(
+                        '<div class="kpi-container">'
+                        '<p class="kpi-title">Total de Municípios</p>'
+                        '<p class="kpi-value">-</p>'
+                        '<span class="kpi-badge">Erro</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        '<div class="kpi-container">'
+                        '<p class="kpi-title">Máximo de Matrículas</p>'
+                        '<p class="kpi-value">-</p>'
+                        '<span class="kpi-badge">Erro</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+                st.caption(f"Erro ao calcular: {str(e)}")
+
+    # -------------------------------
+    # Seção de Tabela de Dados Detalhados
+    # -------------------------------
+    st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
+
+    if tabela_exibicao.empty:
+        st.warning("Não há dados para exibir com os filtros selecionados.")
+    else:
+        # Adicionar opções de filtragem acima da tabela
+        filtro_col1, filtro_col2 = st.columns([1, 3])
+
+        with filtro_col1:
+            registros_por_pagina = st.selectbox(
+                "Registros por página:",
+                options=[10, 25, 50, 100, "Todos"],
+                index=1  # Padrão: 25
             )
-            st.caption(f"Erro ao calcular: {str(e)}")
 
-    # KPI 3: Depende do tipo de visualização
-    with col3:
-        try:
-            if tipo_visualizacao == "Escola":
-                total_escolas = len(df_filtrado)
-                st.markdown(
-                    f'<div class="kpi-container">'
-                    f'<p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p>'
-                    f'<p class="kpi-value">{formatar_numero(total_escolas)}</p>'
-                    f'<span class="kpi-badge">Contagem</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
+        with filtro_col2:
+            if len(tabela_exibicao) > 0 and coluna_dados in tabela_exibicao.columns:
+                ordem_tabela = st.radio(
+                    "Ordenar por:",
+                    ["Maior valor", "Menor valor", "Alfabético (A-Z)", "Alfabético (Z-A)"],
+                    horizontal=True
                 )
-            elif tipo_visualizacao == "Município":
-                total_municipios = len(df_filtrado)
-                st.markdown(
-                    f'<div class="kpi-container">'
-                    f'<p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p>'
-                    f'<p class="kpi-value">{formatar_numero(total_municipios)}</p>'
-                    f'<span class="kpi-badge">Contagem</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            else:  # Estado
-                max_valor = df_filtrado[coluna_dados].max()
-                st.markdown(
-                    f'<div class="kpi-container">'
-                    f'<p class="kpi-title">{ROTULO_MAXIMO_MATRICULAS}</p>'
-                    f'<p class="kpi-value">{formatar_numero(max_valor)}</p>'
-                    f'<span class="kpi-badge">Máximo</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-        except Exception as e:
-            if tipo_visualizacao == "Escola":
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Total de Escolas</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-            elif tipo_visualizacao == "Município":
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Total de Municípios</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Máximo de Matrículas</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-            st.caption(f"Erro ao calcular: {str(e)}")
 
-# -------------------------------
-# Seção de Tabela de Dados Detalhados
-# -------------------------------
-st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
+                if ordem_tabela == "Maior valor":
+                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_dados, ascending=False)
+                elif ordem_tabela == "Menor valor":
+                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_dados, ascending=True)
+                elif ordem_tabela == "Alfabético (A-Z)":
+                    if "NOME DA ESCOLA" in tabela_exibicao.columns:
+                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA ESCOLA", ascending=True)
+                    elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
+                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DO MUNICIPIO", ascending=True)
+                    elif "NOME DA UF" in tabela_exibicao.columns:
+                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA UF", ascending=True)
+                elif ordem_tabela == "Alfabético (Z-A)":
+                    if "NOME DA ESCOLA" in tabela_exibicao.columns:
+                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA ESCOLA", ascending=False)
+                    elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
+                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DO MUNICIPIO", ascending=False)
+                    elif "NOME DA UF" in tabela_exibicao.columns:
+                        tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA UF", ascending=False)
 
-posicao_totais_map = {
-    "Rodapé": "bottom",
-    "Topo": "top",
-    "Nenhum": None
-}
+        # Total de registros
+        st.caption(f"Total de registros: {len(tabela_exibicao):,}".replace(",", "."))
 
-if tabela_exibicao.empty:
-    st.warning("Não há dados para exibir com os filtros selecionados.")
-else:
-    # Preenche colunas nulas com string vazia para evitar erros
-    for col in tabela_exibicao.columns:
-        if tabela_exibicao[col].isnull().any():
-            tabela_exibicao[col] = tabela_exibicao[col].fillna('')
+        # Implementar paginação
+        if registros_por_pagina != "Todos":
+            registros_por_pagina = int(registros_por_pagina)
+            num_paginas = (len(tabela_exibicao) - 1) // registros_por_pagina + 1
 
-    try:
-        exibir_tabela_com_aggrid(
-            tabela_exibicao,
-            altura=altura_tabela,
-            coluna_dados=coluna_dados,
-            posicao_totais=posicao_totais_map.get(posicao_totais),
-            tipo_visualizacao=tipo_visualizacao
-        )
-    except Exception as e:
-        st.error(f"Erro ao exibir tabela no AgGrid: {str(e)}")
-        # Fallback simples
-        st.dataframe(tabela_exibicao, height=altura_tabela)
+            pagina_atual = st.number_input(
+                "Página",
+                min_value=1,
+                max_value=num_paginas,
+                value=1,
+                step=1
+            )
 
-# -------------------------------
-# Rodapé do Dashboard
-# -------------------------------
-st.markdown("---")
-st.markdown(RODAPE_NOTA)
+            inicio = (pagina_atual - 1) * registros_por_pagina
+            fim = min(inicio + registros_por_pagina, len(tabela_exibicao))
 
-# Tempo de execução
-tempo_final = time.time()
-tempo_total = round(tempo_final - st.session_state.get('tempo_inicio', tempo_final), 2)
-st.session_state['tempo_inicio'] = tempo_final
-st.caption(f"Tempo de processamento: {tempo_total} segundos")
+            df_paginado = tabela_exibicao.iloc[inicio:fim]
+            st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
+
+            # Informação da paginação
+            st.caption(f"Exibindo registros {inicio + 1} a {fim} de {len(tabela_exibicao):,}".replace(",", "."))
+        else:
+            st.dataframe(tabela_exibicao, height=altura_tabela, use_container_width=True)
+
+        # Adiciona linha de totais
+        if coluna_dados in tabela_exibicao.columns:
+            total_col = tabela_exibicao[coluna_dados].sum()
+            st.markdown(f"**Total de {coluna_dados}:** {formatar_numero(total_col)}")
+
+    # -------------------------------
+    # Rodapé do Dashboard
+    # -------------------------------
+    st.markdown("---")
+    st.markdown(RODAPE_NOTA)
+
+    # Tempo de execução
+    tempo_final = time.time()
+    tempo_total = round(tempo_final - st.session_state.get('tempo_inicio', tempo_final), 2)
+    st.session_state['tempo_inicio'] = tempo_final
+    st.caption(f"Tempo de processamento: {tempo_total} segundos")
+
+
+
+
+
+
+
