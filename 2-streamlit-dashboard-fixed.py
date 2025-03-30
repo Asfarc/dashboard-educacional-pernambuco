@@ -1123,16 +1123,16 @@ else:
 
     # Configurações de paginação e ordenação ANTES dos filtros
     if tipo_visualizacao != "Estado":
-        config_col1 = st.columns([1, 3])
-
-        # with config_col1:
-        #     registros_por_pagina = st.selectbox(
-        #         "Registros por página:",
-        #         options=[10, 25, 50, 100, "Todos"],
-        #         index=1  # Padrão: 25
-        #     )
+        config_col1, config_col2 = st.columns([1, 3])
 
         with config_col1:
+            registros_por_pagina = st.selectbox(
+                "Registros por página:",
+                options=[10, 25, 50, 100, "Todos"],
+                index=1  # Padrão: 25
+            )
+
+        with config_col2:
             opcoes_ordenacao = ["Maior valor", "Menor valor"]
             if "NOME DA ESCOLA" in tabela_exibicao.columns:
                 opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
