@@ -7,8 +7,6 @@ import io
 import json
 import re
 from constantes import *  # Importa constantes (rótulos, textos, etc.)
-
-# Inicialização do tempo de execução
 import time
 
 if 'tempo_inicio' not in st.session_state:
@@ -286,34 +284,22 @@ def aplicar_padrao_numerico_brasileiro(numero):
     if pd.isna(numero) or numero == "-":
         return "-"
 
-    # Verifica se o valor é numérico
     try:
         float_numero = float(numero)
-        # Exibe sem casas decimais se for inteiro
         if float_numero.is_integer():
             return f"{int(float_numero):,}".replace(",", ".")
         else:
-            # 2 casas decimais
             parte_inteira = int(float_numero)
             parte_decimal = abs(float_numero - parte_inteira)
             inteiro_fmt = f"{parte_inteira:,}".replace(",", ".")
             decimal_fmt = f"{parte_decimal:.2f}".replace("0.", "").replace(".", ",")
             return f"{inteiro_fmt},{decimal_fmt}"
     except (ValueError, TypeError):
-        # Se não for numérico, retorna o valor original como string
         return str(numero)
 
-@st.cache_data(ttl=3600)  # Cache por 1 hora
+@st.cache_data(ttl=3600)
 def importar_arquivos_parquet():
-    """
-    Carrega os dados das planilhas no formato Parquet.
-    - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
-    - Converte colunas que começam com 'Número de' para tipo numérico.
-    - Mantém outras colunas como texto.
-    Em caso de erro, exibe uma mensagem e interrompe a execução.
-    """
     try:
-        # Caminho dos arquivos no diretório atual
         escolas_path = "escolas.parquet"
         estado_path = "estado.parquet"
         municipio_path = "municipio.parquet"
@@ -325,14 +311,12 @@ def importar_arquivos_parquet():
         estado_df = pd.read_parquet(estado_path)
         municipio_df = pd.read_parquet(municipio_path)
 
-        # Agora o processamento das colunas
+        # Converte colunas
         for df_ in [escolas_df, estado_df, municipio_df]:
             for col in df_.columns:
-                # Converte apenas colunas de matrículas para numérico
                 if col.startswith("Número de"):
                     df_[col] = pd.to_numeric(df_[col], errors='coerce')
                 elif col in ["ANO", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA", "CODIGO DA UF"]:
-                    # Garante que estas colunas sejam tratadas como texto
                     df_[col] = df_[col].astype(str)
 
         return escolas_df, estado_df, municipio_df
@@ -344,43 +328,29 @@ def importar_arquivos_parquet():
 
 @st.cache_data
 def ler_dicionario_de_etapas():
-    """
-    Carrega o mapeamento de colunas a partir do arquivo JSON.
-    """
     try:
         json_path = "dicionario_das_etapas_de_ensino.json"
-
         if not os.path.exists(json_path):
             raise FileNotFoundError("Arquivo dicionario_das_etapas_de_ensino.json não encontrado")
-
         with open(json_path, "r", encoding="utf-8") as f:
             return json.load(f)
-
     except Exception as e:
         st.error(f"Erro ao carregar o mapeamento de colunas: {e}")
         st.stop()
 
 @st.cache_data
 def padronizar_dicionario_de_etapas(df):
-    """
-    Ajusta o mapeamento de colunas original para considerar
-    possíveis variações de nome nas colunas do DF real.
-    """
     colunas_map = {}
     for col in df.columns:
-        # Normaliza removendo quebras de linha e espaços extras
         nome_normalizado = col.replace('\n', '').lower().strip()
         colunas_map[nome_normalizado] = col
 
     def obter_coluna_real(nome_padrao):
         if nome_padrao in df.columns:
             return nome_padrao
-
-        # Normaliza o nome padrão também
         nome_normalizado = nome_padrao.replace('\n', '').lower().strip()
         if nome_normalizado in colunas_map:
             return colunas_map[nome_normalizado]
-
         return nome_padrao
 
     mapeamento_base = ler_dicionario_de_etapas()
@@ -392,10 +362,8 @@ def padronizar_dicionario_de_etapas(df):
             "subetapas": {},
             "series": {}
         }
-
         for subetapa, coluna in config.get("subetapas", {}).items():
             mapeamento_ajustado[etapa]["subetapas"][subetapa] = obter_coluna_real(coluna)
-
         for sub, series_dict in config.get("series", {}).items():
             if sub not in mapeamento_ajustado[etapa]["series"]:
                 mapeamento_ajustado[etapa]["series"][sub] = {}
@@ -405,10 +373,6 @@ def padronizar_dicionario_de_etapas(df):
     return mapeamento_ajustado
 
 def procurar_coluna_matriculas_por_etapa(etapa, subetapa, serie, mapeamento):
-    """
-    Retorna o nome da coluna que contém os dados de matrículas
-    de acordo com a etapa, subetapa e série.
-    """
     if etapa not in mapeamento:
         st.error(ERRO_ETAPA_NAO_ENCONTRADA.format(etapa))
         return ""
@@ -430,31 +394,19 @@ def procurar_coluna_matriculas_por_etapa(etapa, subetapa, serie, mapeamento):
 
     return series_subetapa[serie]
 
-
 def confirmar_existencia_colunas_apos_normalizacao(df, coluna_nome):
-    """
-    Verifica se a coluna existe no DataFrame,
-    levando em conta variações de maiúsculas/minúsculas e quebras de linha.
-    """
     if not coluna_nome:
         return False, ""
-
     if coluna_nome in df.columns:
         return True, coluna_nome
 
     coluna_normalizada = coluna_nome.replace('\n', '').lower().strip()
     colunas_normalizadas = {col.replace('\n', '').lower().strip(): col for col in df.columns}
-
     if coluna_normalizada in colunas_normalizadas:
         return True, colunas_normalizadas[coluna_normalizada]
-
     return False, coluna_nome
 
-
 def gerar_arquivo_csv(df):
-    """
-    Converte o DataFrame para CSV em memória e retorna como bytes.
-    """
     if df is None or df.empty:
         return "Não há dados para exportar.".encode('utf-8')
     try:
@@ -463,12 +415,7 @@ def gerar_arquivo_csv(df):
         st.error(f"Erro ao converter para CSV: {str(e)}")
         return "Erro na conversão".encode('utf-8')
 
-
 def gerar_planilha_excel(df):
-    """
-    Converte o DataFrame para Excel em memória e retorna como bytes.
-    Adiciona formatações específicas na planilha.
-    """
     if df is None or df.empty:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -481,8 +428,6 @@ def gerar_planilha_excel(df):
 
             workbook = writer.book
             worksheet = writer.sheets['Dados']
-
-            # Formato para números
             formato_numero = workbook.add_format({'num_format': '#,##0'})
             formato_cabecalho = workbook.add_format({
                 'bold': True,
@@ -492,19 +437,13 @@ def gerar_planilha_excel(df):
                 'font_color': 'white',
                 'border': 1
             })
-
-            # Aplica formato de cabeçalho
             for col_num, value in enumerate(df.columns.values):
                 worksheet.write(0, col_num, value, formato_cabecalho)
-
-            # Aplica formato numérico para colunas que começam com "Número de"
             for i, col in enumerate(df.columns):
                 if col.startswith("Número de"):
                     worksheet.set_column(i, i, 15, formato_numero)
                 else:
                     worksheet.set_column(i, i, 15)
-
-            # Ajusta a largura das colunas de acordo com o conteúdo
             for i, col in enumerate(df.columns):
                 column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
                 worksheet.set_column(i, i, column_width)
@@ -516,6 +455,23 @@ def gerar_planilha_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
+# -----------------------------------------------------------------------------
+# Função para Paginação (chunk) - inspirada no snippet que você viu na internet
+# -----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def split_frame(input_df: pd.DataFrame, rows_per_page: int):
+    """
+    Recebe um DataFrame e o número de linhas por página (rows_per_page).
+    Retorna uma lista de DataFrames, cada qual com 'rows_per_page' linhas.
+    Se a última página tiver menos linhas que rows_per_page, também é retornada.
+    """
+    # Por exemplo, se len(input_df)=100 e rows_per_page=25,
+    # cria 4 DataFrames de 25 linhas cada.
+    chunks = []
+    for i in range(0, len(input_df), rows_per_page):
+        chunk = input_df.iloc[i : i + rows_per_page]
+        chunks.append(chunk)
+    return chunks
 
 # -------------------------------
 # Carregamento de Dados
@@ -524,7 +480,6 @@ with st.container():
     try:
         escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
 
-        # Verificação adicional para garantir que os DataFrames não estão vazios
         if escolas_df.empty:
             st.error("O DataFrame de escolas está vazio.")
         if municipio_df.empty:
@@ -532,7 +487,6 @@ with st.container():
         if estado_df.empty:
             st.error("O DataFrame de estados está vazio.")
 
-        # Verificar colunas críticas
         for df_nome, df_temp in [("escolas", escolas_df), ("município", municipio_df), ("estado", estado_df)]:
             if "ANO" not in df_temp.columns:
                 st.error(f"Coluna 'ANO' não encontrada no DataFrame de {df_nome}.")
@@ -565,7 +519,6 @@ if df.empty:
     st.error(f"Não há dados disponíveis para o nível de agregação '{tipo_nivel_agregacao_selecionado}'.")
     st.stop()
 
-# Debug
 if st.sidebar.checkbox("Mostrar informações de debug", value=False):
     st.sidebar.write(f"Colunas no DataFrame de {tipo_nivel_agregacao_selecionado}:")
     st.sidebar.write(df.columns.tolist())
@@ -631,7 +584,9 @@ if (
     and "series" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]
     and subetapa_selecionada in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"]
 ):
-    lista_de_series_das_etapas_de_ensino = list(dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"][subetapa_selecionada].keys())
+    lista_de_series_das_etapas_de_ensino = list(
+        dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"][subetapa_selecionada].keys()
+    )
     serie_selecionada = st.sidebar.selectbox(
         "Série:",
         ["Todas"] + lista_de_series_das_etapas_de_ensino
@@ -860,7 +815,6 @@ container_indicadores_principais = st.container()
 with container_indicadores_principais:
     col1, col2, col3 = st.columns(3)
 
-    # KPI 1: Total de Matrículas
     try:
         if coluna_matriculas_por_etapa in df_filtrado.columns:
             total_matriculas = df_filtrado[coluna_matriculas_por_etapa].sum()
@@ -895,7 +849,6 @@ with container_indicadores_principais:
             )
             st.caption(f"Erro ao calcular: {str(e)}")
 
-    # KPI 2: Média
     with col2:
         try:
             if coluna_matriculas_por_etapa in df_filtrado.columns:
@@ -921,7 +874,7 @@ with container_indicadores_principais:
                         )
                 else:
                     if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                        if not df_filtrado.empty and coluna_matriculas_por_etapa in df_filtrado.columns:
+                        if not df_filtrado.empty:
                             media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_matriculas_por_etapa].mean()
                             if not media_por_dependencia.empty:
                                 media_geral = media_por_dependencia.mean()
@@ -952,7 +905,7 @@ with container_indicadores_principais:
                                 unsafe_allow_html=True
                             )
                     else:
-                        if not df_filtrado.empty and coluna_matriculas_por_etapa in df_filtrado.columns:
+                        if not df_filtrado.empty:
                             media_geral = df_filtrado[coluna_matriculas_por_etapa].mean()
                             st.markdown(
                                 f'<div class="kpi-container">'
@@ -991,7 +944,6 @@ with container_indicadores_principais:
             )
             st.caption(f"Erro ao calcular: {str(e)}")
 
-    # KPI 3
     with col3:
         try:
             if tipo_nivel_agregacao_selecionado == "Escola":
@@ -1080,11 +1032,9 @@ else:
             colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
             if coluna_real in tabela_exibicao.columns:
                 colunas_essenciais.append(coluna_real)
-
             for col in ["ANO", "CODIGO DA UF", "NOME DA UF"]:
                 if col in tabela_exibicao.columns:
                     colunas_essenciais.append(col)
-
             tabela_simplificada = tabela_exibicao[colunas_essenciais].copy()
 
             st.write("Dados por Dependência Administrativa:")
@@ -1114,13 +1064,15 @@ else:
 
     else:
         try:
-            # Ainda preservamos a lógica de filtros manuais acima das colunas
-            df_filtrado_final = tabela_exibicao.copy()
+            # ------------------------------------------------------------
+            # Exemplo de Paginação manual por 'chunk' (split_frame)
+            # ------------------------------------------------------------
+            df_sem_filtros_texto = tabela_exibicao.copy()  # Base inicial
 
-            # Filtros manuais
+            # Filtros manuais acima das colunas (opcional)
             col_filters = {}
-            filtro_cols = st.columns(len(df_filtrado_final.columns))
-            for i, col_name in enumerate(df_filtrado_final.columns):
+            filtro_cols = st.columns(len(df_sem_filtros_texto.columns))
+            for i, col_name in enumerate(df_sem_filtros_texto.columns):
                 with filtro_cols[i]:
                     st.write(f"**{col_name}**")
                     col_filters[col_name] = st.text_input(
@@ -1130,7 +1082,7 @@ else:
                         placeholder=f"Filtrar {col_name}..."
                     )
 
-            df_texto_filtrado = df_filtrado_final.copy()
+            df_texto_filtrado = df_sem_filtros_texto.copy()
             for col_name, filter_text in col_filters.items():
                 if filter_text:
                     try:
@@ -1139,10 +1091,8 @@ else:
                             pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name])):
                             try:
                                 filter_text_ponto = filter_text.replace(',', '.')
-                                if (
-                                    filter_text_ponto.replace('.', '', 1).isdigit() and
-                                    filter_text_ponto.count('.') <= 1
-                                ):
+                                if (filter_text_ponto.replace('.', '', 1).isdigit() and
+                                    filter_text_ponto.count('.') <= 1):
                                     num_value = float(filter_text_ponto)
                                     df_texto_filtrado = df_texto_filtrado[
                                         df_texto_filtrado[col_name] == num_value
@@ -1155,7 +1105,7 @@ else:
                                             regex=True
                                         )
                                     ]
-                            except Exception:
+                            except:
                                 df_texto_filtrado = df_texto_filtrado[
                                     df_texto_filtrado[col_name].astype(str).str.contains(
                                         filter_text_escaped,
@@ -1174,100 +1124,32 @@ else:
                     except Exception as e:
                         st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
 
-            # Paginação manual (opcional)
-            config_col1, config_col2 = st.columns([1, 3])
-            with config_col1:
-                registros_por_pagina = st.selectbox(
-                    "Registros por página:",
-                    options=[10, 25, 50, 100, "Todos"],
-                    index=1  # Padrão: 25
-                )
-                if registros_por_pagina != "Todos":
-                    registros_por_pagina = int(registros_por_pagina)
-                else:
-                    registros_por_pagina = len(df_texto_filtrado)
+            # Agora definimos o "Page Size" e dividimos o DF em páginas
+            left_col, right_col = st.columns([1, 3])
+            with left_col:
+                page_size = st.selectbox("Page Size", options=[10, 25, 50, 100], index=0)
+            with right_col:
+                st.write(f"**Total de Registros após filtros:** {len(df_texto_filtrado)}")
 
-            with config_col2:
-                # Ordenação simples
-                opcoes_ordenacao = ["Maior valor", "Menor valor"]
-                if "NOME DA ESCOLA" in df_texto_filtrado.columns:
-                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
-                if "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
-                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
-
-                ordem_tabela = None
-                if coluna_real in df_texto_filtrado.columns:
-                    ordem_tabela = st.radio(
-                        "Ordenar por:",
-                        opcoes_ordenacao,
-                        horizontal=True
-                    )
-
-            if ordem_tabela:
-                if ordem_tabela == "Maior valor" and coluna_real in df_texto_filtrado.columns:
-                    df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=False)
-                elif ordem_tabela == "Menor valor" and coluna_real in df_texto_filtrado.columns:
-                    df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=True)
-                elif "por Escola" in ordem_tabela and "NOME DA ESCOLA" in df_texto_filtrado.columns:
-                    df_texto_filtrado = df_texto_filtrado.sort_values(
-                        by="NOME DA ESCOLA",
-                        ascending=("A-Z" in ordem_tabela)
-                    )
-                elif "por Município" in ordem_tabela and "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
-                    df_texto_filtrado = df_texto_filtrado.sort_values(
-                        by="NOME DO MUNICIPIO",
-                        ascending=("A-Z" in ordem_tabela)
-                    )
-
-            # Exemplo de paginação manual
-            if len(df_texto_filtrado) > 0:
-                total_linhas = len(df_texto_filtrado)
-                num_paginas = max(1, (total_linhas - 1) // registros_por_pagina + 1)
-                pagina_atual = st.number_input(
+            # Usar a função split_frame
+            paginated_frames = split_frame(df_texto_filtrado, page_size)
+            total_pages = len(paginated_frames)
+            if total_pages == 0:
+                st.warning("Nenhum registro para exibir após filtragem.")
+            else:
+                current_page = st.number_input(
                     "Página",
                     min_value=1,
-                    max_value=num_paginas,
+                    max_value=total_pages,
                     value=1,
                     step=1
                 )
-                inicio = (pagina_atual - 1) * registros_por_pagina
-                fim = min(inicio + registros_por_pagina, total_linhas)
-                df_paginado = df_texto_filtrado.iloc[inicio:fim]
+                st.markdown(f"**Exibindo Página {current_page} de {total_pages}**")
 
-                st.write("### Visualização via st.dataframe (filtros manuais):")
-                st.dataframe(
-                    df_paginado,
-                    height=altura_tabela,
-                    use_container_width=True
-                )
-                st.caption(f"Exibindo registros {inicio+1} a {fim} de {total_linhas}")
+                # Exibe o chunk atual
+                df_pagina_atual = paginated_frames[current_page - 1]
+                st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
 
-                # Soma total
-                if coluna_real in df_texto_filtrado.columns:
-                    total_col = pd.to_numeric(tabela_dados.loc[df_texto_filtrado.index, coluna_real], errors='coerce').sum()
-                    st.markdown(f"**Total de {coluna_real} (página atualizada):** {aplicar_padrao_numerico_brasileiro(total_col)}")
-
-                # -------------------------------------------
-                # Tabela Interativa com st.data_editor
-                # -------------------------------------------
-                st.write("---")
-                st.write("### Visualização via st.data_editor (filtros nativos, ordenação e paginação):")
-
-                # Definir paginação local e tamanho de página
-                page_size_value = min(registros_por_pagina, len(df_texto_filtrado)) if registros_por_pagina > 0 else 10
-
-                # st.data_editor sem edição, mas com filtros visíveis
-                _ = st.data_editor(
-                    df_texto_filtrado,
-                    disabled=True,
-                    use_container_width=True,
-                    height=altura_tabela,
-                    pagination="local",       # habilita paginação nativa
-                    page_size=page_size_value,
-                    filters="visible"         # exibe filtros nativos no cabeçalho
-                )
-            else:
-                st.warning("Nenhum registro encontrado com os filtros aplicados.")
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
             st.dataframe(tabela_exibicao.head(50))
