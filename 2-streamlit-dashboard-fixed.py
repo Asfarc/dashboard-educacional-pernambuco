@@ -1347,15 +1347,16 @@ else:
             # ------------------------------------
             # Filtros de texto por coluna
             # ------------------------------------
+            # Layout em colunas para os filtros de texto
             st.markdown("### Filtros por coluna")
 
-            # Layout em colunas para os filtros de texto
-            num_cols = min(4, len(df_filtrado_final.columns))
-            filter_cols = st.columns(num_cols)
+            # Criar colunas para cada campo da tabela
+            header_cols = st.columns(len(df_filtrado_final.columns))
             col_filters = {}
 
+            # Criar um campo de filtro para cada coluna na posição correta
             for i, col_name in enumerate(df_filtrado_final.columns):
-                with filter_cols[i % num_cols]:
+                with header_cols[i]:
                     st.markdown(f"**{col_name}**")
                     col_filters[col_name] = st.text_input(
                         "",
