@@ -324,14 +324,22 @@ def criar_mapeamento_colunas(df):
     Ajusta o mapeamento de colunas original para considerar
     possíveis variações de nome nas colunas do DF real.
     """
-    colunas_map = {col.lower().strip(): col for col in df.columns}
+    # Normalizar nomes de colunas para lidar com inconsistências como quebras de linha
+    colunas_map = {}
+    for col in df.columns:
+        # Normaliza removendo quebras de linha e espaços extras
+        nome_normalizado = col.replace('\n', '').lower().strip()
+        colunas_map[nome_normalizado] = col
 
     def obter_coluna_real(nome_padrao):
         if nome_padrao in df.columns:
             return nome_padrao
-        nome_normalizado = nome_padrao.lower().strip()
+
+        # Normaliza o nome padrão também
+        nome_normalizado = nome_padrao.replace('\n', '').lower().strip()
         if nome_normalizado in colunas_map:
             return colunas_map[nome_normalizado]
+
         return nome_padrao
 
     mapeamento_base = carregar_mapeamento_colunas()
@@ -386,19 +394,22 @@ def obter_coluna_dados(etapa, subetapa, serie, mapeamento):
 def verificar_coluna_existe(df, coluna_nome):
     """
     Verifica se a coluna existe no DataFrame,
-    levando em conta variações de maiúsculas/minúsculas.
-    Retorna (True, nome_correto) caso exista; senão, (False, nome_original).
+    levando em conta variações de maiúsculas/minúsculas e quebras de linha.
     """
     if not coluna_nome:
         return False, ""
+
     if coluna_nome in df.columns:
         return True, coluna_nome
-    coluna_normalizada = coluna_nome.lower().strip()
-    colunas_normalizadas = {col.lower().strip(): col for col in df.columns}
+
+    # Normaliza removendo quebras de linha e espaços
+    coluna_normalizada = coluna_nome.replace('\n', '').lower().strip()
+    colunas_normalizadas = {col.replace('\n', '').lower().strip(): col for col in df.columns}
+
     if coluna_normalizada in colunas_normalizadas:
         return True, colunas_normalizadas[coluna_normalizada]
-    return False, coluna_nome
 
+    return False, coluna_nome
 
 def converter_df_para_csv(df):
     """
@@ -668,7 +679,7 @@ colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
 
-# Definir colunas base de acordo com o tipo de visualização e verificar disponibilidade
+# Definir colunas base de acordo com o tipo de visualização
 if tipo_visualizacao == "Escola":
     colunas_base = [
         "CODIGO DA ESCOLA",
@@ -677,29 +688,16 @@ if tipo_visualizacao == "Escola":
         "NOME DO MUNICIPIO",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
-    # Adicionar UF apenas se disponível
-    if "CODIGO DA UF" in df_filtrado.columns:
-        colunas_base.append("CODIGO DA UF")
-    if "NOME DA UF" in df_filtrado.columns:
-        colunas_base.append("NOME DA UF")
 elif tipo_visualizacao == "Município":
     colunas_base = [
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
-    # Adicionar UF apenas se disponível
-    if "CODIGO DA UF" in df_filtrado.columns:
-        colunas_base.append("CODIGO DA UF")
-    if "NOME DA UF" in df_filtrado.columns:
-        colunas_base.append("NOME DA UF")
 else:  # Estado
-    colunas_base = ["DEPENDENCIA ADMINISTRATIVA"]
-    # Adicionar UF apenas se disponível
-    if "CODIGO DA UF" in df_filtrado.columns:
-        colunas_base.append("CODIGO DA UF")
-    if "NOME DA UF" in df_filtrado.columns:
-        colunas_base.append("NOME DA UF")
+    colunas_base = [
+        "DEPENDENCIA ADMINISTRATIVA"
+    ]
 
 # Adicionar apenas colunas que existem no DataFrame
 for col in colunas_base:
@@ -708,8 +706,15 @@ for col in colunas_base:
     else:
         st.sidebar.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_visualizacao}")
 
+# Tentar encontrar a coluna de matrículas principal independentemente da formatação
+for col in df_filtrado.columns:
+    if "número de matrículas da educação básica" in col.lower().replace('\n', ''):
+        if col not in colunas_tabela:
+            colunas_tabela.append(col)
+            break
+
 # Inclui a coluna de dados principal (caso exista)
-if coluna_dados in df_filtrado.columns:
+if coluna_dados in df_filtrado.columns and coluna_dados not in colunas_tabela:
     colunas_tabela.append(coluna_dados)
 
 # Multiselect de colunas opcionais
@@ -735,16 +740,34 @@ col1, col2 = st.sidebar.columns(2)
 
 # Preparar tabela para exibição e download
 try:
+    # Verificar se a coluna de dados existe, considerando possíveis variações no nome
+    coluna_existe = False
+    coluna_real = coluna_dados
+
+    # Verificação direta
     if coluna_dados in df_filtrado.columns:
-        with pd.option_context('mode.chained_assignment', None):
-            df_filtrado_tabela = df_filtrado[colunas_existentes].copy()
-            # Converter coluna de dados para numérico se existir
-            df_filtrado_tabela[coluna_dados] = pd.to_numeric(df_filtrado_tabela[coluna_dados], errors='coerce')
-        # Ordenar por coluna de dados (descrescente)
-        tabela_dados = df_filtrado_tabela.sort_values(by=coluna_dados, ascending=False)
-        tabela_exibicao = tabela_dados.copy()
+        coluna_existe = True
     else:
-        tabela_dados = df_filtrado[colunas_existentes].copy()
+        # Busca alternativa considerando quebras de linha
+        coluna_normalizada = coluna_dados.replace('\n', '').lower().strip()
+        for col in df_filtrado.columns:
+            if col.replace('\n', '').lower().strip() == coluna_normalizada:
+                coluna_existe = True
+                coluna_real = col
+                break
+
+    # Criar cópia do DataFrame para exibição e downloads
+    with pd.option_context('mode.chained_assignment', None):
+        df_filtrado_tabela = df_filtrado[colunas_existentes].copy()
+
+        # Converter coluna de dados para numérico se existir
+        if coluna_existe and coluna_real in df_filtrado_tabela.columns:
+            df_filtrado_tabela[coluna_real] = pd.to_numeric(df_filtrado_tabela[coluna_real], errors='coerce')
+            # Ordenar por coluna de dados (decrescente)
+            tabela_dados = df_filtrado_tabela.sort_values(by=coluna_real, ascending=False)
+        else:
+            tabela_dados = df_filtrado_tabela
+
         tabela_exibicao = tabela_dados.copy()
 
     # Verificar se a tabela está vazia
@@ -778,6 +801,10 @@ try:
             st.error(f"Erro ao preparar Excel para download: {str(e)}")
 except Exception as e:
     st.error(f"Erro ao preparar dados para download: {str(e)}")
+    # Inicializar tabela_dados e tabela_exibicao caso não existam
+    if 'tabela_dados' not in locals() or 'tabela_exibicao' not in locals():
+        tabela_dados = df_filtrado[colunas_existentes].copy() if not df_filtrado.empty else pd.DataFrame()
+        tabela_exibicao = tabela_dados.copy()
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
@@ -1027,7 +1054,7 @@ else:
             elif "NOME DA UF" in tabela_exibicao.columns:
                 opcoes_ordenacao.extend(["Alfabético (A-Z) por UF", "Alfabético (Z-A) por UF"])
 
-            if len(opcoes_ordenacao) > 2 and coluna_dados in tabela_exibicao.columns:
+            if len(opcoes_ordenacao) > 2 and coluna_real in tabela_exibicao.columns:
                 ordem_tabela = st.radio(
                     "Ordenar por:",
                     opcoes_ordenacao,
@@ -1035,9 +1062,9 @@ else:
                 )
 
                 if ordem_tabela == "Maior valor":
-                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_dados, ascending=False)
+                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=False)
                 elif ordem_tabela == "Menor valor":
-                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_dados, ascending=True)
+                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=True)
                 elif "por Escola" in ordem_tabela:
                     tabela_exibicao = tabela_exibicao.sort_values(
                         by="NOME DA ESCOLA",
@@ -1092,9 +1119,9 @@ else:
             st.dataframe(tabela_exibicao, height=altura_tabela, use_container_width=True)
 
         # Adiciona linha de totais
-        if coluna_dados in tabela_exibicao.columns:
-            total_col = tabela_exibicao[coluna_dados].sum()
-            st.markdown(f"**Total de {coluna_dados}:** {formatar_numero(total_col)}")
+        if coluna_real in tabela_exibicao.columns:
+            total_col = tabela_exibicao[coluna_real].sum()
+            st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
 
     except Exception as e:
         st.error(f"Erro ao exibir a tabela: {str(e)}")
