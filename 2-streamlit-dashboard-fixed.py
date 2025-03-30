@@ -806,6 +806,7 @@ except Exception as e:
         tabela_dados = df_filtrado[colunas_existentes].copy() if not df_filtrado.empty else pd.DataFrame()
         tabela_exibicao = tabela_dados.copy()
 
+
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
