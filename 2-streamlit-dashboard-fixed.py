@@ -306,6 +306,7 @@ def aplicar_padrao_numerico_brasileiro(numero):
 
 @st.cache_data(ttl=3600)  # Cache por 1 hora
 def importar_arquivos_parquet():
+    print("Função importar_arquivos_parquet foi chamada")
     """
     Carrega os dados das planilhas no formato Parquet.
     - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
