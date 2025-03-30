@@ -366,7 +366,6 @@ def padronizar_dicionario_de_etapas(df):
     Ajusta o mapeamento de colunas original para considerar
     possíveis variações de nome nas colunas do DF real.
     """
-    # Normalizar nomes de colunas para lidar com inconsistências como quebras de linha
     colunas_map = {}
     for col in df.columns:
         # Normaliza removendo quebras de linha e espaços extras
@@ -443,7 +442,6 @@ def confirmar_existencia_colunas_apos_normalizacao(df, coluna_nome):
     if coluna_nome in df.columns:
         return True, coluna_nome
 
-    # Normaliza removendo quebras de linha e espaços
     coluna_normalizada = coluna_nome.replace('\n', '').lower().strip()
     colunas_normalizadas = {col.replace('\n', '').lower().strip(): col for col in df.columns}
 
@@ -481,7 +479,6 @@ def gerar_planilha_excel(df):
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Dados')
 
-            # Adiciona formatação para o Excel
             workbook = writer.book
             worksheet = writer.sheets['Dados']
 
@@ -523,10 +520,8 @@ def gerar_planilha_excel(df):
 # -------------------------------
 # Carregamento de Dados
 # -------------------------------
-# Usar um container para isolar potenciais mensagens
 with st.container():
     try:
-        # Tentar carregar os dados diretamente
         escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
 
         # Verificação adicional para garantir que os DataFrames não estão vazios
@@ -537,19 +532,16 @@ with st.container():
         if estado_df.empty:
             st.error("O DataFrame de estados está vazio.")
 
-        # Verificar colunas críticas em cada DataFrame
-        for df_nome, df in [("escolas", escolas_df), ("município", municipio_df), ("estado", estado_df)]:
-            if "ANO" not in df.columns:
+        # Verificar colunas críticas
+        for df_nome, df_temp in [("escolas", escolas_df), ("município", municipio_df), ("estado", estado_df)]:
+            if "ANO" not in df_temp.columns:
                 st.error(f"Coluna 'ANO' não encontrada no DataFrame de {df_nome}.")
 
     except Exception as e:
         st.error(f"Erro ao carregar dados: {str(e)}")
-
-        # Criar DataFrames vazios em caso de erro
         escolas_df = pd.DataFrame()
         estado_df = pd.DataFrame()
         municipio_df = pd.DataFrame()
-
         st.stop()
 
 # ======================================
@@ -563,23 +555,22 @@ tipo_nivel_agregacao_selecionado = st.sidebar.radio(
 )
 
 if tipo_nivel_agregacao_selecionado == "Escola":
-    df = escolas_df.copy()  # Usar .copy() para evitar SettingWithCopyWarning
+    df = escolas_df.copy()
 elif tipo_nivel_agregacao_selecionado == "Município":
     df = municipio_df.copy()
-else:  # Estado
+else:
     df = estado_df.copy()
 
-# Verificar se o DataFrame selecionado não está vazio
 if df.empty:
     st.error(f"Não há dados disponíveis para o nível de agregação '{tipo_nivel_agregacao_selecionado}'.")
     st.stop()
 
-# Debug: mostrar as primeiras linhas e colunas do DataFrame usando expander
-with st.sidebar.expander("Mostrar informações de debug", expanded=False):
-    st.write(f"Colunas no DataFrame de {tipo_nivel_agregacao_selecionado}:")
-    st.write(df.columns.tolist())
-    st.write(f"Primeiras linhas do DataFrame de {tipo_nivel_agregacao_selecionado}:")
-    st.write(df.head(2))
+# Debug
+if st.sidebar.checkbox("Mostrar informações de debug", value=False):
+    st.sidebar.write(f"Colunas no DataFrame de {tipo_nivel_agregacao_selecionado}:")
+    st.sidebar.write(df.columns.tolist())
+    st.sidebar.write(f"Primeiras linhas do DataFrame de {tipo_nivel_agregacao_selecionado}:")
+    st.sidebar.write(df.head(2))
 
 dicionario_das_etapas_de_ensino = padronizar_dicionario_de_etapas(df)
 
@@ -587,26 +578,21 @@ dicionario_das_etapas_de_ensino = padronizar_dicionario_de_etapas(df)
 if "ANO" in df.columns:
     anos_disponiveis = sorted(df["ANO"].unique(), reverse=True)
 
-    # Botões práticos para última opção e todas
     col1, col2 = st.sidebar.columns(2)
     if col1.button("Último Ano", key="btn_ultimo_ano"):
         st.session_state["anos_multiselect"] = [anos_disponiveis[0]]
     if col2.button("Todos Anos", key="btn_todos_anos"):
         st.session_state["anos_multiselect"] = anos_disponiveis
 
-    # Multiselect do ano usando session_state
     if "anos_multiselect" not in st.session_state:
-        # Valor padrão
         st.session_state["anos_multiselect"] = [anos_disponiveis[0]]
 
     anos_selecionados = st.sidebar.multiselect(
         "Ano do Censo:",
         options=anos_disponiveis,
         default=st.session_state["anos_multiselect"],
-        key="anos_multiselect_widget"  # Use uma key diferente do session_state
+        key="anos_multiselect_widget"
     )
-
-    # Atualizar o session_state com a nova seleção
     st.session_state["anos_multiselect"] = anos_selecionados
 
     if not anos_selecionados:
@@ -629,7 +615,8 @@ if etapa_ensino_selecionada not in dicionario_das_etapas_de_ensino:
     st.error(f"A etapa '{etapa_ensino_selecionada}' não foi encontrada no mapeamento de colunas.")
     st.stop()
 
-if "subetapas" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada] and dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"]:
+if ("subetapas" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada] and
+    dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"]):
     subetapas_disponiveis = list(dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"].keys())
     subetapa_selecionada = st.sidebar.selectbox(
         "Subetapa:",
@@ -657,11 +644,9 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
     st.sidebar.caption(f"Total de {len(dependencias_disponiveis)} dependências disponíveis")
 
-    # Usando session_state para armazenar seleção
     if "dep_selection" not in st.session_state:
         st.session_state["dep_selection"] = dependencias_disponiveis
 
-    # Botões de seleção
     col_sel_all, col_clear = st.sidebar.columns(2)
     if col_sel_all.button("Selecionar Todas", key="btn_todas_dep"):
         st.session_state["dep_selection"] = dependencias_disponiveis
@@ -674,7 +659,6 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
         default=st.session_state["dep_selection"]
     )
 
-    # Atualiza session_state após a multiselect
     st.session_state["dep_selection"] = dependencia_selecionada
 
     if dependencia_selecionada:
@@ -682,28 +666,30 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
         df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
     else:
         st.sidebar.warning("Nenhuma dependência selecionada. Selecione pelo menos uma.")
-        df_filtrado = df_filtrado[0:0]  # DataFrame vazio
+        df_filtrado = df_filtrado[0:0]
 else:
     st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
-# Identifica a coluna de dados baseada em Etapa / Subetapa / Série
-coluna_matriculas_por_etapa = procurar_coluna_matriculas_por_etapa(etapa_ensino_selecionada, subetapa_selecionada, serie_selecionada, dicionario_das_etapas_de_ensino)
+# Identifica a coluna de dados
+coluna_matriculas_por_etapa = procurar_coluna_matriculas_por_etapa(
+    etapa_ensino_selecionada,
+    subetapa_selecionada,
+    serie_selecionada,
+    dicionario_das_etapas_de_ensino
+)
+
 coluna_existe, coluna_real = confirmar_existencia_colunas_apos_normalizacao(df_filtrado, coluna_matriculas_por_etapa)
 
-# Verificar se a coluna de dados existe e tratar adequadamente
 if coluna_existe:
     coluna_matriculas_por_etapa = coluna_real
     try:
-        # Filtrar apenas matrículas > 0 (se numérico)
         df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_matriculas_por_etapa], errors='coerce') > 0]
         if df_filtrado.empty:
             st.error("Não foi possível encontrar dados para a etapa selecionada.")
             st.stop()
     except Exception as e:
         st.warning(f"Erro ao filtrar dados por valor positivo: {e}")
-        # Em caso de erro, não filtra nada além do que já foi feito
 else:
-    # Coluna não existe mesmo depois de verificação
     st.warning("A coluna de matrículas correspondente não foi encontrada. Os resultados podem ficar inconsistentes.")
 
 # ------------------------------
@@ -712,14 +698,17 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Configurações da tabela")
 
-modificar_altura_tabela = st.sidebar.checkbox("Ajustar altura da tabela", value=False,
-                                     help="Permite ajustar a altura da tabela de dados")
+modificar_altura_tabela = st.sidebar.checkbox(
+    "Ajustar altura da tabela",
+    value=False,
+    help="Permite ajustar a altura da tabela de dados"
+)
 if modificar_altura_tabela:
     altura_tabela = st.sidebar.slider("Altura da tabela (pixels)", 200, 1000, 600, 50)
 else:
     altura_tabela = 600
 
-# Colunas para exibir na tabela
+# Colunas para exibir
 st.sidebar.markdown("### Colunas adicionais")
 colunas_selecionadas_para_exibicao = []
 
@@ -727,7 +716,6 @@ colunas_selecionadas_para_exibicao = []
 if "ANO" in df_filtrado.columns:
     colunas_selecionadas_para_exibicao.append("ANO")
 
-# Definir colunas base de acordo com o tipo de visualização
 if tipo_nivel_agregacao_selecionado == "Escola":
     colunas_base = [
         "CODIGO DA ESCOLA",
@@ -742,33 +730,34 @@ elif tipo_nivel_agregacao_selecionado == "Município":
         "NOME DO MUNICIPIO",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
-else:  # Estado
+else:
     colunas_base = [
         "DEPENDENCIA ADMINISTRATIVA",
         "CODIGO DA UF",
         "NOME DA UF",
     ]
 
-# Adicionar apenas colunas que existem no DataFrame
 for col in colunas_base:
     if col in df_filtrado.columns:
         colunas_selecionadas_para_exibicao.append(col)
     else:
         st.sidebar.warning(f"Coluna '{col}' não encontrada no DataFrame de {tipo_nivel_agregacao_selecionado}")
 
-# Tentar encontrar a coluna de matrículas principal independentemente da formatação
 for col in df_filtrado.columns:
     if "número de matrículas da educação básica" in col.lower().replace('\n', ''):
         if col not in colunas_selecionadas_para_exibicao:
             colunas_selecionadas_para_exibicao.append(col)
             break
 
-# Inclui a coluna de dados principal (caso exista)
-if coluna_matriculas_por_etapa in df_filtrado.columns and coluna_matriculas_por_etapa not in colunas_selecionadas_para_exibicao:
+if (coluna_matriculas_por_etapa in df_filtrado.columns and
+    coluna_matriculas_por_etapa not in colunas_selecionadas_para_exibicao):
     colunas_selecionadas_para_exibicao.append(coluna_matriculas_por_etapa)
 
-# Multiselect de colunas opcionais
-conjunto_total_de_colunas = [c for c in df_filtrado.columns if c not in colunas_selecionadas_para_exibicao]
+conjunto_total_de_colunas = [
+    c for c in df_filtrado.columns
+    if c not in colunas_selecionadas_para_exibicao
+]
+
 colunas_adicionais_selecionadas_para_exibicao = st.sidebar.multiselect(
     "Selecionar colunas adicionais:",
     conjunto_total_de_colunas,
@@ -777,8 +766,10 @@ colunas_adicionais_selecionadas_para_exibicao = st.sidebar.multiselect(
 if colunas_adicionais_selecionadas_para_exibicao:
     colunas_selecionadas_para_exibicao.extend(colunas_adicionais_selecionadas_para_exibicao)
 
-# Garantir que todas as colunas selecionadas existam no DataFrame
-colunas_matriculas_por_etapa_existentes = [c for c in colunas_selecionadas_para_exibicao if c in df_filtrado.columns]
+colunas_matriculas_por_etapa_existentes = [
+    c for c in colunas_selecionadas_para_exibicao
+    if c in df_filtrado.columns
+]
 if len(colunas_matriculas_por_etapa_existentes) != len(colunas_selecionadas_para_exibicao):
     st.sidebar.warning("Algumas colunas selecionadas não existem no DataFrame atual.")
 
@@ -788,20 +779,16 @@ if len(colunas_matriculas_por_etapa_existentes) != len(colunas_selecionadas_para
 st.sidebar.markdown("### Download dos dados")
 col1, col2 = st.sidebar.columns(2)
 
-# Inicialização para filtros avançados de matrículas
 if 'filtro_matriculas_tipo' not in st.session_state:
     st.session_state.filtro_matriculas_tipo = "Sem filtro"
 
-# Preparar tabela para exibição e download
 try:
-    # Verificar se a coluna de dados existe, considerando possíveis variações no nome
     coluna_existe = False
     coluna_real = coluna_matriculas_por_etapa
 
     if coluna_matriculas_por_etapa in df_filtrado.columns:
         coluna_existe = True
     else:
-        # Busca alternativa considerando quebras de linha
         coluna_normalizada = coluna_matriculas_por_etapa.replace('\n', '').lower().strip()
         for col in df_filtrado.columns:
             if col.replace('\n', '').lower().strip() == coluna_normalizada:
@@ -809,36 +796,30 @@ try:
                 coluna_real = col
                 break
 
-    # Criar cópia do DataFrame para exibição e downloads
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_matriculas_por_etapa_existentes].copy()
 
-        # Converter apenas colunas de dados para numérico
         for col in df_filtrado_tabela.columns:
             if col.startswith("Número de"):
                 df_filtrado_tabela[col] = pd.to_numeric(df_filtrado_tabela[col], errors='coerce')
 
-        # Ordenar por coluna de dados (decrescente) se existir
         if coluna_existe and coluna_real in df_filtrado_tabela.columns:
             tabela_dados = df_filtrado_tabela.sort_values(by=coluna_real, ascending=False)
         else:
             tabela_dados = df_filtrado_tabela
 
-        # Criar cópia para exibição (formatada)
         tabela_exibicao = tabela_dados.copy()
 
-        # Formatar apenas colunas numéricas para exibição com separador de milhares
+        # Formatar colunas numéricas
         for col in tabela_exibicao.columns:
             if col.startswith("Número de"):
                 tabela_exibicao[col] = tabela_exibicao[col].apply(
                     lambda x: aplicar_padrao_numerico_brasileiro(x) if pd.notnull(x) else "-"
                 )
 
-    # Verificar se a tabela está vazia
     if tabela_dados.empty:
         st.sidebar.warning("Não há dados para download com os filtros atuais.")
     else:
-        # Preparar para download CSV
         try:
             csv_data = gerar_arquivo_csv(tabela_dados)
             with col1:
@@ -851,7 +832,6 @@ try:
         except Exception as e:
             st.error(f"Erro ao preparar CSV para download: {str(e)}")
 
-        # Preparar para download Excel
         try:
             excel_data = gerar_planilha_excel(tabela_dados)
             with col2:
@@ -893,7 +873,8 @@ with container_indicadores_principais:
                     f'<p class="kpi-title">{ROTULO_TOTAL_MATRICULAS}</p>'
                     f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_matriculas)}</p>'
                     f'<span class="kpi-badge">Total</span>'
-                    f'</div>', unsafe_allow_html=True
+                    f'</div>',
+                    unsafe_allow_html=True
                 )
         else:
             with col1:
@@ -1013,7 +994,7 @@ with container_indicadores_principais:
             )
             st.caption(f"Erro ao calcular: {str(e)}")
 
-    # KPI 3: Depende do tipo de visualização
+    # KPI 3
     with col3:
         try:
             if tipo_nivel_agregacao_selecionado == "Escola":
@@ -1036,7 +1017,7 @@ with container_indicadores_principais:
                     f'</div>',
                     unsafe_allow_html=True
                 )
-            else:  # Estado
+            else:
                 if coluna_matriculas_por_etapa in df_filtrado.columns:
                     max_valor = df_filtrado[coluna_matriculas_por_etapa].max()
                     st.markdown(
@@ -1091,56 +1072,14 @@ with container_indicadores_principais:
 # -------------------------------
 st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 
-# Verificar se há dados para exibir
 if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
     st.warning("Não há dados para exibir com os filtros selecionados.")
 else:
     st.markdown('<div class="table-container">', unsafe_allow_html=True)
     st.markdown(f'<div class="table-header">Dados Detalhados - {tipo_nivel_agregacao_selecionado}</div>', unsafe_allow_html=True)
 
-    # Configurações de paginação e ordenação ANTES dos filtros
-    if tipo_nivel_agregacao_selecionado != "Estado":
-        config_col1, config_col2 = st.columns([1, 3])
-
-        with config_col1:
-            registros_por_pagina = st.selectbox(
-                "Registros por página:",
-                options=[10, 25, 50, 100, "Todos"],
-                index=1  # Padrão: 25
-            )
-
-        with config_col2:
-            opcoes_ordenacao = ["Maior valor", "Menor valor"]
-            if "NOME DA ESCOLA" in tabela_exibicao.columns:
-                opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
-            if "NOME DO MUNICIPIO" in tabela_exibicao.columns:
-                opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
-
-            if coluna_real in tabela_exibicao.columns:
-                ordem_tabela = st.radio(
-                    "Ordenar por:",
-                    opcoes_ordenacao,
-                    horizontal=True
-                )
-
-                # Aplicar ordenação à tabela_dados e tabela_exibicao
-                if ordem_tabela == "Maior valor":
-                    tabela_dados = tabela_dados.sort_values(by=coluna_real, ascending=False)
-                    tabela_exibicao = tabela_exibicao.loc[tabela_dados.index]
-                elif ordem_tabela == "Menor valor":
-                    tabela_dados = tabela_dados.sort_values(by=coluna_real, ascending=True)
-                    tabela_exibicao = tabela_exibicao.loc[tabela_dados.index]
-                elif "por Escola" in ordem_tabela and "NOME DA ESCOLA" in tabela_exibicao.columns:
-                    tabela_exibicao = tabela_exibicao.sort_values(by="NOME DA ESCOLA",
-                                                                  ascending=("A-Z" in ordem_tabela))
-                elif "por Município" in ordem_tabela and "NOME DO MUNICIPIO" in tabela_exibicao.columns:
-                    tabela_exibicao = tabela_exibicao.sort_values(by="NOME DO MUNICIPIO",
-                                                                  ascending=("A-Z" in ordem_tabela))
-
-    # Caso específico para nível "Estado"
     if tipo_nivel_agregacao_selecionado == "Estado":
         try:
-            # Limitar o número de linhas/colunas para exibição
             colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
             if coluna_real in tabela_exibicao.columns:
                 colunas_essenciais.append(coluna_real)
@@ -1154,10 +1093,8 @@ else:
             st.write("Dados por Dependência Administrativa:")
             st.dataframe(tabela_simplificada, height=altura_tabela, use_container_width=True)
 
-            # Exibir total
             if coluna_real in tabela_simplificada.columns:
                 total_col = 0
-                # Como a exibição está formatada, precisamos buscar a soma em tabela_dados
                 if coluna_real in tabela_dados.columns:
                     total_col = tabela_dados[coluna_real].sum()
 
@@ -1166,75 +1103,54 @@ else:
         except Exception as e:
             st.error(f"Erro ao exibir tabela para nível Estado: {str(e)}")
             st.write("Tentando exibição alternativa...")
-
             try:
-                # Agrupar por dependência administrativa para simplificar
-                if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and coluna_matriculas_por_etapa in df_filtrado.columns:
-                    resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[
-                        coluna_matriculas_por_etapa].sum().reset_index()
+                if ("DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and
+                    coluna_matriculas_por_etapa in df_filtrado.columns):
+                    resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_matriculas_por_etapa].sum().reset_index()
                     st.write("Resumo por Dependência Administrativa:")
                     st.dataframe(resumo, use_container_width=True)
                 else:
                     st.write("Dados disponíveis:")
                     st.dataframe(df_filtrado.head(100), use_container_width=True)
             except:
-                st.error("Não foi possível exibir os dados mesmo no formato simplificado.")
+                st.error("Não foi possível exibir dados mesmo no formato simplificado.")
 
-    # Caso para nível "Escola" ou "Município"
     else:
         try:
-            # Processar filtros avançados e obter tabela filtrada
+            # Ainda preservamos a lógica de filtros manuais acima das colunas
             df_filtrado_final = tabela_exibicao.copy()
 
-            # Aplicar filtros de texto por coluna alinhados diretamente acima da tabela
-            # -----------------------------------------------------------------------
-
+            # Filtros manuais
             col_filters = {}
-
-            # Criar a linha de filtros - IMEDIATAMENTE antes da tabela
             filtro_cols = st.columns(len(df_filtrado_final.columns))
-
-            # Adicionar os filtros diretamente acima das colunas da tabela
             for i, col_name in enumerate(df_filtrado_final.columns):
                 with filtro_cols[i]:
                     st.write(f"**{col_name}**")
-                    # Usar text_input simples para todas as colunas para manter o alinhamento
                     col_filters[col_name] = st.text_input(
-                        label=f"Filtro para {col_name}",  # Adicione um label descritivo
+                        label=f"Filtro para {col_name}",
                         key=f"filter_{col_name}",
-                        label_visibility="collapsed",  # Mantenha-o oculto
+                        label_visibility="collapsed",
                         placeholder=f"Filtrar {col_name}..."
                     )
 
-            # Aplicar os filtros de texto
             df_texto_filtrado = df_filtrado_final.copy()
-            filtros_ativos = False
-
             for col_name, filter_text in col_filters.items():
                 if filter_text:
-                    filtros_ativos = True
                     try:
-                        # Escapa caracteres especiais para uso em regex
                         filter_text_escaped = re.escape(filter_text)
-
-                        # Verifica se a coluna é numérica ou começa com "Número de"
-                        if col_name.startswith("Número de") or pd.api.types.is_numeric_dtype(
-                                df_texto_filtrado[col_name]):
+                        if (col_name.startswith("Número de") or
+                            pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name])):
                             try:
-                                # Tenta converter o texto para float, tratando vírgula como separador decimal
                                 filter_text_ponto = filter_text.replace(',', '.')
-
-                                # Se for número válido (ex.: "123" ou "12.3"), faz filtro exato
                                 if (
-                                        filter_text_ponto.replace('.', '', 1).isdigit()
-                                        and filter_text_ponto.count('.') <= 1
+                                    filter_text_ponto.replace('.', '', 1).isdigit() and
+                                    filter_text_ponto.count('.') <= 1
                                 ):
                                     num_value = float(filter_text_ponto)
                                     df_texto_filtrado = df_texto_filtrado[
                                         df_texto_filtrado[col_name] == num_value
-                                        ]
+                                    ]
                                 else:
-                                    # Caso não seja número, faz filtro de texto
                                     df_texto_filtrado = df_texto_filtrado[
                                         df_texto_filtrado[col_name].astype(str).str.contains(
                                             filter_text_escaped,
@@ -1243,7 +1159,6 @@ else:
                                         )
                                     ]
                             except Exception:
-                                # Se der erro, faz filtro de texto normal
                                 df_texto_filtrado = df_texto_filtrado[
                                     df_texto_filtrado[col_name].astype(str).str.contains(
                                         filter_text_escaped,
@@ -1252,7 +1167,6 @@ else:
                                     )
                                 ]
                         else:
-                            # Filtro normal para colunas de texto
                             df_texto_filtrado = df_texto_filtrado[
                                 df_texto_filtrado[col_name].astype(str).str.contains(
                                     filter_text_escaped,
@@ -1260,61 +1174,108 @@ else:
                                     regex=True
                                 )
                             ]
-
                     except Exception as e:
                         st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
 
-            # Daqui pra frente, a exibição/paginação/etc.
+            # Paginação manual (opcional)
+            config_col1, config_col2 = st.columns([1, 3])
+            with config_col1:
+                registros_por_pagina = st.selectbox(
+                    "Registros por página:",
+                    options=[10, 25, 50, 100, "Todos"],
+                    index=1  # Padrão: 25
+                )
+                if registros_por_pagina != "Todos":
+                    registros_por_pagina = int(registros_por_pagina)
+                else:
+                    registros_por_pagina = len(df_texto_filtrado)
+
+            with config_col2:
+                # Ordenação simples
+                opcoes_ordenacao = ["Maior valor", "Menor valor"]
+                if "NOME DA ESCOLA" in df_texto_filtrado.columns:
+                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
+                if "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
+                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
+
+                ordem_tabela = None
+                if coluna_real in df_texto_filtrado.columns:
+                    ordem_tabela = st.radio(
+                        "Ordenar por:",
+                        opcoes_ordenacao,
+                        horizontal=True
+                    )
+
+            if ordem_tabela:
+                if ordem_tabela == "Maior valor" and coluna_real in df_texto_filtrado.columns:
+                    df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=False)
+                elif ordem_tabela == "Menor valor" and coluna_real in df_texto_filtrado.columns:
+                    df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=True)
+                elif "por Escola" in ordem_tabela and "NOME DA ESCOLA" in df_texto_filtrado.columns:
+                    df_texto_filtrado = df_texto_filtrado.sort_values(
+                        by="NOME DA ESCOLA",
+                        ascending=("A-Z" in ordem_tabela)
+                    )
+                elif "por Município" in ordem_tabela and "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
+                    df_texto_filtrado = df_texto_filtrado.sort_values(
+                        by="NOME DO MUNICIPIO",
+                        ascending=("A-Z" in ordem_tabela)
+                    )
+
+            # Exemplo de paginação manual
             if len(df_texto_filtrado) > 0:
-                st.dataframe(df_texto_filtrado)
+                total_linhas = len(df_texto_filtrado)
+                num_paginas = max(1, (total_linhas - 1) // registros_por_pagina + 1)
+                pagina_atual = st.number_input(
+                    "Página",
+                    min_value=1,
+                    max_value=num_paginas,
+                    value=1,
+                    step=1
+                )
+                inicio = (pagina_atual - 1) * registros_por_pagina
+                fim = min(inicio + registros_por_pagina, total_linhas)
+                df_paginado = df_texto_filtrado.iloc[inicio:fim]
+
+                st.write("### Visualização via st.dataframe (filtros manuais):")
+                st.dataframe(
+                    df_paginado,
+                    height=altura_tabela,
+                    use_container_width=True
+                )
+                st.caption(f"Exibindo registros {inicio+1} a {fim} de {total_linhas}")
+
+                # Soma total
+                if coluna_real in df_texto_filtrado.columns:
+                    total_col = pd.to_numeric(tabela_dados.loc[df_texto_filtrado.index, coluna_real], errors='coerce').sum()
+                    st.markdown(f"**Total de {coluna_real} (página atualizada):** {aplicar_padrao_numerico_brasileiro(total_col)}")
+
+                # -------------------------------------------
+                # Tabela Interativa com st.data_editor
+                # -------------------------------------------
+                st.write("---")
+                st.write("### Visualização via st.data_editor (filtros nativos, ordenação e paginação):")
+
+                # Definir paginação local e tamanho de página
+                page_size_value = min(registros_por_pagina, len(df_texto_filtrado)) if registros_por_pagina > 0 else 10
+
+                # st.data_editor sem edição, mas com filtros visíveis
+                _ = st.data_editor(
+                    df_texto_filtrado,
+                    disabled=True,
+                    use_container_width=True,
+                    height=altura_tabela,
+                    pagination="local",       # habilita paginação nativa
+                    page_size=page_size_value,
+                    filters="visible"         # exibe filtros nativos no cabeçalho
+                )
             else:
                 st.warning("Nenhum registro encontrado com os filtros aplicados.")
-
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
-            # Exemplo de fallback: mostra um dataframe parcial
             st.dataframe(tabela_exibicao.head(50))
 
-    #         # Paginação e exibição da tabela
-    #         if len(df_texto_filtrado) > 0:
-    #             if registros_por_pagina != "Todos":
-    #                 registros_por_pagina = int(registros_por_pagina)
-    #                 num_paginas = max(1, (len(df_texto_filtrado) - 1) // registros_por_pagina + 1)
-    #
-    #                 pagina_atual = st.number_input(
-    #                     "Página",
-    #                     min_value=1,
-    #                     max_value=num_paginas,
-    #                     value=1,
-    #                     step=1
-    #                 )
-    #
-    #                 inicio = (pagina_atual - 1) * registros_por_pagina
-    #                 fim = min(inicio + registros_por_pagina, len(df_texto_filtrado))
-    #                 df_paginado = df_texto_filtrado.iloc[inicio:fim]
-    #
-    #                 # Exibição da tabela - após todos os controles
-    #                 st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
-    #                 st.caption(
-    #                     f"Exibindo registros {inicio + 1} a {fim} de {len(df_texto_filtrado):,}".replace(",", ".")
-    #                 )
-    #             else:
-    #                 # Exibição sem paginação
-    #                 st.dataframe(df_texto_filtrado, height=altura_tabela, use_container_width=True)
-    #
-    #             # Total
-    #             if coluna_real in df_texto_filtrado.columns:
-    #                 total_col = pd.to_numeric(tabela_dados.loc[df_texto_filtrado.index, coluna_real],
-    #                                           errors='coerce').sum()
-    #                 st.markdown(f"**Total de {coluna_real}:** {aplicar_padrao_numerico_brasileiro(total_col)}")
-    #         else:
-    #             st.warning("Nenhum registro encontrado com os filtros aplicados.")
-    #
-    #     except Exception as e:
-    #         st.error(f"Erro ao exibir a tabela: {str(e)}")
-    #         st.dataframe(tabela_exibicao.head(100), height=altura_tabela, use_container_width=True)
-    #
-    # st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Rodapé do Dashboard
@@ -1343,9 +1304,10 @@ else:
         unsafe_allow_html=True
     )
 
-# Tempo de execução
-
 registro_conclusao_processamento = time.time()
-tempo_total_processamento_segundos = round(registro_conclusao_processamento - st.session_state.get('tempo_inicio', registro_conclusao_processamento), 2)
+tempo_total_processamento_segundos = round(
+    registro_conclusao_processamento - st.session_state.get('tempo_inicio', registro_conclusao_processamento),
+    2
+)
 st.session_state['tempo_inicio'] = registro_conclusao_processamento
 st.caption(f"Tempo de processamento: {tempo_total_processamento_segundos} segundos")
