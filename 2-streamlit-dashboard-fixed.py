@@ -303,7 +303,6 @@ def aplicar_padrao_numerico_brasileiro(numero):
         # Se não for numérico, retorna o valor original como string
         return str(numero)
 
-
 @st.cache_data(ttl=3600)  # Cache por 1 hora
 def importar_arquivos_parquet():
     print("Função importar_arquivos_parquet foi chamada")
