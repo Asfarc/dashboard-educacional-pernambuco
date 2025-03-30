@@ -1033,109 +1033,143 @@ st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
     st.warning("Não há dados para exibir com os filtros selecionados.")
 else:
-    try:
-        # Adicionar opções de filtragem acima da tabela
-        filtro_col1, filtro_col2 = st.columns([1, 3])
+    if tipo_visualizacao == "Estado":
+        st.markdown("### Visualização de Dados para Nível Estado")
 
-        with filtro_col1:
-            registros_por_pagina = st.selectbox(
-                "Registros por página:",
-                options=[10, 25, 50, 100, "Todos"],
-                index=1  # Padrão: 25
-            )
-
-        with filtro_col2:
-            opcoes_ordenacao = ["Maior valor", "Menor valor"]
-
-            # Opções adicionais de ordenação baseadas nas colunas disponíveis
-            if "NOME DA ESCOLA" in tabela_exibicao.columns:
-                opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
-            elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
-                opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
-            elif "NOME DA UF" in tabela_exibicao.columns:
-                opcoes_ordenacao.extend(["Alfabético (A-Z) por UF", "Alfabético (Z-A) por UF"])
-
-            if len(opcoes_ordenacao) > 2 and coluna_real in tabela_exibicao.columns:
-                ordem_tabela = st.radio(
-                    "Ordenar por:",
-                    opcoes_ordenacao,
-                    horizontal=True
-                )
-
-                if ordem_tabela == "Maior valor":
-                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=False)
-                elif ordem_tabela == "Menor valor":
-                    tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=True)
-                elif "por Escola" in ordem_tabela:
-                    tabela_exibicao = tabela_exibicao.sort_values(
-                        by="NOME DA ESCOLA",
-                        ascending=("A-Z" in ordem_tabela)
-                    )
-                elif "por Município" in ordem_tabela:
-                    tabela_exibicao = tabela_exibicao.sort_values(
-                        by="NOME DO MUNICIPIO",
-                        ascending=("A-Z" in ordem_tabela)
-                    )
-                elif "por UF" in ordem_tabela:
-                    tabela_exibicao = tabela_exibicao.sort_values(
-                        by="NOME DA UF",
-                        ascending=("A-Z" in ordem_tabela)
-                    )
-
-        # Total de registros
-        st.caption(f"Total de registros: {len(tabela_exibicao):,}".replace(",", "."))
-
-        # Implementar paginação
-        if registros_por_pagina != "Todos":
-            registros_por_pagina = int(registros_por_pagina)
-            num_paginas = max(1, (len(tabela_exibicao) - 1) // registros_por_pagina + 1)
-
-            # Garantir que não haja erro se não houver registros
-            if num_paginas > 0:
-                pagina_atual = st.number_input(
-                    "Página",
-                    min_value=1,
-                    max_value=num_paginas,
-                    value=1,
-                    step=1
-                )
-
-                inicio = (pagina_atual - 1) * registros_por_pagina
-                fim = min(inicio + registros_por_pagina, len(tabela_exibicao))
-
-                # Garantir que os índices sejam válidos
-                if inicio < len(tabela_exibicao):
-                    df_paginado = tabela_exibicao.iloc[inicio:fim]
-                    st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
-
-                    # Informação da paginação
-                    st.caption(f"Exibindo registros {inicio + 1} a {fim} de {len(tabela_exibicao):,}".replace(",", "."))
-                else:
-                    st.warning("Índice de paginação inválido.")
-                    st.dataframe(tabela_exibicao.head(registros_por_pagina), height=altura_tabela,
-                                 use_container_width=True)
-            else:
-                st.warning("Não há páginas para exibir.")
-        else:
-            st.dataframe(tabela_exibicao, height=altura_tabela, use_container_width=True)
-
-        # Adiciona linha de totais
-        if coluna_real in tabela_exibicao.columns:
-            total_col = tabela_exibicao[coluna_real].sum()
-            st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
-
-    except Exception as e:
-        st.error(f"Erro ao exibir a tabela: {str(e)}")
-        st.write("Detalhes do erro para depuração:")
-        st.exception(e)
-
-        # Tentativa alternativa de visualização
-        st.write("Tentando exibir tabela simplificada...")
+        # Usar uma versão simplificada da tabela para evitar problemas de renderização
         try:
-            # Mostrar apenas as primeiras 100 linhas como fallback
-            st.dataframe(tabela_exibicao.head(100), height=altura_tabela)
-        except:
-            st.error("Não foi possível exibir a tabela mesmo em formato simplificado.")
+            # Limitar o número de linhas e colunas para facilitar a renderização
+            colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
+            if coluna_real in tabela_exibicao.columns:
+                colunas_essenciais.append(coluna_real)
+
+            # Adicionar outras colunas principais se disponíveis
+            for col in ["ANO"]:
+                if col in tabela_exibicao.columns:
+                    colunas_essenciais.append(col)
+
+            tabela_simplificada = tabela_exibicao[colunas_essenciais].copy()
+
+            # Exibir a tabela sem usar recursos avançados
+            st.write("Dados por Dependência Administrativa:")
+            st.dataframe(tabela_simplificada, height=altura_tabela, use_container_width=True)
+
+            # Exibir totais como texto simples
+            if coluna_real in tabela_simplificada.columns:
+                total_col = tabela_simplificada[coluna_real].sum()
+                st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
+
+        except Exception as e:
+            st.error(f"Erro ao exibir tabela para nível Estado: {str(e)}")
+            st.write("Tentando exibição alternativa...")
+
+            # Fallback extremamente simples
+            try:
+                # Agrupar por dependência administrativa para uma visualização simplificada
+                if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and coluna_dados in df_filtrado.columns:
+                    resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].sum().reset_index()
+                    st.write("Resumo por Dependência Administrativa:")
+                    st.dataframe(resumo, use_container_width=True)
+                else:
+                    st.write("Dados disponíveis:")
+                    st.dataframe(df_filtrado.head(100), use_container_width=True)
+            except:
+                st.error("Não foi possível exibir os dados mesmo no formato simplificado.")
+    else:
+        # Código existente para visualização de Escola e Município
+        try:
+            # Adicionar opções de filtragem acima da tabela
+            filtro_col1, filtro_col2 = st.columns([1, 3])
+
+            with filtro_col1:
+                registros_por_pagina = st.selectbox(
+                    "Registros por página:",
+                    options=[10, 25, 50, 100, "Todos"],
+                    index=1  # Padrão: 25
+                )
+
+            with filtro_col2:
+                opcoes_ordenacao = ["Maior valor", "Menor valor"]
+
+                # Opções adicionais de ordenação baseadas nas colunas disponíveis
+                if "NOME DA ESCOLA" in tabela_exibicao.columns:
+                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
+                elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
+                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
+
+                if len(opcoes_ordenacao) > 2 and coluna_real in tabela_exibicao.columns:
+                    ordem_tabela = st.radio(
+                        "Ordenar por:",
+                        opcoes_ordenacao,
+                        horizontal=True
+                    )
+
+                    if ordem_tabela == "Maior valor":
+                        tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=False)
+                    elif ordem_tabela == "Menor valor":
+                        tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=True)
+                    elif "por Escola" in ordem_tabela:
+                        tabela_exibicao = tabela_exibicao.sort_values(
+                            by="NOME DA ESCOLA",
+                            ascending=("A-Z" in ordem_tabela)
+                        )
+                    elif "por Município" in ordem_tabela:
+                        tabela_exibicao = tabela_exibicao.sort_values(
+                            by="NOME DO MUNICIPIO",
+                            ascending=("A-Z" in ordem_tabela)
+                        )
+
+            # Total de registros
+            st.caption(f"Total de registros: {len(tabela_exibicao):,}".replace(",", "."))
+
+            # Implementar paginação
+            if registros_por_pagina != "Todos":
+                registros_por_pagina = int(registros_por_pagina)
+                num_paginas = max(1, (len(tabela_exibicao) - 1) // registros_por_pagina + 1)
+
+                # Garantir que não haja erro se não houver registros
+                if num_paginas > 0:
+                    pagina_atual = st.number_input(
+                        "Página",
+                        min_value=1,
+                        max_value=num_paginas,
+                        value=1,
+                        step=1
+                    )
+
+                    inicio = (pagina_atual - 1) * registros_por_pagina
+                    fim = min(inicio + registros_por_pagina, len(tabela_exibicao))
+
+                    # Garantir que os índices sejam válidos
+                    if inicio < len(tabela_exibicao):
+                        df_paginado = tabela_exibicao.iloc[inicio:fim]
+                        st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
+
+                        # Informação da paginação
+                        st.caption(
+                            f"Exibindo registros {inicio + 1} a {fim} de {len(tabela_exibicao):,}".replace(",", "."))
+                    else:
+                        st.warning("Índice de paginação inválido.")
+                        st.dataframe(tabela_exibicao.head(registros_por_pagina), height=altura_tabela,
+                                     use_container_width=True)
+                else:
+                    st.warning("Não há páginas para exibir.")
+            else:
+                st.dataframe(tabela_exibicao, height=altura_tabela, use_container_width=True)
+
+            # Adiciona linha de totais
+            if coluna_real in tabela_exibicao.columns:
+                total_col = tabela_exibicao[coluna_real].sum()
+                st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
+
+        except Exception as e:
+            st.error(f"Erro ao exibir a tabela: {str(e)}")
+            st.write("Tentando exibir tabela simplificada...")
+            try:
+                # Mostrar apenas as primeiras 100 linhas como fallback
+                st.dataframe(tabela_exibicao.head(100), height=altura_tabela)
+            except:
+                st.error("Não foi possível exibir a tabela mesmo em formato simplificado.")
 
 # -------------------------------
 # Rodapé do Dashboard
