@@ -668,31 +668,38 @@ colunas_tabela = []
 if "ANO" in df_filtrado.columns:
     colunas_tabela.append("ANO")
 
-# Definir colunas base de acordo com o tipo de visualização
+# Definir colunas base de acordo com o tipo de visualização e verificar disponibilidade
 if tipo_visualizacao == "Escola":
     colunas_base = [
         "CODIGO DA ESCOLA",
         "NOME DA ESCOLA",
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
-        "CODIGO DA UF",
-        "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
+    # Adicionar UF apenas se disponível
+    if "CODIGO DA UF" in df_filtrado.columns:
+        colunas_base.append("CODIGO DA UF")
+    if "NOME DA UF" in df_filtrado.columns:
+        colunas_base.append("NOME DA UF")
 elif tipo_visualizacao == "Município":
     colunas_base = [
         "CODIGO DO MUNICIPIO",
         "NOME DO MUNICIPIO",
-        "CODIGO DA UF",
-        "NOME DA UF",
         "DEPENDENCIA ADMINISTRATIVA"
     ]
+    # Adicionar UF apenas se disponível
+    if "CODIGO DA UF" in df_filtrado.columns:
+        colunas_base.append("CODIGO DA UF")
+    if "NOME DA UF" in df_filtrado.columns:
+        colunas_base.append("NOME DA UF")
 else:  # Estado
-    colunas_base = [
-        "CODIGO DA UF",
-        "NOME DA UF",
-        "DEPENDENCIA ADMINISTRATIVA"
-    ]
+    colunas_base = ["DEPENDENCIA ADMINISTRATIVA"]
+    # Adicionar UF apenas se disponível
+    if "CODIGO DA UF" in df_filtrado.columns:
+        colunas_base.append("CODIGO DA UF")
+    if "NOME DA UF" in df_filtrado.columns:
+        colunas_base.append("NOME DA UF")
 
 # Adicionar apenas colunas que existem no DataFrame
 for col in colunas_base:
