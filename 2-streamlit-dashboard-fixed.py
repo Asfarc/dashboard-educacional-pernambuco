@@ -1074,9 +1074,6 @@ else:
             """Converte 6883 -> '6.883'."""
             return f"{num:,}".replace(",", ".")
 
-        # Exemplo de altura para a tabela
-        altura_tabela = 400
-
         df_sem_filtros_texto = tabela_exibicao.copy()
 
         # ------------------------------------------------------------
