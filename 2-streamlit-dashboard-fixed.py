@@ -1157,34 +1157,31 @@ else:
                 # Verifica se a página atual ainda é válida após a filtragem
                 if st.session_state["current_page"] > total_pages:
                     st.session_state["current_page"] = 1  # Redefine para página 1
-                    st.rerun()  # Força o rerun para atualizar a interface
 
                 # 3) MOSTRA A TABELA DA PÁGINA ATUAL
                 df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
                 st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
 
-                # 4) Controles de navegação abaixo da tabela
-                col1, col2, col3 = st.columns([2, 1, 1])
+                # Criamos o menu de navegação na parte inferior (mais organizado)
+                menu_inferior = st.columns((4, 1, 1))
 
-                with col1:
-                    # Exibe informação sobre página atual/total
-                    st.markdown(f"**Exibindo Página {st.session_state['current_page']} de {total_pages}**")
-
-                with col2:
-                    # Adiciona botões de navegação anterior/próximo
-                    cols_nav = st.columns(2)
-                    with cols_nav[0]:
+                with menu_inferior[0]:
+                    # Informação sobre registros e páginas
+                    st.markdown(
+                        f"**Total: {len(df_texto_filtrado)} registros | Página {st.session_state['current_page']} de {total_pages}**")
+                    # Botões de navegação anterior/próximo em linha
+                    col_btn1, col_btn2 = st.columns(2)
+                    with col_btn1:
                         if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1):
                             st.session_state["current_page"] -= 1
                             st.rerun()
-
-                    with cols_nav[1]:
+                    with col_btn2:
                         if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages):
                             st.session_state["current_page"] += 1
                             st.rerun()
 
-                with col3:
-                    # Input de número da página conectado diretamente ao session_state
+                with menu_inferior[1]:
+                    # Input de número da página
                     st.session_state["current_page"] = st.number_input(
                         "Página",
                         min_value=1,
@@ -1193,13 +1190,20 @@ else:
                         step=1
                     )
 
+                with menu_inferior[2]:
+                    # Selector de tamanho da página
+                    if "page_size" not in st.session_state:
+                        st.session_state["page_size"] = 10
+
+                    page_size = st.selectbox(
+                        "Itens por página",
+                        options=[10, 25, 50, 100],
+                        index=[10, 25, 50, 100].index(st.session_state["page_size"]),
+                        key="page_size"
+                    )
             except Exception as e:
                 st.error(f"Erro ao exibir a tabela: {str(e)}")
                 st.dataframe(tabela_exibicao.head(50))
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-
 # -------------------------------
 # Rodapé do Dashboard
 # -------------------------------
