@@ -1173,6 +1173,8 @@ else:
 
             # Aplicar filtros de texto por coluna alinhados diretamente acima da tabela
             # -----------------------------------------------------------------------
+            import re  # Certifique-se de ter import re no topo do seu código
+
             col_filters = {}
 
             # Criar a linha de filtros - IMEDIATAMENTE antes da tabela
@@ -1198,49 +1200,66 @@ else:
                 if filter_text:
                     filtros_ativos = True
                     try:
-                        # Escapa automaticamente todos os caracteres especiais
+                        # Escapa caracteres especiais para uso em regex
                         filter_text_escaped = re.escape(filter_text)
 
-                        # Verificar se a coluna é numérica ou começa com "Número de"
+                        # Verifica se a coluna é numérica ou começa com "Número de"
                         if col_name.startswith("Número de") or pd.api.types.is_numeric_dtype(
                                 df_texto_filtrado[col_name]):
                             try:
-                                # Converter vírgula em ponto para tentarmos detectar número decimal
+                                # Tenta converter o texto para float, tratando vírgula como separador decimal
                                 filter_text_ponto = filter_text.replace(',', '.')
 
-                                # Se for um número válido (ex.: "123", "12.3"), tenta filtro exato
+                                # Se for número válido (ex.: "123" ou "12.3"), faz filtro exato
                                 if (
-                                        filter_text_ponto.replace('.', '', 1).isdigit() and
-                                        filter_text_ponto.count('.') <= 1
+                                        filter_text_ponto.replace('.', '', 1).isdigit()
+                                        and filter_text_ponto.count('.') <= 1
                                 ):
                                     num_value = float(filter_text_ponto)
                                     df_texto_filtrado = df_texto_filtrado[
                                         df_texto_filtrado[col_name] == num_value
                                         ]
                                 else:
-                                    # Se não for número, faz filtro por texto
+                                    # Caso não seja número, faz filtro de texto
                                     df_texto_filtrado = df_texto_filtrado[
                                         df_texto_filtrado[col_name].astype(str).str.contains(
-                                            filter_text_escaped, case=False, regex=True
+                                            filter_text_escaped,
+                                            case=False,
+                                            regex=True
                                         )
                                     ]
                             except Exception:
-                                # Se der erro na conversão, volta para o filtro de texto
+                                # Se der erro, faz filtro de texto normal
                                 df_texto_filtrado = df_texto_filtrado[
                                     df_texto_filtrado[col_name].astype(str).str.contains(
-                                        filter_text_escaped, case=False, regex=True
+                                        filter_text_escaped,
+                                        case=False,
+                                        regex=True
                                     )
                                 ]
                         else:
-                            # Filtro padrão para colunas de texto
+                            # Filtro normal para colunas de texto
                             df_texto_filtrado = df_texto_filtrado[
                                 df_texto_filtrado[col_name].astype(str).str.contains(
-                                    filter_text_escaped, case=False, regex=True
+                                    filter_text_escaped,
+                                    case=False,
+                                    regex=True
                                 )
                             ]
 
                     except Exception as e:
                         st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
+
+            # Daqui pra frente, a exibição/paginação/etc.
+            if len(df_texto_filtrado) > 0:
+                st.dataframe(df_texto_filtrado)
+            else:
+                st.warning("Nenhum registro encontrado com os filtros aplicados.")
+
+        except Exception as e:
+            st.error(f"Erro ao exibir a tabela: {str(e)}")
+            # Exemplo de fallback: mostra um dataframe parcial
+            st.dataframe(tabela_exibicao.head(50))
 
     #         # Paginação e exibição da tabela
     #         if len(df_texto_filtrado) > 0:
