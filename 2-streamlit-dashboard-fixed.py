@@ -263,8 +263,30 @@ def carregar_dados():
     Em caso de erro, exibe uma mensagem e interrompe a execução.
     """
     try:
-        # Código existente para localizar e carregar os arquivos...
+        # Possíveis diretórios onde os arquivos podem estar
+        diretorios_possiveis = [
+            ".",
+            "data",
+            "dados",
+            os.path.join(os.path.dirname(__file__), "data")
+        ]
 
+        escolas_df = estado_df = municipio_df = None
+        for diretorio in diretorios_possiveis:
+            escolas_path = os.path.join(diretorio, "escolas.parquet")
+            estado_path = os.path.join(diretorio, "estado.parquet")
+            municipio_path = os.path.join(diretorio, "municipio.parquet")
+
+            if os.path.exists(escolas_path) and os.path.exists(estado_path) and os.path.exists(municipio_path):
+                escolas_df = pd.read_parquet(escolas_path)
+                estado_df = pd.read_parquet(estado_path)
+                municipio_df = pd.read_parquet(municipio_path)
+                break
+
+        if escolas_df is None or estado_df is None or municipio_df is None:
+            raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
+
+        # Agora o processamento das colunas
         for df_ in [escolas_df, estado_df, municipio_df]:
             for col in df_.columns:
                 # Converte apenas colunas de matrículas para numérico
