@@ -1192,52 +1192,96 @@ else:
 
             # Aplicar os filtros de texto
             df_texto_filtrado = df_filtrado_final.copy()
+            filtros_ativos = False
+
             for col_name, filter_text in col_filters.items():
                 if filter_text:
-                    df_texto_filtrado = df_texto_filtrado[
-                        df_texto_filtrado[col_name].astype(str).str.contains(filter_text, case=False)
-                    ]
+                    filtros_ativos = True
+                    try:
+                        # Escapa automaticamente todos os caracteres especiais
+                        filter_text_escaped = re.escape(filter_text)
 
-            # Paginação e exibição da tabela
-            if len(df_texto_filtrado) > 0:
-                if registros_por_pagina != "Todos":
-                    registros_por_pagina = int(registros_por_pagina)
-                    num_paginas = max(1, (len(df_texto_filtrado) - 1) // registros_por_pagina + 1)
+                        # Verificar se a coluna é numérica ou começa com "Número de"
+                        if col_name.startswith("Número de") or pd.api.types.is_numeric_dtype(
+                                df_texto_filtrado[col_name]):
+                            try:
+                                # Converter vírgula em ponto para tentarmos detectar número decimal
+                                filter_text_ponto = filter_text.replace(',', '.')
 
-                    pagina_atual = st.number_input(
-                        "Página",
-                        min_value=1,
-                        max_value=num_paginas,
-                        value=1,
-                        step=1
-                    )
+                                # Se for um número válido (ex.: "123", "12.3"), tenta filtro exato
+                                if (
+                                        filter_text_ponto.replace('.', '', 1).isdigit() and
+                                        filter_text_ponto.count('.') <= 1
+                                ):
+                                    num_value = float(filter_text_ponto)
+                                    df_texto_filtrado = df_texto_filtrado[
+                                        df_texto_filtrado[col_name] == num_value
+                                        ]
+                                else:
+                                    # Se não for número, faz filtro por texto
+                                    df_texto_filtrado = df_texto_filtrado[
+                                        df_texto_filtrado[col_name].astype(str).str.contains(
+                                            filter_text_escaped, case=False, regex=True
+                                        )
+                                    ]
+                            except Exception:
+                                # Se der erro na conversão, volta para o filtro de texto
+                                df_texto_filtrado = df_texto_filtrado[
+                                    df_texto_filtrado[col_name].astype(str).str.contains(
+                                        filter_text_escaped, case=False, regex=True
+                                    )
+                                ]
+                        else:
+                            # Filtro padrão para colunas de texto
+                            df_texto_filtrado = df_texto_filtrado[
+                                df_texto_filtrado[col_name].astype(str).str.contains(
+                                    filter_text_escaped, case=False, regex=True
+                                )
+                            ]
 
-                    inicio = (pagina_atual - 1) * registros_por_pagina
-                    fim = min(inicio + registros_por_pagina, len(df_texto_filtrado))
-                    df_paginado = df_texto_filtrado.iloc[inicio:fim]
+                    except Exception as e:
+                        st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
 
-                    # Exibição da tabela - após todos os controles
-                    st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
-                    st.caption(
-                        f"Exibindo registros {inicio + 1} a {fim} de {len(df_texto_filtrado):,}".replace(",", ".")
-                    )
-                else:
-                    # Exibição sem paginação
-                    st.dataframe(df_texto_filtrado, height=altura_tabela, use_container_width=True)
-
-                # Total
-                if coluna_real in df_texto_filtrado.columns:
-                    total_col = pd.to_numeric(tabela_dados.loc[df_texto_filtrado.index, coluna_real],
-                                              errors='coerce').sum()
-                    st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
-            else:
-                st.warning("Nenhum registro encontrado com os filtros aplicados.")
-
-        except Exception as e:
-            st.error(f"Erro ao exibir a tabela: {str(e)}")
-            st.dataframe(tabela_exibicao.head(100), height=altura_tabela, use_container_width=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    #         # Paginação e exibição da tabela
+    #         if len(df_texto_filtrado) > 0:
+    #             if registros_por_pagina != "Todos":
+    #                 registros_por_pagina = int(registros_por_pagina)
+    #                 num_paginas = max(1, (len(df_texto_filtrado) - 1) // registros_por_pagina + 1)
+    #
+    #                 pagina_atual = st.number_input(
+    #                     "Página",
+    #                     min_value=1,
+    #                     max_value=num_paginas,
+    #                     value=1,
+    #                     step=1
+    #                 )
+    #
+    #                 inicio = (pagina_atual - 1) * registros_por_pagina
+    #                 fim = min(inicio + registros_por_pagina, len(df_texto_filtrado))
+    #                 df_paginado = df_texto_filtrado.iloc[inicio:fim]
+    #
+    #                 # Exibição da tabela - após todos os controles
+    #                 st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
+    #                 st.caption(
+    #                     f"Exibindo registros {inicio + 1} a {fim} de {len(df_texto_filtrado):,}".replace(",", ".")
+    #                 )
+    #             else:
+    #                 # Exibição sem paginação
+    #                 st.dataframe(df_texto_filtrado, height=altura_tabela, use_container_width=True)
+    #
+    #             # Total
+    #             if coluna_real in df_texto_filtrado.columns:
+    #                 total_col = pd.to_numeric(tabela_dados.loc[df_texto_filtrado.index, coluna_real],
+    #                                           errors='coerce').sum()
+    #                 st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
+    #         else:
+    #             st.warning("Nenhum registro encontrado com os filtros aplicados.")
+    #
+    #     except Exception as e:
+    #         st.error(f"Erro ao exibir a tabela: {str(e)}")
+    #         st.dataframe(tabela_exibicao.head(100), height=altura_tabela, use_container_width=True)
+    #
+    # st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Rodapé do Dashboard
