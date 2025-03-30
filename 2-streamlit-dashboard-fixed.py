@@ -216,10 +216,61 @@ h2 {
     font-size: 0.8rem;
     color: #364b60;
 }
+
+/* Estilos para filtros de tabela */
+.table-container {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.table-header {
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #364b60;
+    font-size: 18px;
+}
+.filter-input {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.info-text {
+    color: #4c8bf5;
+    font-size: 14px;
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #f0f7ff;
+    border-radius: 5px;
+    border-left: 3px solid #4c8bf5;
+}
+.warning-text {
+    color: #dc3545;
+    font-size: 14px;
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #fff5f5;
+    border-radius: 5px;
+    border-left: 3px solid #dc3545;
+}
+.icon-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.icon-filters-container {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
 """
 
 st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
-
 
 # -------------------------------
 # Funções Auxiliares
@@ -422,6 +473,7 @@ def verificar_coluna_existe(df, coluna_nome):
 
     return False, coluna_nome
 
+
 def converter_df_para_csv(df):
     """
     Converte o DataFrame para CSV em memória e retorna como bytes.
@@ -610,9 +662,11 @@ else:
     subetapa_selecionada = "Todas"
 
 series_disponiveis = []
-if (subetapa_selecionada != "Todas"
-        and "series" in mapeamento_colunas[etapa_selecionada]
-        and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]):
+if (
+    subetapa_selecionada != "Todas"
+    and "series" in mapeamento_colunas[etapa_selecionada]
+    and subetapa_selecionada in mapeamento_colunas[etapa_selecionada]["series"]
+):
     series_disponiveis = list(mapeamento_colunas[etapa_selecionada]["series"][subetapa_selecionada].keys())
     serie_selecionada = st.sidebar.selectbox(
         "Série:",
@@ -662,27 +716,18 @@ coluna_existe, coluna_real = verificar_coluna_existe(df_filtrado, coluna_dados)
 # Verificar se a coluna de dados existe e tratar adequadamente
 if coluna_existe:
     coluna_dados = coluna_real
-    # Verificar se há dados válidos antes de filtrar
     try:
+        # Filtrar apenas matrículas > 0 (se numérico)
         df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
+        if df_filtrado.empty:
+            st.error("Não foi possível encontrar dados para a etapa selecionada.")
+            st.stop()
     except Exception as e:
         st.warning(f"Erro ao filtrar dados por valor positivo: {e}")
-        # Em caso de erro, não filtra
+        # Em caso de erro, não filtra nada além do que já foi feito
 else:
-    st.warning(f"A coluna '{coluna_dados}' não está disponível nos dados.")
-    coluna_principal = mapeamento_colunas[etapa_selecionada].get("coluna_principal", "")
-    coluna_existe, coluna_principal_real = verificar_coluna_existe(df_filtrado, coluna_principal)
-    if coluna_existe:
-        coluna_dados = coluna_principal_real
-        st.info(f"Usando '{coluna_dados}' como alternativa")
-        try:
-            df_filtrado = df_filtrado[pd.to_numeric(df_filtrado[coluna_dados], errors='coerce') > 0]
-        except Exception as e:
-            st.warning(f"Erro ao filtrar dados por valor positivo: {e}")
-            # Em caso de erro, não filtra
-    else:
-        st.error("Não foi possível encontrar dados para a etapa selecionada.")
-        st.stop()
+    # Coluna não existe mesmo depois de verificação
+    st.warning("A coluna de matrículas correspondente não foi encontrada. Os resultados podem ficar inconsistentes.")
 
 # ------------------------------
 # Configurações da Tabela
@@ -766,13 +811,16 @@ if len(colunas_existentes) != len(colunas_tabela):
 st.sidebar.markdown("### Download dos dados")
 col1, col2 = st.sidebar.columns(2)
 
+# Inicialização para filtros avançados de matrículas
+if 'filtro_matriculas_tipo' not in st.session_state:
+    st.session_state.filtro_matriculas_tipo = "Sem filtro"
+
 # Preparar tabela para exibição e download
 try:
     # Verificar se a coluna de dados existe, considerando possíveis variações no nome
     coluna_existe = False
     coluna_real = coluna_dados
 
-    # Verificação direta
     if coluna_dados in df_filtrado.columns:
         coluna_existe = True
     else:
@@ -799,14 +847,15 @@ try:
         else:
             tabela_dados = df_filtrado_tabela
 
-        # Criar cópia para exibição
+        # Criar cópia para exibição (formatada)
         tabela_exibicao = tabela_dados.copy()
 
         # Formatar apenas colunas numéricas para exibição com separador de milhares
         for col in tabela_exibicao.columns:
             if col.startswith("Número de"):
                 tabela_exibicao[col] = tabela_exibicao[col].apply(
-                    lambda x: formatar_numero(x) if pd.notnull(x) else "-")
+                    lambda x: formatar_numero(x) if pd.notnull(x) else "-"
+                )
 
     # Verificar se a tabela está vazia
     if tabela_dados.empty:
@@ -814,7 +863,6 @@ try:
     else:
         # Preparar para download CSV
         try:
-            # Use tabela_dados (não formatada) para downloads
             csv_data = converter_df_para_csv(tabela_dados)
             with col1:
                 st.download_button(
@@ -838,18 +886,18 @@ try:
                 )
         except Exception as e:
             st.error(f"Erro ao preparar Excel para download: {str(e)}")
+
 except Exception as e:
     st.error(f"Erro ao preparar dados para download: {str(e)}")
-    # Inicializar tabela_dados e tabela_exibicao caso não existam
     if 'tabela_dados' not in locals() or 'tabela_exibicao' not in locals():
         tabela_dados = df_filtrado[colunas_existentes].copy() if not df_filtrado.empty else pd.DataFrame()
         tabela_exibicao = tabela_dados.copy()
-
 
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
 st.title(TITULO_DASHBOARD)
+
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
@@ -918,10 +966,8 @@ with kpi_container:
                         )
                 else:
                     if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                        # Verificar se há dados suficientes para o agrupamento
                         if not df_filtrado.empty and coluna_dados in df_filtrado.columns:
-                            media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[
-                                coluna_dados].mean()
+                            media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].mean()
                             if not media_por_dependencia.empty:
                                 media_geral = media_por_dependencia.mean()
                                 st.markdown(
@@ -1072,39 +1118,41 @@ st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
     st.warning("Não há dados para exibir com os filtros selecionados.")
 else:
-    if tipo_visualizacao == "Estado":
-        st.markdown("### Visualização de Dados para Nível Estado")
+    st.markdown('<div class="table-container">', unsafe_allow_html=True)
+    st.markdown(f'<div class="table-header">Dados Detalhados - {tipo_visualizacao}</div>', unsafe_allow_html=True)
 
-        # Usar uma versão simplificada da tabela para evitar problemas de renderização
+    # Caso específico para nível "Estado"
+    if tipo_visualizacao == "Estado":
         try:
-            # Limitar o número de linhas e colunas para facilitar a renderização
+            # Limitar o número de linhas/colunas para exibição
             colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
             if coluna_real in tabela_exibicao.columns:
                 colunas_essenciais.append(coluna_real)
 
-            # Adicionar outras colunas principais se disponíveis
             for col in ["ANO", "CODIGO DA UF", "NOME DA UF"]:
                 if col in tabela_exibicao.columns:
                     colunas_essenciais.append(col)
 
             tabela_simplificada = tabela_exibicao[colunas_essenciais].copy()
 
-            # Exibir a tabela sem usar recursos avançados
             st.write("Dados por Dependência Administrativa:")
             st.dataframe(tabela_simplificada, height=altura_tabela, use_container_width=True)
 
-            # Exibir totais como texto simples
+            # Exibir total
             if coluna_real in tabela_simplificada.columns:
-                total_col = tabela_simplificada[coluna_real].sum()
+                total_col = 0
+                # Como a exibição está formatada, precisamos buscar a soma em tabela_dados
+                if coluna_real in tabela_dados.columns:
+                    total_col = tabela_dados[coluna_real].sum()
+
                 st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
 
         except Exception as e:
             st.error(f"Erro ao exibir tabela para nível Estado: {str(e)}")
             st.write("Tentando exibição alternativa...")
 
-            # Fallback extremamente simples
             try:
-                # Agrupar por dependência administrativa para uma visualização simplificada
+                # Agrupar por dependência administrativa para simplificar
                 if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and coluna_dados in df_filtrado.columns:
                     resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_dados].sum().reset_index()
                     st.write("Resumo por Dependência Administrativa:")
@@ -1114,101 +1162,318 @@ else:
                     st.dataframe(df_filtrado.head(100), use_container_width=True)
             except:
                 st.error("Não foi possível exibir os dados mesmo no formato simplificado.")
-    else:
-        # Código existente para visualização de Escola e Município
-        try:
-            # Adicionar opções de filtragem acima da tabela
-            filtro_col1, filtro_col2 = st.columns([1, 3])
 
-            with filtro_col1:
-                registros_por_pagina = st.selectbox(
-                    "Registros por página:",
-                    options=[10, 25, 50, 100, "Todos"],
-                    index=1  # Padrão: 25
+    # Caso para nível "Escola" ou "Município"
+    else:
+        try:
+            # ------------------------------------
+            # Filtros avançados para coluna-matrículas
+            # ------------------------------------
+            coluna_matriculas = None
+            for col in tabela_exibicao.columns:
+                if "número de" in col.lower() and coluna_real == col:
+                    coluna_matriculas = col
+                    break
+
+            if coluna_matriculas:
+                st.markdown("### Filtros avançados")
+
+                filtro_container = st.container()
+                with filtro_container:
+                    col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 3])
+
+                    with col1:
+                        if st.button("🚫",
+                                     key="btn_sem_filtro",
+                                     help="Remover filtros",
+                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Sem filtro" else "secondary"):
+                            st.session_state.filtro_matriculas_tipo = "Sem filtro"
+                            st.experimental_rerun()
+
+                    with col2:
+                        if st.button("↗️",
+                                     key="btn_acima",
+                                     help="Mostrar valores acima de um limite",
+                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Acima de" else "secondary"):
+                            st.session_state.filtro_matriculas_tipo = "Acima de"
+                            st.experimental_rerun()
+
+                    with col3:
+                        if st.button("↘️",
+                                     key="btn_abaixo",
+                                     help="Mostrar valores abaixo de um limite",
+                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Abaixo de" else "secondary"):
+                            st.session_state.filtro_matriculas_tipo = "Abaixo de"
+                            st.experimental_rerun()
+
+                    with col4:
+                        if st.button("↔️",
+                                     key="btn_entre",
+                                     help="Mostrar valores entre dois limites",
+                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Entre" else "secondary"):
+                            st.session_state.filtro_matriculas_tipo = "Entre"
+                            st.experimental_rerun()
+
+                    with col5:
+                        if st.button("🔝",
+                                     key="btn_top",
+                                     help="Mostrar os maiores valores",
+                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Top maiores" else "secondary"):
+                            st.session_state.filtro_matriculas_tipo = "Top maiores"
+                            st.experimental_rerun()
+
+                    with col6:
+                        if st.button("↙️",
+                                     key="btn_bottom",
+                                     help="Mostrar os menores valores",
+                                     type="primary" if st.session_state.filtro_matriculas_tipo == "Top menores" else "secondary"):
+                            st.session_state.filtro_matriculas_tipo = "Top menores"
+                            st.experimental_rerun()
+
+                    with col7:
+                        # Campo(s) para definir limites/top_n
+                        tipo_filtro = st.session_state.filtro_matriculas_tipo
+
+                        if tipo_filtro == "Acima de":
+                            st.markdown("**Valor mínimo:**")
+                            valor_min = st.number_input("",
+                                                        min_value=0,
+                                                        max_value=int(tabela_dados[coluna_matriculas].max()),
+                                                        value=1000,
+                                                        label_visibility="collapsed")
+                            valor_max = None
+                            top_n = None
+
+                        elif tipo_filtro == "Abaixo de":
+                            st.markdown("**Valor máximo:**")
+                            valor_max = st.number_input("",
+                                                        min_value=0,
+                                                        max_value=int(tabela_dados[coluna_matriculas].max()),
+                                                        value=5000,
+                                                        label_visibility="collapsed")
+                            valor_min = None
+                            top_n = None
+
+                        elif tipo_filtro == "Entre":
+                            col7a, col7b = st.columns(2)
+                            with col7a:
+                                st.markdown("**Mínimo:**")
+                                valor_min = st.number_input("Min",
+                                                            min_value=0,
+                                                            max_value=int(tabela_dados[coluna_matriculas].max()),
+                                                            value=1000,
+                                                            label_visibility="collapsed")
+                            with col7b:
+                                st.markdown("**Máximo:**")
+                                valor_max = st.number_input("Max",
+                                                            min_value=0,
+                                                            max_value=int(tabela_dados[coluna_matriculas].max()),
+                                                            value=5000,
+                                                            label_visibility="collapsed")
+                            top_n = None
+
+                        elif tipo_filtro in ["Top maiores", "Top menores"]:
+                            st.markdown("**Quantidade:**")
+                            top_n = st.number_input("",
+                                                    min_value=1,
+                                                    max_value=min(100, len(tabela_dados)),
+                                                    value=10,
+                                                    label_visibility="collapsed")
+                            valor_min = None
+                            valor_max = None
+
+                        else:
+                            valor_min = None
+                            valor_max = None
+                            top_n = None
+
+                # Aplica o filtro avançado
+                df_filtrado_final = tabela_exibicao.copy()
+
+                # Precisamos filtrar usando valores numéricos (tabela_dados) em paralelo
+                tipo_filtro = st.session_state.filtro_matriculas_tipo
+
+                # Converter a coluna na tabela_dados para numérico
+                tabela_dados[coluna_matriculas] = pd.to_numeric(tabela_dados[coluna_matriculas], errors='coerce')
+
+                if tipo_filtro == "Acima de" and valor_min is not None:
+                    # Precisamos identificar linhas acima de valor_min
+                    indices = tabela_dados[tabela_dados[coluna_matriculas] > valor_min].index
+                    df_filtrado_final = df_filtrado_final.loc[indices]
+
+                elif tipo_filtro == "Abaixo de" and valor_max is not None:
+                    indices = tabela_dados[tabela_dados[coluna_matriculas] < valor_max].index
+                    df_filtrado_final = df_filtrado_final.loc[indices]
+
+                elif tipo_filtro == "Entre" and valor_min is not None and valor_max is not None:
+                    indices = tabela_dados[
+                        (tabela_dados[coluna_matriculas] >= valor_min) &
+                        (tabela_dados[coluna_matriculas] <= valor_max)
+                    ].index
+                    df_filtrado_final = df_filtrado_final.loc[indices]
+
+                elif tipo_filtro == "Top maiores" and top_n is not None:
+                    df_temp = tabela_dados.sort_values(by=coluna_matriculas, ascending=False)
+                    top_indices = df_temp.head(top_n).index
+                    df_filtrado_final = df_filtrado_final.loc[top_indices]
+
+                elif tipo_filtro == "Top menores" and top_n is not None:
+                    df_temp = tabela_dados.sort_values(by=coluna_matriculas, ascending=True)
+                    top_indices = df_temp.head(top_n).index
+                    df_filtrado_final = df_filtrado_final.loc[top_indices]
+
+                else:
+                    df_filtrado_final = tabela_exibicao.copy()
+
+                # Exibir informação sobre o tipo de filtro
+                if tipo_filtro != "Sem filtro":
+                    filtro_info = f"Filtro aplicado: {tipo_filtro}"
+                    if tipo_filtro == "Acima de":
+                        filtro_info += f" {valor_min:,}".replace(",", ".")
+                    elif tipo_filtro == "Abaixo de":
+                        filtro_info += f" {valor_max:,}".replace(",", ".")
+                    elif tipo_filtro == "Entre":
+                        filtro_info += f" {valor_min:,} e {valor_max:,}".replace(",", ".")
+                    elif tipo_filtro in ["Top maiores", "Top menores"]:
+                        filtro_info += f" {top_n} registro(s)"
+
+                    st.markdown(f'<div class="info-text">ℹ️ {filtro_info}</div>', unsafe_allow_html=True)
+                    st.caption(f"Exibindo {len(df_filtrado_final)} de {len(tabela_exibicao)} registro(s) após este filtro.")
+
+            else:
+                # Se não há coluna de matrículas identificada
+                df_filtrado_final = tabela_exibicao.copy()
+
+            # ------------------------------------
+            # Filtros de texto por coluna
+            # ------------------------------------
+            st.markdown("### Filtros por coluna")
+
+            # Layout em colunas para os filtros de texto
+            num_cols = min(4, len(df_filtrado_final.columns))
+            filter_cols = st.columns(num_cols)
+            col_filters = {}
+
+            for i, col_name in enumerate(df_filtrado_final.columns):
+                with filter_cols[i % num_cols]:
+                    st.markdown(f"**{col_name}**")
+                    col_filters[col_name] = st.text_input(
+                        "",
+                        key=f"filter_{col_name}",
+                        label_visibility="collapsed",
+                        placeholder=f"Filtrar {col_name}..."
+                    )
+
+            df_texto_filtrado = df_filtrado_final.copy()
+            for col_name, filter_text in col_filters.items():
+                if filter_text:
+                    df_texto_filtrado = df_texto_filtrado[
+                        df_texto_filtrado[col_name].astype(str).str.contains(filter_text, case=False)
+                    ]
+
+            if len(col_filters) > 0 and any(col_filters.values()):
+                st.markdown(
+                    f'<div class="info-text">📋 Filtros de texto aplicados. Exibindo {len(df_texto_filtrado)} de {len(df_filtrado_final)} registros.</div>',
+                    unsafe_allow_html=True
                 )
 
-            with filtro_col2:
-                opcoes_ordenacao = ["Maior valor", "Menor valor"]
+            # ------------------------------------
+            # Paginação
+            # ------------------------------------
+            if len(df_texto_filtrado) > 0:
+                col_pag1, col_pag2 = st.columns([1, 3])
 
-                # Opções adicionais de ordenação baseadas nas colunas disponíveis
-                if "NOME DA ESCOLA" in tabela_exibicao.columns:
-                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
-                elif "NOME DO MUNICIPIO" in tabela_exibicao.columns:
-                    opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
-
-                if len(opcoes_ordenacao) > 2 and coluna_real in tabela_exibicao.columns:
-                    ordem_tabela = st.radio(
-                        "Ordenar por:",
-                        opcoes_ordenacao,
-                        horizontal=True
+                with col_pag1:
+                    registros_por_pagina = st.selectbox(
+                        "Registros por página:",
+                        options=[10, 25, 50, 100, "Todos"],
+                        index=1  # Padrão: 25
                     )
 
-                    if ordem_tabela == "Maior valor":
-                        tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=False)
-                    elif ordem_tabela == "Menor valor":
-                        tabela_exibicao = tabela_exibicao.sort_values(by=coluna_real, ascending=True)
-                    elif "por Escola" in ordem_tabela:
-                        tabela_exibicao = tabela_exibicao.sort_values(
-                            by="NOME DA ESCOLA",
-                            ascending=("A-Z" in ordem_tabela)
+                with col_pag2:
+                    opcoes_ordenacao = ["Maior valor", "Menor valor"]
+                    if "NOME DA ESCOLA" in df_texto_filtrado.columns:
+                        opcoes_ordenacao.extend(["Alfabético (A-Z) por Escola", "Alfabético (Z-A) por Escola"])
+                    if "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
+                        opcoes_ordenacao.extend(["Alfabético (A-Z) por Município", "Alfabético (Z-A) por Município"])
+
+                    if coluna_real in df_texto_filtrado.columns:
+                        ordem_tabela = st.radio(
+                            "Ordenar por:",
+                            opcoes_ordenacao,
+                            horizontal=True
                         )
-                    elif "por Município" in ordem_tabela:
-                        tabela_exibicao = tabela_exibicao.sort_values(
-                            by="NOME DO MUNICIPIO",
-                            ascending=("A-Z" in ordem_tabela)
+
+                        if ordem_tabela == "Maior valor":
+                            # Converter para numérico se necessário
+                            df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real], errors='coerce')
+                            df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=False)
+
+                        elif ordem_tabela == "Menor valor":
+                            df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real], errors='coerce')
+                            df_texto_filtrado = df_texto_filtrado.sort_values(by=coluna_real, ascending=True)
+
+                        elif ordem_tabela == "Alfabético (A-Z) por Escola" and "NOME DA ESCOLA" in df_texto_filtrado.columns:
+                            df_texto_filtrado = df_texto_filtrado.sort_values(by="NOME DA ESCOLA", ascending=True)
+
+                        elif ordem_tabela == "Alfabético (Z-A) por Escola" and "NOME DA ESCOLA" in df_texto_filtrado.columns:
+                            df_texto_filtrado = df_texto_filtrado.sort_values(by="NOME DA ESCOLA", ascending=False)
+
+                        elif ordem_tabela == "Alfabético (A-Z) por Município" and "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
+                            df_texto_filtrado = df_texto_filtrado.sort_values(by="NOME DO MUNICIPIO", ascending=True)
+
+                        elif ordem_tabela == "Alfabético (Z-A) por Município" and "NOME DO MUNICIPIO" in df_texto_filtrado.columns:
+                            df_texto_filtrado = df_texto_filtrado.sort_values(by="NOME DO MUNICIPIO", ascending=False)
+
+                if registros_por_pagina != "Todos":
+                    registros_por_pagina = int(registros_por_pagina)
+                    num_paginas = max(1, (len(df_texto_filtrado) - 1) // registros_por_pagina + 1)
+
+                    if num_paginas > 0:
+                        pagina_atual = st.number_input(
+                            "Página",
+                            min_value=1,
+                            max_value=num_paginas,
+                            value=1,
+                            step=1
                         )
 
-            # Total de registros
-            st.caption(f"Total de registros: {len(tabela_exibicao):,}".replace(",", "."))
+                        inicio = (pagina_atual - 1) * registros_por_pagina
+                        fim = min(inicio + registros_por_pagina, len(df_texto_filtrado))
+                        df_paginado = df_texto_filtrado.iloc[inicio:fim]
 
-            # Implementar paginação
-            if registros_por_pagina != "Todos":
-                registros_por_pagina = int(registros_por_pagina)
-                num_paginas = max(1, (len(tabela_exibicao) - 1) // registros_por_pagina + 1)
-
-                # Garantir que não haja erro se não houver registros
-                if num_paginas > 0:
-                    pagina_atual = st.number_input(
-                        "Página",
-                        min_value=1,
-                        max_value=num_paginas,
-                        value=1,
-                        step=1
-                    )
-
-                    inicio = (pagina_atual - 1) * registros_por_pagina
-                    fim = min(inicio + registros_por_pagina, len(tabela_exibicao))
-
-                    # Garantir que os índices sejam válidos
-                    if inicio < len(tabela_exibicao):
-                        df_paginado = tabela_exibicao.iloc[inicio:fim]
                         st.dataframe(df_paginado, height=altura_tabela, use_container_width=True)
-
-                        # Informação da paginação
                         st.caption(
-                            f"Exibindo registros {inicio + 1} a {fim} de {len(tabela_exibicao):,}".replace(",", "."))
+                            f"Exibindo registros {inicio + 1} a {fim} de {len(df_texto_filtrado):,}".replace(",", ".")
+                        )
                     else:
-                        st.warning("Índice de paginação inválido.")
-                        st.dataframe(tabela_exibicao.head(registros_por_pagina), height=altura_tabela,
-                                     use_container_width=True)
+                        st.warning("Não há páginas para exibir.")
                 else:
-                    st.warning("Não há páginas para exibir.")
-            else:
-                st.dataframe(tabela_exibicao, height=altura_tabela, use_container_width=True)
+                    st.dataframe(df_texto_filtrado, height=altura_tabela, use_container_width=True)
 
-            # Adiciona linha de totais
-            if coluna_real in tabela_exibicao.columns:
-                total_col = tabela_exibicao[coluna_real].sum()
-                st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
+                # Linha de total (se for coluna numérica)
+                if coluna_real in df_texto_filtrado.columns:
+                    try:
+                        df_texto_filtrado[coluna_real] = pd.to_numeric(df_texto_filtrado[coluna_real], errors='coerce')
+                        total_col = df_texto_filtrado[coluna_real].sum()
+                        st.markdown(f"**Total de {coluna_real}:** {formatar_numero(total_col)}")
+                    except Exception:
+                        pass
+            else:
+                st.markdown(
+                    '<div class="warning-text">⚠️ Nenhum registro encontrado com os filtros aplicados.</div>',
+                    unsafe_allow_html=True
+                )
 
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
             st.write("Tentando exibir tabela simplificada...")
             try:
-                # Mostrar apenas as primeiras 100 linhas como fallback
-                st.dataframe(tabela_exibicao.head(100), height=altura_tabela)
+                st.dataframe(tabela_exibicao.head(100), height=altura_tabela, use_container_width=True)
             except:
                 st.error("Não foi possível exibir a tabela mesmo em formato simplificado.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Rodapé do Dashboard
@@ -1217,7 +1482,25 @@ st.markdown("---")
 if 'RODAPE_NOTA' in globals():
     st.markdown(RODAPE_NOTA)
 else:
-    st.markdown("© Dashboard Educacional - Desenvolvido para visualização de dados do Censo Escolar")
+    st.markdown(
+        """
+        <style>
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        </style>
+        <div class="footer">
+            © Dashboard Educacional - Desenvolvido para visualização de dados do Censo Escolar
+            <br>Última atualização: Março/2025
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Tempo de execução
 tempo_final = time.time()
