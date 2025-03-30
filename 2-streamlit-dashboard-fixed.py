@@ -8,10 +8,6 @@ import json
 import re
 from constantes import *  # Importa constantes (rótulos, textos, etc.)
 
-# Configuração para suprimir impressão de docstrings e avisos
-st.set_option('deprecation.showfileUploaderEncoding', False)
-st.set_option('deprecation.showPyplotGlobalUse', False)
-
 # Inicialização do tempo de execução
 import time
 
