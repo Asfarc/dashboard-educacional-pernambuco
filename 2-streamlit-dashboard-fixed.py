@@ -1196,9 +1196,9 @@ else:
                     st.write(f"**{col_name}**")
                     # Usar text_input simples para todas as colunas para manter o alinhamento
                     col_filters[col_name] = st.text_input(
-                        "",
+                        label=f"Filtro para {col_name}",  # Adicione um label descritivo
                         key=f"filter_{col_name}",
-                        label_visibility="collapsed",
+                        label_visibility="collapsed",  # Mantenha-o oculto
                         placeholder=f"Filtrar {col_name}..."
                     )
 
