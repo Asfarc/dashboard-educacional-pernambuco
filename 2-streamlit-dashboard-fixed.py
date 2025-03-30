@@ -230,21 +230,26 @@ def formatar_numero(numero):
     Ex.: 1234567 -> '1.234.567'
          1234.56 -> '1.234,56'
     Se o número for NaN ou '-', retorna '-'.
+    Aplica formatação apenas a valores numéricos.
     """
     if pd.isna(numero) or numero == "-":
         return "-"
+
+    # Verifica se o valor é numérico
     try:
+        float_numero = float(numero)
         # Exibe sem casas decimais se for inteiro
-        if float(numero).is_integer():
-            return f"{int(numero):,}".replace(",", ".")
+        if float_numero.is_integer():
+            return f"{int(float_numero):,}".replace(",", ".")
         else:
             # 2 casas decimais
-            parte_inteira = int(float(numero))
-            parte_decimal = abs(float(numero) - parte_inteira)
+            parte_inteira = int(float_numero)
+            parte_decimal = abs(float_numero - parte_inteira)
             inteiro_fmt = f"{parte_inteira:,}".replace(",", ".")
             decimal_fmt = f"{parte_decimal:.2f}".replace("0.", "").replace(".", ",")
             return f"{inteiro_fmt},{decimal_fmt}"
     except (ValueError, TypeError):
+        # Se não for numérico, retorna o valor original como string
         return str(numero)
 
 
@@ -254,36 +259,20 @@ def carregar_dados():
     Carrega os dados das planilhas no formato Parquet.
     - Lê os arquivos: escolas.parquet, estado.parquet e municipio.parquet.
     - Converte colunas que começam com 'Número de' para tipo numérico.
+    - Mantém outras colunas como texto.
     Em caso de erro, exibe uma mensagem e interrompe a execução.
     """
     try:
-        # Possíveis diretórios onde os arquivos podem estar
-        diretorios_possiveis = [
-            ".",
-            "data",
-            "dados",
-            os.path.join(os.path.dirname(__file__), "data")
-        ]
-
-        escolas_df = estado_df = municipio_df = None
-        for diretorio in diretorios_possiveis:
-            escolas_path = os.path.join(diretorio, "escolas.parquet")
-            estado_path = os.path.join(diretorio, "estado.parquet")
-            municipio_path = os.path.join(diretorio, "municipio.parquet")
-
-            if os.path.exists(escolas_path) and os.path.exists(estado_path) and os.path.exists(municipio_path):
-                escolas_df = pd.read_parquet(escolas_path)
-                estado_df = pd.read_parquet(estado_path)
-                municipio_df = pd.read_parquet(municipio_path)
-                break
-
-        if escolas_df is None or estado_df is None or municipio_df is None:
-            raise FileNotFoundError(ERRO_ARQUIVOS_NAO_ENCONTRADOS)
+        # Código existente para localizar e carregar os arquivos...
 
         for df_ in [escolas_df, estado_df, municipio_df]:
             for col in df_.columns:
+                # Converte apenas colunas de matrículas para numérico
                 if col.startswith("Número de"):
                     df_[col] = pd.to_numeric(df_[col], errors='coerce')
+                elif col in ["ANO", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA", "CODIGO DA UF"]:
+                    # Garante que estas colunas sejam tratadas como texto
+                    df_[col] = df_[col].astype(str)
 
         return escolas_df, estado_df, municipio_df
 
@@ -762,15 +751,25 @@ try:
     with pd.option_context('mode.chained_assignment', None):
         df_filtrado_tabela = df_filtrado[colunas_existentes].copy()
 
-        # Converter coluna de dados para numérico se existir
+        # Converter apenas colunas de dados para numérico
+        for col in df_filtrado_tabela.columns:
+            if col.startswith("Número de"):
+                df_filtrado_tabela[col] = pd.to_numeric(df_filtrado_tabela[col], errors='coerce')
+
+        # Ordenar por coluna de dados (decrescente) se existir
         if coluna_existe and coluna_real in df_filtrado_tabela.columns:
-            df_filtrado_tabela[coluna_real] = pd.to_numeric(df_filtrado_tabela[coluna_real], errors='coerce')
-            # Ordenar por coluna de dados (decrescente)
             tabela_dados = df_filtrado_tabela.sort_values(by=coluna_real, ascending=False)
         else:
             tabela_dados = df_filtrado_tabela
 
+        # Criar cópia para exibição
         tabela_exibicao = tabela_dados.copy()
+
+        # Formatar apenas colunas numéricas para exibição com separador de milhares
+        for col in tabela_exibicao.columns:
+            if col.startswith("Número de"):
+                tabela_exibicao[col] = tabela_exibicao[col].apply(
+                    lambda x: formatar_numero(x) if pd.notnull(x) else "-")
 
     # Verificar se a tabela está vazia
     if tabela_dados.empty:
@@ -778,6 +777,7 @@ try:
     else:
         # Preparar para download CSV
         try:
+            # Use tabela_dados (não formatada) para downloads
             csv_data = converter_df_para_csv(tabela_dados)
             with col1:
                 st.download_button(
@@ -1046,7 +1046,7 @@ else:
                 colunas_essenciais.append(coluna_real)
 
             # Adicionar outras colunas principais se disponíveis
-            for col in ["ANO"]:
+            for col in ["ANO", "CODIGO DA UF", "NOME DA UF"]:
                 if col in tabela_exibicao.columns:
                     colunas_essenciais.append(col)
 
