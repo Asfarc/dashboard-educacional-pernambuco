@@ -471,6 +471,12 @@ def converter_df_para_excel(df):
 # Carregamento de Dados
 # -------------------------------
 try:
+    # Inicializar as variáveis com valores vazios para garantir que elas existam
+    escolas_df = pd.DataFrame()
+    estado_df = pd.DataFrame()
+    municipio_df = pd.DataFrame()
+
+    # Carregar os dados
     escolas_df, estado_df, municipio_df = carregar_dados()
 
     # Verificação adicional para garantir que os DataFrames não estão vazios
@@ -488,6 +494,15 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao carregar dados: {str(e)}")
+
+    # Criar DataFrames vazios caso não existam
+    if 'escolas_df' not in locals():
+        escolas_df = pd.DataFrame()
+    if 'estado_df' not in locals():
+        estado_df = pd.DataFrame()
+    if 'municipio_df' not in locals():
+        municipio_df = pd.DataFrame()
+
     st.stop()
 
 # ======================================
