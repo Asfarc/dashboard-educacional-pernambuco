@@ -36,25 +36,32 @@ from layout_primeiros_indicadores import (
 # -----------------------------------------
 # 1) Injetar o CSS de estilo dos containers
 # -----------------------------------------
-#st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
+st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 
 css_unificado = """
 /* =================== RESET DO TÍTULO =================== */
+/* Container principal do app */
 .stApp {
-    margin-top: -3.5rem !important;
-    padding-top: 0.5rem !important;
+    margin-top: -2rem !important;
+    padding-top: 0 !important;
 }
 
-div.stMarkdown:has(h1:first-of-type) {
-    margin: -4rem 0 -3rem !important;
+/* Container do título */
+.stMarkdown:has(h1:first-of-type) {
+    margin: -3rem 0 -4rem !important;
     padding: 0 !important;
 }
 
-div.stMarkdown h1:first-of-type {
+/* Texto do título */
+.stMarkdown h1:first-of-type {
     padding: 0.25rem 0 !important;
-    margin: -2rem 0 0.5rem !important;
-    position: relative;
-    z-index: 999;
+    margin: 0 0 0.5rem !important;
+}
+
+/* Espaço acima do primeiro elemento */
+.stApp > div:first-child {
+    padding-top: 0 !important;
+    margin-top: -1rem !important;
 }
 
 /* CSS Unificado e Otimizado para o Dashboard */
@@ -66,12 +73,11 @@ div.stMarkdown h1:first-of-type {
    
    /* Posicionamento do elemento - controla onde o fundo começa */
    top: 50px;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
-   left: 0;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
-   bottom: 0;
+   left: 0px;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
    
-   # /* Dimensões do elemento - controla o tamanho do fundo */
-   # width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) - pode variar de 0% a 100% ou valores fixos como px */
-   # height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) - pode variar de 0% a 100% ou valores fixos como px */
+   /* Dimensões do elemento - controla o tamanho do fundo */
+   width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) - pode variar de 0% a 100% ou valores fixos como px */
+   height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) - pode variar de 0% a 100% ou valores fixos como px */
    
    background-color: #364b60; /* Cor de fundo azul escuro - pode ser qualquer código de cor HEX, RGB ou nome de cor */
    z-index: -1; /* Coloca o fundo atrás do conteúdo (valores negativos = atrás, positivos = na frente) */
