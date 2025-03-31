@@ -989,7 +989,7 @@ st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
     st.warning("Não há dados para exibir com os filtros selecionados.")
 else:
-    st.markdown('<div class="table-container">', unsafe_allow_html=True)
+
     st.markdown(f'<div class="table-header">Dados Detalhados - {tipo_nivel_agregacao_selecionado}</div>', unsafe_allow_html=True)
 
     if tipo_nivel_agregacao_selecionado == "Estado":
