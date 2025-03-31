@@ -40,28 +40,21 @@ from layout_primeiros_indicadores import (
 
 css_unificado = """
 /* =================== RESET DO TÍTULO =================== */
-/* Container principal do app */
 .stApp {
-    margin-top: -2rem !important;
-    padding-top: 0 !important;
+    margin-top: -3.5rem !important;
+    padding-top: 0.5rem !important;
 }
 
-/* Container do título */
-.stMarkdown:has(h1:first-of-type) {
-    margin: -3rem 0 -4rem !important;
+div.stMarkdown:has(h1:first-of-type) {
+    margin: -4rem 0 -3rem !important;
     padding: 0 !important;
 }
 
-/* Texto do título */
-.stMarkdown h1:first-of-type {
+div.stMarkdown h1:first-of-type {
     padding: 0.25rem 0 !important;
-    margin: 0 0 0.5rem !important;
-}
-
-/* Espaço acima do primeiro elemento */
-.stApp > div:first-child {
-    padding-top: 0 !important;
-    margin-top: -1rem !important;
+    margin: -2rem 0 0.5rem !important;
+    position: relative;
+    z-index: 999;
 }
 
 /* CSS Unificado e Otimizado para o Dashboard */
