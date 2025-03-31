@@ -1131,6 +1131,12 @@ else:
                     st.markdown(
                         f"**Total: {total_registros_br} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
                     )
+                # Defina proporções diferentes para testar
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.markdown("Coluna 1")
+                with col2:
+                    st.markdown("Coluna 2")
 
                 # 2) Botão ◀ Anterior
                 with col_anterior:
