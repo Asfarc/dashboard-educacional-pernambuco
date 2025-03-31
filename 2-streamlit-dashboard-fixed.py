@@ -806,94 +806,121 @@ except Exception as e:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-# Exemplo de dados estáticos (você pode substituir pelos que já calculou)
+import streamlit as st
+import pandas as pd
+import altair as alt
+
+# ----- Dados de exemplo -----
 dados_absolutos = {
-    "Rede": ["Estaduais", "Municipais", "Privadas"],  # Pode incluir "Privadas"
-    "Escolas": [408, 2228, 350],      # Números fictícios
+    "Rede": ["Estaduais", "Municipais", "Privadas"],
+    "Escolas": [408, 2228, 350],
     "Matrículas": [274436, 607055, 100000],
     "Professores": [50816, 117972, 25000]
 }
 df_absolutos = pd.DataFrame(dados_absolutos)
-df_absolutos["Total"] = df_absolutos[["Escolas", "Matrículas", "Professores"]].sum(axis=1)
 
-# Para o gráfico (Evolução 2015 a 2025): dados fictícios
-# A ideia é que você obtenha esses valores dinamicamente
+# Evolução (anos e valores fictícios) para o gráfico
 df_evolucao = pd.DataFrame({
     "Ano": list(range(2015, 2026)),
-    "Escolas": [400+(i*5) for i in range(11)],      # Exemplo
-    "Matrículas": [800000+(i*8000) for i in range(11)],
-    "Professores": [15000+(i*600) for i in range(11)],
+    "Escolas": [400 + (i * 5) for i in range(11)],
+    "Matrículas": [800000 + (i * 8000) for i in range(11)],
+    "Professores": [15000 + (i * 600) for i in range(11)],
 })
-# Faz pivot para plotar 3 linhas (Escolas, Matrículas, Professores)
-df_melt = df_evolucao.melt(id_vars="Ano",
-                           var_name="Categoria",
-                           value_name="Valor")
+df_melt = df_evolucao.melt(id_vars="Ano", var_name="Categoria", value_name="Valor")
 
-# ---------------------------------------------------------
-# CSS básico para bordas, fontes, etc. (ajuste conforme quiser)
-# ---------------------------------------------------------
-st.markdown("""
+# ----- Função para formatar com pontos nos milhares -----
+def format_number(num: float) -> str:
+    """Ex.: 123456 -> '123.456' """
+    return f"{num:_.0f}".replace("_", ".")
+
+# ----- CSS: bordas, fonte, etc. -----
+st.markdown(
+    """
 <style>
 .container-custom {
-    border: 1px solid #ddd;       /* borda cinza clara */
-    border-radius: 8px;          /* cantos semi-arredondados */
+    border: 1px solid #dee2e6;     /* Borda externa clara */
+    border-radius: 8px;           /* Cantos semiarredondados */
     padding: 1rem;
     margin-bottom: 1rem;
+    background-color: white;
 }
-/* Título dentro de cada container */
+/* Título no container */
 .container-title {
     font-family: "Open Sans", sans-serif;
-    font-weight: 700;           /* negrito */
+    font-weight: 700;
     color: #364b60;
-    font-size: 1.1rem;         /* ajuste conforme necessário */
+    font-size: 1.1rem;  /* Ajuste conforme necessário */
     margin-bottom: 0.5rem;
 }
-/* Texto/numérico dentro do container */
+/* Texto da tabela e valores */
 .container-text {
     font-family: "Open Sans", sans-serif;
-    font-weight: 400;          /* seminegrito ou normal */
+    color: #364b60; 
+    font-weight: 400;  /* Normal */
     font-size: 1rem;
-    color: #333;
 }
 /* Tabela customizada */
 .custom-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed; /* Permite definir larguras */
 }
-.custom-table th, .custom-table td {
-    text-align: left;
+.custom-table col:nth-child(1) { width: 40%; }  /* Ajuste as larguras conforme quiser */
+.custom-table col:nth-child(2) { width: 15%; }
+.custom-table col:nth-child(3) { width: 15%; }
+.custom-table col:nth-child(4) { width: 15%; }
+.custom-table col:nth-child(5) { width: 15%; }
+
+/* Apenas linhas verticais (sem horizontais) */
+.custom-table td, .custom-table th {
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
     padding: 8px;
+    vertical-align: middle;
 }
-.custom-table tr + tr {
-    border-top: 1px solid #ddd;  /* linha separadora entre Escolas, Matrículas, Professores */
+.custom-table th {
+    font-weight: 700;  /* Cabeçalho em negrito */
+    text-align: center;
+}
+.custom-table td:first-child, .custom-table th:first-child {
+    border-left: none; /* Remove borda esquerda na 1ª col */
+}
+.custom-table td:last-child, .custom-table th:last-child {
+    border-right: none; /* Remove borda direita na última col */
 }
 .icone {
-    width: 24px;
-    height: 24px;
-    vertical-align: middle;  /* alinhar ao texto */
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
     margin-right: 6px;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True
+)
 
-# =========================
-# CRIA AS DUAS COLUNAS (SIDE BY SIDE)
-# =========================
+# Criação das duas colunas lado a lado
 col1, col2 = st.columns(2)
 
-# -------------------------
-# CONTAINER 1: Tabela
-# -------------------------
+# -----------------------------------
+#  CONTAINER 1: Tabela de Dados
+# -----------------------------------
 with col1:
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
-
     st.markdown('<div class="container-title">Dados Absolutos</div>', unsafe_allow_html=True)
 
-    # Exemplo de HTML para exibir a tabela com ícones
-    # Ajuste os caminhos dos ícones conforme a sua máquina
-    # e, se quiser, altere para .svg
-    tabela_html = f"""
+    # Montagem do HTML da tabela
+    # Ajuste os caminhos dos ícones na tag <img>.
+    # Se estiver tudo na pasta "icones", e seu script está na raiz do projeto, use "icones/Escolas.png", etc.
+    tabela_html = """
     <table class="custom-table container-text">
+        <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+        </colgroup>
         <thead>
             <tr>
                 <th></th>
@@ -905,64 +932,81 @@ with col1:
         </thead>
         <tbody>
             <tr>
-                <td>
-                    <img class="icone" src="file://C:/Users/User/Desktop/DashBoard/icones/Escolas.png"/>
+                <td><strong>
+                    <img class="icone" src="icones/Escolas.png" />
                     Escolas
-                </td>
-                <td>{df_absolutos['Escolas'][0]:,}</td>
-                <td>{df_absolutos['Escolas'][1]:,}</td>
-                <td>{df_absolutos['Escolas'][2]:,}</td>
-                <td>{df_absolutos['Escolas'].sum():,}</td>
+                </strong></td>
+                <td>{est_esc}</td>
+                <td>{mun_esc}</td>
+                <td>{priv_esc}</td>
+                <td>{total_esc}</td>
             </tr>
             <tr>
-                <td>
-                    <img class="icone" src="file://C:/Users/User/Desktop/DashBoard/icones/Matriculas.png"/>
+                <td><strong>
+                    <img class="icone" src="icones/Matriculas.png" />
                     Matrículas
-                </td>
-                <td>{df_absolutos['Matrículas'][0]:,}</td>
-                <td>{df_absolutos['Matrículas'][1]:,}</td>
-                <td>{df_absolutos['Matrículas'][2]:,}</td>
-                <td>{df_absolutos['Matrículas'].sum():,}</td>
+                </strong></td>
+                <td>{est_mat}</td>
+                <td>{mun_mat}</td>
+                <td>{priv_mat}</td>
+                <td>{total_mat}</td>
             </tr>
             <tr>
-                <td>
-                    <img class="icone" src="file://C:/Users/User/Desktop/DashBoard/icones/Professores.png"/>
+                <td><strong>
+                    <img class="icone" src="icones/Professores.png" />
                     Professores
-                </td>
-                <td>{df_absolutos['Professores'][0]:,}</td>
-                <td>{df_absolutos['Professores'][1]:,}</td>
-                <td>{df_absolutos['Professores'][2]:,}</td>
-                <td>{df_absolutos['Professores'].sum():,}</td>
+                </strong></td>
+                <td>{est_prof}</td>
+                <td>{mun_prof}</td>
+                <td>{priv_prof}</td>
+                <td>{total_prof}</td>
             </tr>
         </tbody>
     </table>
-    """
-    # Observação: Usamos "{valor:,}" para inserir separadores de milhar como "123,456".
-    # Se quiser usar ponto no lugar de vírgula, troque por:
-    #   f"{df_absolutos['Escolas'][0]:_.0f}".replace("_", ".")
-    # ou faça manualmente com .replace().
+    """.format(
+        est_esc=format_number(df_absolutos["Escolas"][0]),
+        mun_esc=format_number(df_absolutos["Escolas"][1]),
+        priv_esc=format_number(df_absolutos["Escolas"][2]),
+        total_esc=format_number(df_absolutos["Escolas"].sum()),
+
+        est_mat=format_number(df_absolutos["Matrículas"][0]),
+        mun_mat=format_number(df_absolutos["Matrículas"][1]),
+        priv_mat=format_number(df_absolutos["Matrículas"][2]),
+        total_mat=format_number(df_absolutos["Matrículas"].sum()),
+
+        est_prof=format_number(df_absolutos["Professores"][0]),
+        mun_prof=format_number(df_absolutos["Professores"][1]),
+        priv_prof=format_number(df_absolutos["Professores"][2]),
+        total_prof=format_number(df_absolutos["Professores"].sum()),
+    )
 
     st.markdown(tabela_html, unsafe_allow_html=True)
-
     st.markdown('</div>', unsafe_allow_html=True)  # Fecha container-custom
 
-# -------------------------
-# CONTAINER 2: Gráfico de Linha
-# -------------------------
+# -----------------------------------
+#  CONTAINER 2: Gráfico de Linhas
+# -----------------------------------
 with col2:
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
     st.markdown('<div class="container-title">Evolução dos números</div>', unsafe_allow_html=True)
 
-    # Monta um gráfico de linhas usando Altair
-    # Usaremos as cores: Escolas (#364b60), Matrículas (#cccccc), Professores (#a3b8cb)
-    chart = (
+    # Exemplo de gráfico Altair customizado
+    # strokeWidth = espessura da linha
+    # point = Altair MarkDef -> tamanho dos marcadores
+    line_chart = (
         alt.Chart(df_melt)
-        .mark_line(point=True)  # colque point=False se quiser sem marcadores
+        .mark_line(
+            point=alt.OverlayMarkDef(size=70),  # Tamanho dos 'bolinhas'
+            strokeWidth=3                      # Grossura das linhas
+        )
         .encode(
-            x=alt.X("Ano:O", title=""),
+            x=alt.X(
+                "Ano:O",  # Categórico ou ordinal
+                axis=alt.Axis(labelAngle=0)  # Rótulos horizontais
+            ),
             y=alt.Y("Valor:Q", title=""),
             color=alt.Color(
-                "Categoria",
+                "Categoria:N",
                 scale=alt.Scale(
                     domain=["Escolas", "Matrículas", "Professores"],
                     range=["#364b60", "#cccccc", "#a3b8cb"]
@@ -970,12 +1014,15 @@ with col2:
             ),
             tooltip=["Ano", "Categoria", "Valor"]
         )
-        .properties(width="container", height=200)
+        # Ajuste aqui as dimensões
+        .properties(width=400, height=250)
         .interactive()
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(line_chart, use_container_width=True)
+
     st.markdown('</div>', unsafe_allow_html=True)  # Fecha container-custom
+
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
