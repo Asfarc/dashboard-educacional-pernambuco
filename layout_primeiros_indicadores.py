@@ -192,7 +192,7 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
         titleColor=cor_grafico,
         labelColor=cor_grafico
     ).configure_title(
-        fontSize=20,
+        fontSize=25,
         font=fonte
     )
 
