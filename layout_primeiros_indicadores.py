@@ -60,24 +60,16 @@ def obter_estilo_css_container() -> str:
         vertical-align: middle;
         text-align: center;
     }}
-    .custom-table tbody tr {{
-        /* Adiciona borda inferior apenas nas linhas do corpo da tabela */
-        border-bottom: 1px solid {params["cor_borda"]};
-    }}
-    /* Remover borda da última linha do corpo da tabela (opcional) */
-    .custom-table tbody tr:last-child {{
-        border-bottom: none;
-    }}
-    .custom-table thead tr {{
-        /* Adiciona borda inferior para o cabeçalho */
-        border-bottom: 2px solid {params["cor_borda"]};
-    }}
     .custom-table th {{
         font-weight: 700; /* negrito */
         text-align: center;
     }}
-    .custom-table td:first-child {{
+    .custom-table td:first-child, .custom-table th:first-child {{
+        border-left: none;  /* remove borda do lado esquerdo */
         text-align: left;   /* Mantém o alinhamento à esquerda apenas para a primeira coluna */
+    }}
+    .custom-table td:last-child, .custom-table th:last-child {{
+        border-right: none; /* remove borda do lado direito */
     }}
     .icone {{
         width: 50px;
