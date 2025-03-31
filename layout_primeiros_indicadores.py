@@ -44,7 +44,7 @@ def obter_estilo_css_container() -> str:
     }}
     /* ----- Tabela customizada ----- */
     .custom-table {{
-        width: 100%;
+        width: 90%;
         border-collapse: collapse;
         table-layout: fixed; /* Permite ajustar as larguras das colunas via colgroup */
     }}
