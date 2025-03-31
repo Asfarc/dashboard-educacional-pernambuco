@@ -132,7 +132,7 @@ def construir_grafico_linha_evolucao(df_transformado, largura=450, altura=300, e
     # Configurações de estilo
     fonte = "Arial"
     tamanho_texto_eixo = 16
-    tamanho_texto_legenda = 16
+    tamanho_texto_legenda = 25
     cor_grafico = "#364b60"
 
     # Cores específicas para cada categoria
