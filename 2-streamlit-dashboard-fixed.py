@@ -810,211 +810,65 @@ st.title(TITULO_DASHBOARD)
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
+# Apague ou comente as linhas referentes a col1, col2, col3 e seus st.markdown(...)
+
+# No lugar daquele bloco “Seção de Indicadores (KPIs)”, faça:
 st.markdown("## Indicadores")
-container_indicadores_principais = st.container()
-with container_indicadores_principais:
-    col1, col2, col3 = st.columns(3)
 
-    try:
-        if coluna_matriculas_por_etapa in df_filtrado.columns:
-            total_matriculas = df_filtrado[coluna_matriculas_por_etapa].sum()
-            with col1:
-                st.markdown(
-                    f'<div class="kpi-container">'
-                    f'<p class="kpi-title">{ROTULO_TOTAL_MATRICULAS}</p>'
-                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_matriculas)}</p>'
-                    f'<span class="kpi-badge">Total</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-        else:
-            with col1:
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Total de Matrículas</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Coluna não disponível</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-    except Exception as e:
-        with col1:
-            st.markdown(
-                '<div class="kpi-container">'
-                '<p class="kpi-title">Total de Matrículas</p>'
-                '<p class="kpi-value">-</p>'
-                '<span class="kpi-badge">Erro</span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-            st.caption(f"Erro ao calcular: {str(e)}")
+html_tabela = """
+<style>
+.custom-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+}
+.custom-table th, .custom-table td {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    text-align: center;
+}
+.custom-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+.custom-table th:first-child, .custom-table td:first-child {
+    text-align: left; /* permite que a primeira coluna fique alinhada à esquerda */
+}
+</style>
+<table class="custom-table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Estaduais</th>
+            <th>Municipais</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Escolas</strong></td>
+            <td>408</td>
+            <td>2,228</td>
+            <td>2,636</td>
+        </tr>
+        <tr>
+            <td><strong>Matrículas</strong></td>
+            <td>274,436</td>
+            <td>607,055</td>
+            <td>881,491</td>
+        </tr>
+        <tr>
+            <td><strong>Professores</strong></td>
+            <td>50,816</td>
+            <td>117,972</td>
+            <td>168,788</td>
+        </tr>
+    </tbody>
+</table>
+"""
 
-    with col2:
-        try:
-            if coluna_matriculas_por_etapa in df_filtrado.columns:
-                if tipo_nivel_agregacao_selecionado == "Escola":
-                    if len(df_filtrado) > 0:
-                        media_por_escola = df_filtrado[coluna_matriculas_por_etapa].mean()
-                        st.markdown(
-                            f'<div class="kpi-container">'
-                            f'<p class="kpi-title">{ROTULO_MEDIA_POR_ESCOLA}</p>'
-                            f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(media_por_escola)}</p>'
-                            f'<span class="kpi-badge">Média</span>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.markdown(
-                            '<div class="kpi-container">'
-                            '<p class="kpi-title">Média de Matrículas por Escola</p>'
-                            '<p class="kpi-value">-</p>'
-                            '<span class="kpi-badge">Sem dados</span>'
-                            '</div>',
-                            unsafe_allow_html=True
-                        )
-                else:
-                    if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:
-                        if not df_filtrado.empty:
-                            media_por_dependencia = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[coluna_matriculas_por_etapa].mean()
-                            if not media_por_dependencia.empty:
-                                media_geral = media_por_dependencia.mean()
-                                st.markdown(
-                                    f'<div class="kpi-container">'
-                                    f'<p class="kpi-title">{ROTULO_MEDIA_MATRICULAS}</p>'
-                                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(media_geral)}</p>'
-                                    f'<span class="kpi-badge">Média</span>'
-                                    f'</div>',
-                                    unsafe_allow_html=True
-                                )
-                            else:
-                                st.markdown(
-                                    '<div class="kpi-container">'
-                                    '<p class="kpi-title">Média de Matrículas</p>'
-                                    '<p class="kpi-value">-</p>'
-                                    '<span class="kpi-badge">Sem dados</span>'
-                                    '</div>',
-                                    unsafe_allow_html=True
-                                )
-                        else:
-                            st.markdown(
-                                '<div class="kpi-container">'
-                                '<p class="kpi-title">Média de Matrículas</p>'
-                                '<p class="kpi-value">-</p>'
-                                '<span class="kpi-badge">Dados insuficientes</span>'
-                                '</div>',
-                                unsafe_allow_html=True
-                            )
-                    else:
-                        if not df_filtrado.empty:
-                            media_geral = df_filtrado[coluna_matriculas_por_etapa].mean()
-                            st.markdown(
-                                f'<div class="kpi-container">'
-                                f'<p class="kpi-title">Média de Matrículas</p>'
-                                f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(media_geral)}</p>'
-                                f'<span class="kpi-badge">Média</span>'
-                                f'</div>',
-                                unsafe_allow_html=True
-                            )
-                        else:
-                            st.markdown(
-                                '<div class="kpi-container">'
-                                '<p class="kpi-title">Média de Matrículas</p>'
-                                '<p class="kpi-value">-</p>'
-                                '<span class="kpi-badge">Dados insuficientes</span>'
-                                '</div>',
-                                unsafe_allow_html=True
-                            )
-            else:
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Média de Matrículas</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Coluna não disponível</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-        except Exception as e:
-            st.markdown(
-                '<div class="kpi-container">'
-                '<p class="kpi-title">Média de Matrículas</p>'
-                '<p class="kpi-value">-</p>'
-                '<span class="kpi-badge">Erro</span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-            st.caption(f"Erro ao calcular: {str(e)}")
-
-    with col3:
-        try:
-            if tipo_nivel_agregacao_selecionado == "Escola":
-                total_escolas = len(df_filtrado)
-                st.markdown(
-                    f'<div class="kpi-container">'
-                    f'<p class="kpi-title">{ROTULO_TOTAL_ESCOLAS}</p>'
-                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_escolas)}</p>'
-                    f'<span class="kpi-badge">Contagem</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            elif tipo_nivel_agregacao_selecionado == "Município":
-                total_municipios = len(df_filtrado)
-                st.markdown(
-                    f'<div class="kpi-container">'
-                    f'<p class="kpi-title">{ROTULO_TOTAL_MUNICIPIOS}</p>'
-                    f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(total_municipios)}</p>'
-                    f'<span class="kpi-badge">Contagem</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                if coluna_matriculas_por_etapa in df_filtrado.columns:
-                    max_valor = df_filtrado[coluna_matriculas_por_etapa].max()
-                    st.markdown(
-                        f'<div class="kpi-container">'
-                        f'<p class="kpi-title">{ROTULO_MAXIMO_MATRICULAS}</p>'
-                        f'<p class="kpi-value">{aplicar_padrao_numerico_brasileiro(max_valor)}</p>'
-                        f'<span class="kpi-badge">Máximo</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(
-                        '<div class="kpi-container">'
-                        '<p class="kpi-title">Máximo de Matrículas</p>'
-                        '<p class="kpi-value">-</p>'
-                        '<span class="kpi-badge">Coluna não disponível</span>'
-                        '</div>',
-                        unsafe_allow_html=True
-                    )
-        except Exception as e:
-            if tipo_nivel_agregacao_selecionado == "Escola":
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Total de Escolas</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-            elif tipo_nivel_agregacao_selecionado == "Município":
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Total de Municípios</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    '<div class="kpi-container">'
-                    '<p class="kpi-title">Máximo de Matrículas</p>'
-                    '<p class="kpi-value">-</p>'
-                    '<span class="kpi-badge">Erro</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-            st.caption(f"Erro ao calcular: {str(e)}")
+st.markdown(html_tabela, unsafe_allow_html=True)
 
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
