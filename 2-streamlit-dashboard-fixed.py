@@ -861,7 +861,7 @@ with coluna_esquerda:
 
     # Montagem de tabela via HTML
     tabela_html = f"""
-    <table class="custom-table container-text">
+    <table class="custom-table container-text" style="border-collapse: collapse; border: none;">
         <colgroup>
             <col /><col /><col /><col /><col />
         </colgroup>
