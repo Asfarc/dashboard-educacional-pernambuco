@@ -1175,20 +1175,15 @@ else:
             # Layout em uma única linha para controles de paginação
             # --------------------------------------------------------
             try:
-                # Layout principal com colunas espaçadas
-                col1, space1, col2, space2, col3, space3, col4, col5 = st.columns([2, 0.2, 0.8, 0.2, 0.8, 0.2, 1, 1])
+                # Layout principal com 5 colunas
+                col1, col2, col3, col4, col5 = st.columns([3, 1.2, 1.2, 1.8, 1.8])
 
                 # 1) Texto: "Total: registros | Página x de y"
                 with col1:
                     total_registros_br = format_number_br(len(df_texto_filtrado))
                     st.markdown(
-                        f"**Total: {total_registros_br} registros "
-                        f"| Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
+                        f"**Total: {total_registros_br} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
                     )
-
-                # Espaçador 1
-                with space1:
-                    st.empty()
 
                 # 2) Botão ◀ Anterior
                 with col2:
@@ -1197,10 +1192,6 @@ else:
                         st.session_state["current_page"] -= 1
                         st.rerun()
 
-                # Espaçador 2
-                with space2:
-                    st.empty()
-
                 # 3) Botão Próximo ▶
                 with col3:
                     if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages,
@@ -1208,39 +1199,53 @@ else:
                         st.session_state["current_page"] += 1
                         st.rerun()
 
-                # Espaçador 3
-                with space3:
-                    st.empty()
-
-                # 4) Número da Página (com label ao lado usando texto e componente em uma linha)
+                # 4) Número da Página com label
                 with col4:
-                    st.write("Página:", help="Selecione a página")
-                    nova_pagina = st.number_input(
-                        "",
-                        min_value=1,
-                        max_value=total_pages,
-                        value=st.session_state["current_page"],
-                        step=1,
-                        label_visibility="collapsed"
-                    )
-                    if nova_pagina != st.session_state["current_page"]:
-                        st.session_state["current_page"] = nova_pagina
-                        st.rerun()
+                    # Use container para alinhar elementos horizontalmente
+                    container = st.container()
 
-                # 5) Itens por página
+                    # Crie duas colunas dentro do container
+                    label_col, input_col = container.columns([1, 2])
+
+                    with label_col:
+                        st.markdown("<div style='padding-top: 5px;'>Página:</div>", unsafe_allow_html=True)
+
+                    with input_col:
+                        nova_pagina = st.number_input(
+                            "",
+                            min_value=1,
+                            max_value=total_pages,
+                            value=st.session_state["current_page"],
+                            step=1,
+                            label_visibility="collapsed"
+                        )
+                        if nova_pagina != st.session_state["current_page"]:
+                            st.session_state["current_page"] = nova_pagina
+                            st.rerun()
+
+                # 5) Itens por página com label
                 with col5:
-                    st.write("Itens por página:", help="Selecione o número de itens exibidos por página")
-                    novo_page_size = st.selectbox(
-                        "",
-                        options=[10, 25, 50, 100],
-                        index=[10, 25, 50, 100].index(st.session_state["page_size"]),
-                        label_visibility="collapsed"
-                    )
-                    if novo_page_size != st.session_state["page_size"]:
-                        st.session_state["page_size"] = novo_page_size
-                        # Volta para página 1 ao mudar o page_size
-                        st.session_state["current_page"] = 1
-                        st.rerun()
+                    # Use container para alinhar elementos horizontalmente
+                    container = st.container()
+
+                    # Crie duas colunas dentro do container
+                    label_col, select_col = container.columns([1.2, 1])
+
+                    with label_col:
+                        st.markdown("<div style='padding-top: 5px;'>Itens por página:</div>", unsafe_allow_html=True)
+
+                    with select_col:
+                        novo_page_size = st.selectbox(
+                            "",
+                            options=[10, 25, 50, 100],
+                            index=[10, 25, 50, 100].index(st.session_state["page_size"]),
+                            label_visibility="collapsed"
+                        )
+                        if novo_page_size != st.session_state["page_size"]:
+                            st.session_state["page_size"] = novo_page_size
+                            # Volta para página 1 ao mudar o page_size
+                            st.session_state["current_page"] = 1
+                            st.rerun()
 
             except Exception as e:
                 st.error(f"Erro ao exibir a tabela: {str(e)}")
