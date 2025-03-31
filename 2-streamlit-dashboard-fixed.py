@@ -37,7 +37,7 @@ from layout_primeiros_indicadores import (
 # 1) Injetar o CSS de estilo dos containers
 # -----------------------------------------
 st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
-st.title(TITULO_DASHBOARD)
+
 
 # CSS unificado e otimizado
 css_unificado = """
@@ -318,6 +318,7 @@ h2 {
 """
 
 st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
+st.title(TITULO_DASHBOARD)
 
 # -------------------------------
 # Funções Auxiliares
