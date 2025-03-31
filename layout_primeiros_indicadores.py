@@ -128,11 +128,11 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
 
 
 # Função para construir o gráfico de linha de evolução
-def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, espessura_linha=4, tamanho_ponto=100):
+def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, espessura_linha=4, tamanho_ponto=150):
     # Configurações de estilo
     fonte = "Arial"
-    tamanho_texto_eixo = 14
-    tamanho_texto_legenda = 12
+    tamanho_texto_eixo = 15
+    tamanho_texto_legenda = 16
     cor_grafico = "#364b60"
 
     # Crie o gráfico de linha básico
