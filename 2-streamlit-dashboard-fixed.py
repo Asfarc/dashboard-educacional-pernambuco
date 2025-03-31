@@ -828,7 +828,7 @@ from layout_primeiros_indicadores import (
 # -----------------------------------------
 st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 
-st.title("TITULO_DASHBOARD")
+st.title(TITULO_DASHBOARD)
 
 # -----------------------------
 # 2) Dados de exemplo
