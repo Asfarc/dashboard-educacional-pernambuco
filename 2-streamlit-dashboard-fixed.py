@@ -25,6 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 # CSS unificado e otimizado
 css_unificado = """
 /* CSS Unificado e Otimizado para o Dashboard */
@@ -280,6 +281,12 @@ h2 {
 """
 
 st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
+
+# -----------------------------------------
+# 1) Injetar o CSS de estilo dos containers
+# -----------------------------------------
+
+st.title(TITULO_DASHBOARD)
 
 # -------------------------------
 # Funções Auxiliares
@@ -823,12 +830,7 @@ from layout_primeiros_indicadores import (
     construir_grafico_linha_evolucao,
     PARAMETROS_ESTILO_CONTAINER
 )
-# -----------------------------------------
-# 1) Injetar o CSS de estilo dos containers
-# -----------------------------------------
-st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 
-st.title(TITULO_DASHBOARD)
 
 # -----------------------------
 # 2) Dados de exemplo
