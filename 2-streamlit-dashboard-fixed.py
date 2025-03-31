@@ -65,7 +65,7 @@ div.stMarkdown h1:first-of-type {
    position: absolute; /* Posicionamento absoluto para cobrir toda a área */
    
    /* Posicionamento do elemento - controla onde o fundo começa */
-   top: 0;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
+   top: 50px;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
    left: 0;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
    bottom: 0;
    
