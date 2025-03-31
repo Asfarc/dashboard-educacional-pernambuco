@@ -127,65 +127,72 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
     return aplicar_padrao_numerico_brasileiro(numero)
 
 
-# Função para construir o gráfico de linha de evolução
-def construir_grafico_linha_evolucao(df_transformado, largura=450, altura=300, espessura_linha=5, tamanho_ponto=100):
+# Função modificada com controle de tamanho de texto
+def construir_grafico_linha_evolucao(
+    df_transformado,
+    largura=450,
+    altura=300,
+    espessura_linha=5,
+    tamanho_ponto=100,
+    tamanho_texto_eixo=16,       # Novo parâmetro
+    tamanho_texto_legenda=16,     # Novo parâmetro
+    tamanho_titulo_eixo=18,       # Novo parâmetro
+    tamanho_titulo_legenda=18     # Novo parâmetro
+):
     # Configurações de estilo
     fonte = "Arial"
-    tamanho_texto_eixo = 16
-    tamanho_texto_legenda = 25
     cor_grafico = "#364b60"
 
-    # Cores específicas para cada categoria
+    # Mantém as cores das categorias
     cores_categorias = {
-        'Escolas': '#364b60',  # Azul escuro
-        'Matrículas': '#cccccc',  # Cinza claro
-        'Professores': '#a3b8cb'  # Azul claro
+        'Escolas': '#364b60',
+        'Matrículas': '#cccccc',
+        'Professores': '#a3b8cb'
     }
 
-    # Crie o gráfico de linha com pontos integrados
+    # Criação do gráfico com parâmetros ajustáveis
     grafico = alt.Chart(df_transformado).mark_line(
         strokeWidth=espessura_linha,
-        point={  # Configuração dos pontos integrados à linha
-            "filled": True,
-            "size": tamanho_ponto
-        }
+        point={"filled": True, "size": tamanho_ponto}
     ).encode(
-        x=alt.X('Ano:O',  # O :O força o tratamento como ordinal
+        x=alt.X('Ano:O',
                 axis=alt.Axis(
-                    values=[2015, 2020, 2025],  # Mostra apenas esses anos
+                    values=[2015, 2020, 2025],
                     title="Ano",
-                    labelFontSize=tamanho_texto_eixo,
-                    titleFontSize=tamanho_texto_eixo + 2,
+                    labelFontSize=tamanho_texto_eixo,          # Usa novo parâmetro
+                    titleFontSize=tamanho_titulo_eixo,         # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    labelAngle=0  # Garante que os rótulos estejam na horizontal
+                    labelAngle=0
                 )),
         y=alt.Y('Valor:Q',
                 axis=alt.Axis(
                     title="Quantidade",
-                    labelFontSize=tamanho_texto_eixo,
-                    titleFontSize=tamanho_texto_eixo + 2,
+                    labelFontSize=tamanho_texto_eixo,          # Usa novo parâmetro
+                    titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    format=',d'  # Formata números com separador de milhar
+                    format=',d'
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
                             title="Categoria",
-                            titleFontSize=tamanho_texto_legenda + 2,
-                            labelFontSize=tamanho_texto_legenda,
+                            titleFontSize=tamanho_titulo_legenda,  # Usa novo parâmetro
+                            labelFontSize=tamanho_texto_legenda,   # Usa novo parâmetro
                             titleFont=fonte,
                             labelFont=fonte,
-                            orient='top',  # Posiciona a legenda no topo
+                            orient='top',
                             titleAnchor='middle'
                         ),
-                        scale=alt.Scale(domain=list(cores_categorias.keys()),
-                                        range=list(cores_categorias.values())))
+                        scale=alt.Scale(
+                            domain=list(cores_categorias.keys()),
+                            range=list(cores_categorias.values())
+                        ))
     ).properties(
         width=largura,
         height=altura
     ).configure_view(
-        strokeWidth=0  # Remove a borda do gráfico
+        strokeWidth=0
     ).configure_axis(
         gridColor='#f0f0f0',
         domainColor=cor_grafico,
