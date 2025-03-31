@@ -1175,53 +1175,78 @@ else:
             # Layout em uma única linha para controles de paginação
             # --------------------------------------------------------
             # Criação das colunas para a navegação da tabela
-            linha = st.columns([0.8, 0.5, 0.5, 1, 1], gap="small", vertical_alignment="bottom", border=True)
+            # --------------------------------------------------------
+            # Layout em uma única linha para controles de paginação
+            # --------------------------------------------------------
+            try:
+                # Criação das colunas para a navegação da tabela
+                col = st.columns([2, 0.8, 0.8, 2], gap="small", vertical_alignment="bottom", border=True)
 
-            # 1) Texto: "Total: 6.883 registros | Página 1 de 689"
-            with linha[0]:
-                total_registros_br = format_number_br(len(df_texto_filtrado))
-                st.markdown(
-                    f"**Total: {total_registros_br} registros "
-                    f"| Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
-                )
+                # 1) Texto: "Total: registros | Página x de y"
+                with col[0]:
+                    total_registros_br = format_number_br(len(df_texto_filtrado))
+                    st.markdown(
+                        f"**Total: {total_registros_br} registros "
+                        f"| Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
+                    )
 
-            # 2) Botão ◀ Anterior
-            with linha[1]:
-                if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1):
-                    st.session_state["current_page"] -= 1
-                    st.rerun()
+                # 2) Botão ◀ Anterior
+                with col[1]:
+                    if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1, use_container_width=True):
+                        st.session_state["current_page"] -= 1
+                        st.rerun()
 
-            # 3) Botão Próximo ▶
-            with linha[2]:
-                if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages):
-                    st.session_state["current_page"] += 1
-                    st.rerun()
+                # 3) Botão Próximo ▶
+                with col[2]:
+                    if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages, use_container_width=True):
+                        st.session_state["current_page"] += 1
+                        st.rerun()
 
-            # 4) Número da Página
-            with linha[3]:
-                nova_pagina = st.number_input(
-                    "Página",
-                    min_value=1,
-                    max_value=total_pages,
-                    value=st.session_state["current_page"],
-                    step=1
-                )
-                if nova_pagina != st.session_state["current_page"]:
-                    st.session_state["current_page"] = nova_pagina
-                    st.rerun()
+                # 4) Número da Página e Itens por página (lado a lado em uma única coluna)
+                with col[3]:
+                    # Criar duas colunas dentro da quarta coluna principal
+                    subcol1, subcol2 = st.columns(2)
 
-            # 5) Itens por página
-            with linha[4]:
-                novo_page_size = st.selectbox(
-                    "Itens por página",
-                    options=[10, 25, 50, 100],
-                    index=[10, 25, 50, 100].index(st.session_state["page_size"])
-                )
-                if novo_page_size != st.session_state["page_size"]:
-                    st.session_state["page_size"] = novo_page_size
-                    # Volta para página 1 ao mudar o page_size
-                    st.session_state["current_page"] = 1
-                    st.rerun()
+                    # Número da Página (com label ao lado)
+                    with subcol1:
+                        # Criar duas subcolunas para o label e o input
+                        label_col, input_col = st.columns([0.4, 0.6])
+                        with label_col:
+                            st.write("Página:")
+                        with input_col:
+                            nova_pagina = st.number_input(
+                                "",
+                                min_value=1,
+                                max_value=total_pages,
+                                value=st.session_state["current_page"],
+                                step=1,
+                                label_visibility="collapsed"
+                            )
+                            if nova_pagina != st.session_state["current_page"]:
+                                st.session_state["current_page"] = nova_pagina
+                                st.rerun()
+
+                    # Itens por página (com label ao lado)
+                    with subcol2:
+                        # Criar duas subcolunas para o label e o select
+                        label_col, select_col = st.columns([0.6, 0.4])
+                        with label_col:
+                            st.write("Itens por página:")
+                        with select_col:
+                            novo_page_size = st.selectbox(
+                                "",
+                                options=[10, 25, 50, 100],
+                                index=[10, 25, 50, 100].index(st.session_state["page_size"]),
+                                label_visibility="collapsed"
+                            )
+                            if novo_page_size != st.session_state["page_size"]:
+                                st.session_state["page_size"] = novo_page_size
+                                # Volta para página 1 ao mudar o page_size
+                                st.session_state["current_page"] = 1
+                                st.rerun()
+
+            except Exception as e:
+                st.error(f"Erro ao exibir a tabela: {str(e)}")
 
         except Exception as e:
             st.error(f"Erro ao exibir a tabela: {str(e)}")
