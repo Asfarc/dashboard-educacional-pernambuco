@@ -932,9 +932,9 @@ with coluna_direita:
     # Utilizamos nossa função construir_grafico_linha_evolucao
     grafico = construir_grafico_linha_evolucao(
         df_transformado=df_transformado,
-        largura=200,         # Ajuste se preferir
+        largura=450,         # Ajuste se preferir
         altura=300,         # Ajuste se preferir
-        espessura_linha=4,  # Espessura da linha
+        espessura_linha=1,  # Espessura da linha
         tamanho_ponto=100     # Tamanho das bolinhas
     )
     st.altair_chart(grafico, use_container_width=True)
