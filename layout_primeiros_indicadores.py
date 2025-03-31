@@ -45,8 +45,9 @@ def obter_estilo_css_container() -> str:
     /* ----- Tabela customizada ----- */
     .custom-table {{
         width: 90%;
-        border-collapse: collapse;
-        table-layout: fixed; /* Permite ajustar as larguras das colunas via colgroup */
+        border-collapse: collapse; 
+        table-layout: fixed;  /* Permite controlar a largura de cada coluna */
+        border: 1px solid {params["cor_borda"]}; /* Borda externa da tabela */
     }}
     .custom-table col:nth-child(1) {{ width: 30%; }}
     .custom-table col:nth-child(2) {{ width: 15%; }}
@@ -54,8 +55,7 @@ def obter_estilo_css_container() -> str:
     .custom-table col:nth-child(4) {{ width: 15%; }}
     .custom-table col:nth-child(5) {{ width: 15%; }}
     .custom-table td, .custom-table th {{
-        border-left: 1px solid {params["cor_borda"]};
-        border-right: 1px solid {params["cor_borda"]};
+        border: none;         /* Remove qualquer borda das células */
         padding: 8px;
         vertical-align: middle;
         text-align: center;
