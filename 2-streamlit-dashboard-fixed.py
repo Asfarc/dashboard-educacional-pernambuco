@@ -861,20 +861,20 @@ with coluna_esquerda:
 
     # Montagem de tabela via HTML
     tabela_html = f"""
-    <table class="custom-table container-text" style="border-collapse: collapse; border: none;">
+    <table class="custom-table container-text">
         <colgroup>
             <col /><col /><col /><col /><col />
         </colgroup>
         <thead>
-            <tr style="border-bottom: 1px solid #dee2e6;">
-                <th style="border: none;"></th>
-                <th style="border: none;"><strong>Estaduais</strong></th>
-                <th style="border: none;"><strong>Municipais</strong></th>
-                <th style="border: none;"><strong>Privadas</strong></th>
-                <th style="border: none;"><strong>Total</strong></th>
-                </tr>
-            </thead>
-            <tbody>
+            <tr>
+                <th></th>
+                <th><strong>Estaduais</strong></th>
+                <th><strong>Municipais</strong></th>
+                <th><strong>Privadas</strong></th>
+                <th><strong>Total</strong></th>
+            </tr>
+        </thead>
+        <tbody>
             <tr>
                 <td><strong>
                     <img class="icone" src="{github_raw_url}/Escolas.svg" />

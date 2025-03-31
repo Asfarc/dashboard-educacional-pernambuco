@@ -18,80 +18,76 @@ def obter_estilo_css_container() -> str:
     Ajuste as chaves do dicionário PARAMETROS_ESTILO_CONTAINER para personalizar
     facilmente cores, bordas, tamanhos de fonte etc.
     """
-
-    def obter_estilo_css_container() -> str:
-        params = PARAMETROS_ESTILO_CONTAINER
-        bloco_estilo = f"""
-        <style>
-        .container-custom {{
-            border: 1px solid {params["cor_borda"]};
-            border-radius: {params["raio_borda"]}px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background-color: white;
-        }}
-        .container-title {{
-            font-family: "Open Sans", sans-serif;
-            font-weight: 700;
-            color: {params["cor_titulo"]};
-            font-size: {params["tamanho_fonte_titulo"]};
-            margin-bottom: 0.5rem;
-        }}
-        .container-text {{
-            font-family: "Open Sans", sans-serif;
-            color: {params["cor_fonte_conteudo"]};
-            font-weight: 400;
-            font-size: {params["tamanho_fonte_conteudo"]};
-        }}
-        /* ----- Tabela customizada ----- */
-        .custom-table {{
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            border: none; /* Remove a borda externa */
-        }}
-        .custom-table col:nth-child(1) {{ width: 40%; }}
-        .custom-table col:nth-child(2) {{ width: 15%; }}
-        .custom-table col:nth-child(3) {{ width: 15%; }}
-        .custom-table col:nth-child(4) {{ width: 15%; }}
-        .custom-table col:nth-child(5) {{ width: 15%; }}
-
-        /* Remove todas as bordas das células */
-        .custom-table td, .custom-table th {{
-            border: none;
-            padding: 8px;
-            vertical-align: middle;
-            text-align: center;
-        }}
-
-        /* Adiciona apenas bordas horizontais nas linhas */
-        .custom-table tr {{
-            border-bottom: 1px solid {params["cor_borda"]};
-        }}
-
-        /* Opcional: remove a borda da última linha */
-        .custom-table tr:last-child {{
-            border-bottom: none;
-        }}
-
-        .custom-table th {{
-            font-weight: 700;
-            text-align: center;
-        }}
-
-        .custom-table td:first-child {{
-            text-align: left;
-        }}
-
-        .icone {{
-            width: 50px;
-            height: 50px;
-            vertical-align: middle;
-            margin-right: 6px;
-        }}
-        </style>
-        """
-        return bloco_estilo
+    params = PARAMETROS_ESTILO_CONTAINER
+    # Os placeholders abaixo usam p.ex. {params["cor_borda"]}, etc.
+    bloco_estilo = f"""
+    <style>
+    .container-custom {{
+        border: 1px solid {params["cor_borda"]};
+        border-radius: {params["raio_borda"]}px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: white;
+    }}
+    .container-title {{
+        font-family: "Open Sans", sans-serif;
+        font-weight: 700;
+        color: {params["cor_titulo"]};
+        font-size: {params["tamanho_fonte_titulo"]};
+        margin-bottom: 0.5rem;
+    }}
+    .container-text {{
+        font-family: "Open Sans", sans-serif;
+        color: {params["cor_fonte_conteudo"]};
+        font-weight: 400;
+        font-size: {params["tamanho_fonte_conteudo"]};
+    }}
+    /* ----- Tabela customizada ----- */
+    .custom-table {{
+        width: 90%;
+        border-collapse: collapse;
+        table-layout: fixed; /* Permite ajustar as larguras das colunas via colgroup */
+    }}
+    .custom-table col:nth-child(1) {{ width: 30%; }}
+    .custom-table col:nth-child(2) {{ width: 15%; }}
+    .custom-table col:nth-child(3) {{ width: 15%; }}
+    .custom-table col:nth-child(4) {{ width: 15%; }}
+    .custom-table col:nth-child(5) {{ width: 15%; }}
+    .custom-table td, .custom-table th {{
+        border-left: 1px solid {params["cor_borda"]};
+        border-right: 1px solid {params["cor_borda"]};
+        padding: 8px;
+        vertical-align: middle;
+        text-align: center;
+    }}
+    .custom-table tbody tr {{
+        /* Adiciona borda inferior apenas nas linhas do corpo da tabela */
+        border-bottom: 1px solid {params["cor_borda"]};
+    }}
+    /* Remover borda da última linha do corpo da tabela (opcional) */
+    .custom-table tbody tr:last-child {{
+        border-bottom: none;
+    }}
+    .custom-table thead tr {{
+        /* Adiciona borda inferior para o cabeçalho */
+        border-bottom: 2px solid {params["cor_borda"]};
+    }}
+    .custom-table th {{
+        font-weight: 700; /* negrito */
+        text-align: center;
+    }}
+    .custom-table td:first-child {{
+        text-align: left;   /* Mantém o alinhamento à esquerda apenas para a primeira coluna */
+    }}
+    .icone {{
+        width: 50px;
+        height: 50px;
+        vertical-align: middle;
+        margin-right: 6px;
+    }}
+    </style>
+    """
+    return bloco_estilo
 
 
 # Importando pandas para acesso à função isna
