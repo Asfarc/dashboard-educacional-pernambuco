@@ -128,16 +128,29 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
 
 
 # Função para construir o gráfico de linha de evolução
-def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, espessura_linha=4, tamanho_ponto=150):
+def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400):
     # Configurações de estilo
     fonte = "Arial"
-    tamanho_texto_eixo = 15
+    tamanho_titulo = 25  # Aumentado para 25
+    tamanho_texto_eixo = 16  # Aumentado para 16
     tamanho_texto_legenda = 16
     cor_grafico = "#364b60"
 
-    # Crie o gráfico de linha básico
-    grafico_linha = alt.Chart(df_transformado).mark_line(
-        strokeWidth=espessura_linha
+    # Título do gráfico
+    titulo = alt.TitleParams(
+        "Evolução dos números",
+        fontSize=tamanho_titulo,
+        font=fonte,
+        color=cor_grafico
+    )
+
+    # Crie o gráfico de linha básico (sem pontos separados)
+    grafico = alt.Chart(df_transformado).mark_line(
+        strokeWidth=4,  # Espessura da linha
+        point={  # Configuração dos pontos integrados à linha
+            "filled": True,
+            "size": 150  # Tamanho do ponto
+        }
     ).encode(
         x=alt.X('Ano:O',  # O :O força o tratamento como ordinal
                 axis=alt.Axis(
@@ -155,7 +168,8 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
                     labelFontSize=tamanho_texto_eixo,
                     titleFontSize=tamanho_texto_eixo + 2,
                     titleFont=fonte,
-                    labelFont=fonte
+                    labelFont=fonte,
+                    format=',d'  # Formata números com separador de milhar
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
@@ -168,22 +182,11 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
                             titleAnchor='middle'
                         ),
                         scale=alt.Scale(domain=['Escolas', 'Matrículas', 'Professores'],
-                                       range=['#364b60', '#cccccc', '#a3b8cb']))
-    )
-
-    # Crie o gráfico de pontos
-    grafico_pontos = alt.Chart(df_transformado).mark_circle(
-        size=tamanho_ponto
-    ).encode(
-        x='Ano:O',
-        y='Valor:Q',
-        color='Categoria:N'
-    )
-
-    # Combine os dois gráficos em uma camada
-    grafico_combinado = alt.layer(grafico_linha, grafico_pontos).properties(
+                                        range=['#364b60', '#cccccc', '#a3b8cb']))
+    ).properties(
         width=largura,
-        height=altura
+        height=altura,
+        title=titulo
     ).configure_view(
         strokeWidth=0  # Remove a borda do gráfico
     ).configure_axis(
@@ -191,9 +194,6 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
         domainColor=cor_grafico,
         titleColor=cor_grafico,
         labelColor=cor_grafico
-    ).configure_title(
-        fontSize=25,
-        font=fonte
     )
 
-    return grafico_combinado
+    return grafico
