@@ -25,6 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 # Importa tudo do config_containers
 from layout_primeiros_indicadores import (
     obter_estilo_css_container,
