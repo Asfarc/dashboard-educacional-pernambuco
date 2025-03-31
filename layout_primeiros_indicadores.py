@@ -45,9 +45,12 @@ def obter_estilo_css_container() -> str:
     /* ----- Tabela customizada ----- */
     .custom-table {{
         width: 100%;
-        border-collapse: collapse; 
+        border-collapse: separate; /* Alterado para permitir border-radius */
+        border-spacing: 0;
         table-layout: fixed;  /* Permite controlar a largura de cada coluna */
         border: 1px solid {params["cor_borda"]}; /* Borda externa da tabela */
+        border-radius: 8px;       /* Borda arredondada */
+        overflow: hidden;          /* Fundamental para o efeito */
     }}
     .custom-table col:nth-child(1) {{ width: 30%; }}
     .custom-table col:nth-child(2) {{ width: 15%; }}
@@ -56,13 +59,17 @@ def obter_estilo_css_container() -> str:
     .custom-table col:nth-child(5) {{ width: 15%; }}
     .custom-table td, .custom-table th {{
         border: none;         /* Remove qualquer borda das células */
-        padding: 3px;
+        padding: 8px;
         vertical-align: middle;
         text-align: center;
     }}
     .custom-table th {{
         font-weight: 700; /* negrito */
         text-align: center;
+        color: #364b60;
+    }}
+    .custom-table thead th {{
+    border-bottom: none !important; /* Remove a borda inferior do cabeçalho */
     }}
     .custom-table td:first-child, .custom-table th:first-child {{
         border-left: none;  /* remove borda do lado esquerdo */
