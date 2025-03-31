@@ -48,7 +48,7 @@ def obter_estilo_css_container() -> str:
         border-collapse: collapse;
         table-layout: fixed; /* Permite ajustar as larguras das colunas via colgroup */
     }}
-    .custom-table col:nth-child(1) {{ width: 40%; }}
+    .custom-table col:nth-child(1) {{ width: 30%; }}
     .custom-table col:nth-child(2) {{ width: 15%; }}
     .custom-table col:nth-child(3) {{ width: 15%; }}
     .custom-table col:nth-child(4) {{ width: 15%; }}
