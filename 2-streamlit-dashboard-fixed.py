@@ -41,6 +41,21 @@ st.title(TITULO_DASHBOARD)
 
 # CSS unificado e otimizado
 css_unificado = """
+/* Ajuste do título principal */
+.stApp h1:first-of-type {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Remove espaçamento superior do container principal */
+.stApp > div:first-child {
+    padding-top: 1rem;
+}
+
+/* Ajuste fino de posicionamento */
+.stMarkdown:has(h1:first-of-type) {
+    margin-top: -1.5rem;
+}
 /* CSS Unificado e Otimizado para o Dashboard */
 
 /* Estilo da Barra Lateral - Define o fundo da barra lateral */
