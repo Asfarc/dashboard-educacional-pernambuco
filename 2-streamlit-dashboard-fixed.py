@@ -887,7 +887,7 @@ with coluna_esquerda:
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Matriculas.svg" style="width: 30px; height: 30px;" />
+                    <img class="icone" src="{github_raw_url}/Matrículas.svg" style="width: 50px; height: 50px;" />
                     Matrículas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
