@@ -1178,7 +1178,7 @@ else:
                 # Definição de parâmetros de layout - AJUSTE AQUI!
                 # Larguras das colunas principais - os valores são proporções relativas entre si
                 L_INFO = 3.0  # Largura da coluna de informações (Total: registros...)
-                L_ANTERIOR = 1.2  # Largura do botão Anterior
+                L_ANTERIOR = 4.2  # Largura do botão Anterior
                 L_ESPACO1 = 0.3  # Espaço entre Anterior e Próximo
                 L_PROXIMO = 1.2  # Largura do botão Próximo
                 L_ESPACO2 = 2.0  # Espaço entre Próximo e Página
