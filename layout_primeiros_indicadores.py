@@ -128,41 +128,66 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
 
 
 # Função para construir o gráfico de linha de evolução
-def construir_grafico_linha_evolucao(df_transformado, largura=400, altura=250,
-                                     espessura_linha=3, tamanho_ponto=70):
-    """
-    Constrói e retorna um gráfico de linhas Altair, mostrando a evolução
-    de diversas categorias (e.g. Escolas, Matrículas, Professores) ao longo do tempo.
+def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, espessura_linha=4, tamanho_ponto=100):
+    # Configurações de estilo
+    fonte = "Arial"
+    tamanho_texto_eixo = 14
+    tamanho_texto_legenda = 12
+    cor_grafico = "#364b60"
 
-    Parâmetros:
-        df_transformado: DataFrame em formato "transformado", contendo colunas ["Ano", "Categoria", "Valor"]
-        largura: Largura do gráfico (pixels)
-        altura: Altura do gráfico (pixels)
-        espessura_linha: Espessura das linhas
-        tamanho_ponto: Tamanho das 'bolinhas' que marcam cada ponto
-
-    Retorna:
-        Um gráfico Altair interativo
-    """
-    grafico = (
-        alt.Chart(df_transformado)
-        .mark_line(
-            point=alt.OverlayMarkDef(size=tamanho_ponto),
-            strokeWidth=espessura_linha
-        )
-        .encode(
-            x=alt.X("Ano:O", axis=alt.Axis(labelAngle=0)),  # Eixo X sem rotação do label
-            y=alt.Y("Valor:Q", title=""),
-            color=alt.Color(
-                "Categoria:N",
-                scale=alt.Scale(
-                    domain=["Escolas", "Matrículas", "Professores"],
-                    range=["#364b60", "#cccccc", "#a3b8cb"]
-                )
-            ),
-            tooltip=["Ano", "Categoria", "Valor"]
-        )
-        .properties(width=largura, height=altura)
-        .interactive()
+    grafico = alt.Chart(df_transformado).mark_line(
+        strokeWidth=espessura_linha
+    ).encode(
+        x=alt.X('Ano:O',  # O :O força o tratamento como ordinal
+                axis=alt.Axis(
+                    values=[2015, 2020, 2025],  # Mostra apenas esses anos
+                    title="Ano",
+                    labelFontSize=tamanho_texto_eixo,
+                    titleFontSize=tamanho_texto_eixo + 2,
+                    titleFont=fonte,
+                    labelFont=fonte
+                )),
+        y=alt.Y('Valor:Q',
+                axis=alt.Axis(
+                    title="Quantidade",
+                    labelFontSize=tamanho_texto_eixo,
+                    titleFontSize=tamanho_texto_eixo + 2,
+                    titleFont=fonte,
+                    labelFont=fonte
+                )),
+        color=alt.Color('Categoria:N',
+                        legend=alt.Legend(
+                            title="Categoria",
+                            titleFontSize=tamanho_texto_legenda + 2,
+                            labelFontSize=tamanho_texto_legenda,
+                            titleFont=fonte,
+                            labelFont=fonte,
+                            orient='bottom',  # Posiciona a legenda embaixo
+                            titleAnchor='middle'
+                        ),
+                        scale=alt.Scale(scheme='category10'))
+    ).properties(
+        width=largura,
+        height=altura
+    ).configure_view(
+        strokeWidth=0  # Remove a borda do gráfico
+    ).configure_axis(
+        gridColor='#f0f0f0',
+        domainColor=cor_grafico,
+        titleColor=cor_grafico,
+        labelColor=cor_grafico
+    ).configure_title(
+        fontSize=16,
+        font=fonte
     )
-    return grafico
+
+    # Adiciona pontos nos anos específicos
+    pontos = alt.Chart(df_transformado).mark_circle(
+        size=tamanho_ponto
+    ).encode(
+        x='Ano:O',
+        y='Valor:Q',
+        color='Categoria:N'
+    )
+
+    return grafico + pontos
