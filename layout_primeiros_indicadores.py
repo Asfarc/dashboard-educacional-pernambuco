@@ -70,8 +70,8 @@ def obter_estilo_css_container() -> str:
         border-right: none; /* remove borda do lado direito */
     }}
     .icone {{
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
         vertical-align: middle;
         margin-right: 6px;
     }}
