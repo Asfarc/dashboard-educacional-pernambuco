@@ -43,34 +43,41 @@ st.title(TITULO_DASHBOARD)
 css_unificado = """
 /* CSS Unificado e Otimizado para o Dashboard */
 
-/* Estilo da Barra Lateral */
+/* Estilo da Barra Lateral - Define o fundo da barra lateral */
 [data-testid="stSidebar"]::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #364b60;
-    z-index: -1;
-    border-radius: 1px;
-    margin: 1rem;
-    padding: 1rem;
+   content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
+   position: absolute; /* Posicionamento absoluto para cobrir toda a área */
+   
+   /* Posicionamento do elemento - controla onde o fundo começa */
+   top: 20;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
+   left: 0;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
+   
+   /* Dimensões do elemento - controla o tamanho do fundo */
+   width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) - pode variar de 0% a 100% ou valores fixos como px */
+   height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) - pode variar de 0% a 100% ou valores fixos como px */
+   
+   background-color: #364b60; /* Cor de fundo azul escuro - pode ser qualquer código de cor HEX, RGB ou nome de cor */
+   z-index: -1; /* Coloca o fundo atrás do conteúdo (valores negativos = atrás, positivos = na frente) */
+   border-radius: 1px; /* Arredondamento dos cantos - pode variar de 0px (quadrado) até valores altos para mais arredondamento */
+   margin: 1rem; /* Margem externa - pode variar de 0 a valores positivos em px/rem */
+   padding: 1rem; /* Preenchimento interno - pode variar de 0 a valores positivos em px/rem */
 }
 
+/* Garante que o conteúdo da barra lateral fique acima do fundo */
 [data-testid="stSidebar"] > div {
-    position: relative;
-    z-index: 1;
+   position: relative;
+   z-index: 1; /* Mantém o conteúdo acima do fundo */
 }
 
-/* Texto branco para elementos da barra lateral */
+/* Define a cor do texto na barra lateral como branca */
+/* Aplica-se a títulos, labels, parágrafos e elementos de rádio */
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
-    color: white !important;
+   color: white !important; /* Força a cor do texto como branca - altere para mudar a cor do texto */
 }
 
 /* Mantém o texto das opções em preto */
