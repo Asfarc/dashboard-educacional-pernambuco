@@ -877,7 +877,7 @@ with coluna_esquerda:
         <tbody>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Escolas.png" />
+                    <img class="icone" src="{github_raw_url}/Escolas.svg" />
                     Escolas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][0])}</td>
@@ -887,7 +887,7 @@ with coluna_esquerda:
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Matrículas.svg" style="width: 50px; height: 50px;" />
+                    <img class="icone" src="{github_raw_url}/Matrículas.svg" />
                     Matrículas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
@@ -897,7 +897,7 @@ with coluna_esquerda:
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Professores.png" />
+                    <img class="icone" src="{github_raw_url}/Professores.svg" />
                     Professores
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][0])}</td>

@@ -58,6 +58,7 @@ def obter_estilo_css_container() -> str:
         border-right: 1px solid {params["cor_borda"]};
         padding: 8px;
         vertical-align: middle;
+        text-align: center;
     }}
     .custom-table th {{
         font-weight: 700; /* negrito */
@@ -65,6 +66,7 @@ def obter_estilo_css_container() -> str:
     }}
     .custom-table td:first-child, .custom-table th:first-child {{
         border-left: none;  /* remove borda do lado esquerdo */
+        text-align: left;   /* Mantém o alinhamento à esquerda apenas para a primeira coluna */
     }}
     .custom-table td:last-child, .custom-table th:last-child {{
         border-right: none; /* remove borda do lado direito */
