@@ -56,7 +56,7 @@ def obter_estilo_css_container() -> str:
     .custom-table col:nth-child(5) {{ width: 15%; }}
     .custom-table td, .custom-table th {{
         border: none;         /* Remove qualquer borda das células */
-        padding: 8px;
+        padding: 3px;
         vertical-align: middle;
         text-align: center;
     }}
