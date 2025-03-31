@@ -71,8 +71,8 @@ def obter_estilo_css_container() -> str:
     .custom-table thead tr th {{
         border-bottom: none !important;
         border-top: none !important;
-        box-shadow: none !important;
-        background: transparent !important; /* Remove fundo cinza padrão */
+        box-shadow: none !important;  /* Streamlit adiciona sombra como borda */
+        background-color: transparent !important;
     }}
     .custom-table td:first-child, .custom-table th:first-child {{
         border-left: none;  /* remove borda do lado esquerdo */
