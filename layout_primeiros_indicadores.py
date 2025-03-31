@@ -23,7 +23,7 @@ def obter_estilo_css_container() -> str:
     bloco_estilo = f"""
     <style>
     .container-custom {{
-        border: 1px solid {params["cor_borda"]};
+        border: 1px solid {params["cor_borda"]} 
         border-radius: {params["raio_borda"]}px;
         padding: 1rem;
         margin-bottom: 1rem;
@@ -45,12 +45,12 @@ def obter_estilo_css_container() -> str:
     /* ----- Tabela customizada ----- */
     .custom-table {{
         width: 100%;
-        border-collapse: separate; /* Alterado para permitir border-radius */
+        border-collapse: separate; 
         border-spacing: 0;
-        table-layout: fixed;  /* Permite controlar a largura de cada coluna */
-        border: 1px solid {params["cor_borda"]}; /* Borda externa da tabela */
-        border-radius: 8px;       /* Borda arredondada */
-        overflow: hidden;          /* Fundamental para o efeito */
+        table-layout: fixed;
+        border: 1px solid {params["cor_borda"]} !important; /* Borda garantida */
+        border-radius: 8px;
+        overflow: hidden;
     }}
     .custom-table col:nth-child(1) {{ width: 30%; }}
     .custom-table col:nth-child(2) {{ width: 15%; }}
@@ -68,8 +68,11 @@ def obter_estilo_css_container() -> str:
         text-align: center;
         color: #364b60;
     }}
-    .custom-table thead th {{
-    border-bottom: none !important; /* Remove a borda inferior do cabeçalho */
+    .custom-table thead tr th {{
+        border-bottom: none !important;
+        border-top: none !important;
+        box-shadow: none !important;
+        background: transparent !important; /* Remove fundo cinza padrão */
     }}
     .custom-table td:first-child, .custom-table th:first-child {{
         border-left: none;  /* remove borda do lado esquerdo */
