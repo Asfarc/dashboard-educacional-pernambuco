@@ -806,11 +806,23 @@ except Exception as e:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-import streamlit as st
-import pandas as pd
-import altair as alt
+# Importa tudo do config_containers
+from layout_primeiros_indicadores import (
+    obter_estilo_css_container,
+    aplicar_padrao_numerico_brasileiro,
+    construir_grafico_linha_evolucao,
+    PARAMETROS_ESTILO_CONTAINER
+)
+# -----------------------------------------
+# 1) Injetar o CSS de estilo dos containers
+# -----------------------------------------
+st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 
-# ----- Dados de exemplo -----
+st.title("Meu Dashboard")
+
+# -----------------------------
+# 2) Dados de exemplo
+# -----------------------------
 dados_absolutos = {
     "Rede": ["Estaduais", "Municipais", "Privadas"],
     "Escolas": [408, 2228, 350],
@@ -819,115 +831,42 @@ dados_absolutos = {
 }
 df_absolutos = pd.DataFrame(dados_absolutos)
 
-# Evolução (anos e valores fictícios) para o gráfico
 df_evolucao = pd.DataFrame({
     "Ano": list(range(2015, 2026)),
     "Escolas": [400 + (i * 5) for i in range(11)],
     "Matrículas": [800000 + (i * 8000) for i in range(11)],
     "Professores": [15000 + (i * 600) for i in range(11)],
 })
-df_melt = df_evolucao.melt(id_vars="Ano", var_name="Categoria", value_name="Valor")
 
-# ----- Função para formatar com pontos nos milhares -----
-def format_number(num: float) -> str:
-    """Ex.: 123456 -> '123.456' """
-    return f"{num:_.0f}".replace("_", ".")
+# Transformamos em formato 'melt' para plotar 3 linhas separadas no Altair
+df_transformado = df_evolucao.melt(id_vars="Ano", var_name="Categoria", value_name="Valor")
 
-# ----- CSS: bordas, fonte, etc. -----
-st.markdown(
-    """
-<style>
-.container-custom {
-    border: 1px solid #dee2e6;     /* Borda externa clara */
-    border-radius: 8px;           /* Cantos semiarredondados */
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background-color: white;
-}
-/* Título no container */
-.container-title {
-    font-family: "Open Sans", sans-serif;
-    font-weight: 700;
-    color: #364b60;
-    font-size: 1.1rem;  /* Ajuste conforme necessário */
-    margin-bottom: 0.5rem;
-}
-/* Texto da tabela e valores */
-.container-text {
-    font-family: "Open Sans", sans-serif;
-    color: #364b60; 
-    font-weight: 400;  /* Normal */
-    font-size: 1rem;
-}
-/* Tabela customizada */
-.custom-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed; /* Permite definir larguras */
-}
-.custom-table col:nth-child(1) { width: 40%; }  /* Ajuste as larguras conforme quiser */
-.custom-table col:nth-child(2) { width: 15%; }
-.custom-table col:nth-child(3) { width: 15%; }
-.custom-table col:nth-child(4) { width: 15%; }
-.custom-table col:nth-child(5) { width: 15%; }
-
-/* Apenas linhas verticais (sem horizontais) */
-.custom-table td, .custom-table th {
-    border-left: 1px solid #dee2e6;
-    border-right: 1px solid #dee2e6;
-    padding: 8px;
-    vertical-align: middle;
-}
-.custom-table th {
-    font-weight: 700;  /* Cabeçalho em negrito */
-    text-align: center;
-}
-.custom-table td:first-child, .custom-table th:first-child {
-    border-left: none; /* Remove borda esquerda na 1ª col */
-}
-.custom-table td:last-child, .custom-table th:last-child {
-    border-right: none; /* Remove borda direita na última col */
-}
-.icone {
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
-    margin-right: 6px;
-}
-</style>
-""",
-    unsafe_allow_html=True
-)
-
-# Criação das duas colunas lado a lado
-col1, col2 = st.columns(2)
-
-# -----------------------------------
-#  CONTAINER 1: Tabela de Dados
-# -----------------------------------
-with col1:
+# -----------------------------------------------------
+# 3) Criar duas colunas para exibir lado a lado
+# -----------------------------------------------------
+coluna_esquerda, coluna_direita = st.columns(2)
+# -----------------------------------------------------
+# 4) CONTAINER ESQUERDO: Tabela de dados absolutos
+# -----------------------------------------------------
+with coluna_esquerda:
+    # Abre um container HTML
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
+    # Título do container
     st.markdown('<div class="container-title">Dados Absolutos</div>', unsafe_allow_html=True)
 
-    # Montagem do HTML da tabela
-    # Ajuste os caminhos dos ícones na tag <img>.
-    # Se estiver tudo na pasta "icones", e seu script está na raiz do projeto, use "icones/Escolas.png", etc.
-    tabela_html = """
+    # Montagem de tabela via HTML
+    tabela_html = f"""
     <table class="custom-table container-text">
         <colgroup>
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
+            <col /><col /><col /><col /><col />
         </colgroup>
         <thead>
             <tr>
                 <th></th>
-                <th>Estaduais</th>
-                <th>Municipais</th>
-                <th>Privadas</th>
-                <th>Total</th>
+                <th><strong>Estaduais</strong></th>
+                <th><strong>Municipais</strong></th>
+                <th><strong>Privadas</strong></th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -936,97 +875,58 @@ with col1:
                     <img class="icone" src="icones/Escolas.png" />
                     Escolas
                 </strong></td>
-                <td>{est_esc}</td>
-                <td>{mun_esc}</td>
-                <td>{priv_esc}</td>
-                <td>{total_esc}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][0])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][1])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][2])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'].sum())}</td>
             </tr>
             <tr>
                 <td><strong>
                     <img class="icone" src="icones/Matriculas.png" />
                     Matrículas
                 </strong></td>
-                <td>{est_mat}</td>
-                <td>{mun_mat}</td>
-                <td>{priv_mat}</td>
-                <td>{total_mat}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][1])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][2])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'].sum())}</td>
             </tr>
             <tr>
                 <td><strong>
                     <img class="icone" src="icones/Professores.png" />
                     Professores
                 </strong></td>
-                <td>{est_prof}</td>
-                <td>{mun_prof}</td>
-                <td>{priv_prof}</td>
-                <td>{total_prof}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][0])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][1])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][2])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'].sum())}</td>
             </tr>
         </tbody>
     </table>
-    """.format(
-        est_esc=format_number(df_absolutos["Escolas"][0]),
-        mun_esc=format_number(df_absolutos["Escolas"][1]),
-        priv_esc=format_number(df_absolutos["Escolas"][2]),
-        total_esc=format_number(df_absolutos["Escolas"].sum()),
-
-        est_mat=format_number(df_absolutos["Matrículas"][0]),
-        mun_mat=format_number(df_absolutos["Matrículas"][1]),
-        priv_mat=format_number(df_absolutos["Matrículas"][2]),
-        total_mat=format_number(df_absolutos["Matrículas"].sum()),
-
-        est_prof=format_number(df_absolutos["Professores"][0]),
-        mun_prof=format_number(df_absolutos["Professores"][1]),
-        priv_prof=format_number(df_absolutos["Professores"][2]),
-        total_prof=format_number(df_absolutos["Professores"].sum()),
-    )
+    """
 
     st.markdown(tabela_html, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)  # Fecha container-custom
 
-# -----------------------------------
-#  CONTAINER 2: Gráfico de Linhas
-# -----------------------------------
-with col2:
+    # Fecha o container
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------
+# 5) CONTAINER DIREITO: Gráfico de linhas
+# -----------------------------------------------------
+with coluna_direita:
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
     st.markdown('<div class="container-title">Evolução dos números</div>', unsafe_allow_html=True)
 
-    # Exemplo de gráfico Altair customizado
-    # strokeWidth = espessura da linha
-    # point = Altair MarkDef -> tamanho dos marcadores
-    line_chart = (
-        alt.Chart(df_melt)
-        .mark_line(
-            point=alt.OverlayMarkDef(size=70),  # Tamanho dos 'bolinhas'
-            strokeWidth=3                      # Grossura das linhas
-        )
-        .encode(
-            x=alt.X(
-                "Ano:O",  # Categórico ou ordinal
-                axis=alt.Axis(labelAngle=0)  # Rótulos horizontais
-            ),
-            y=alt.Y("Valor:Q", title=""),
-            color=alt.Color(
-                "Categoria:N",
-                scale=alt.Scale(
-                    domain=["Escolas", "Matrículas", "Professores"],
-                    range=["#364b60", "#cccccc", "#a3b8cb"]
-                )
-            ),
-            tooltip=["Ano", "Categoria", "Valor"]
-        )
-        # Ajuste aqui as dimensões
-        .properties(width=400, height=250)
-        .interactive()
+    # Utilizamos nossa função construir_grafico_linha_evolucao
+    grafico = construir_grafico_linha_evolucao(
+        df_transformado=df_transformado,
+        largura=450,         # Ajuste se preferir
+        altura=300,         # Ajuste se preferir
+        espessura_linha=4,  # Espessura da linha
+        tamanho_ponto=100     # Tamanho das bolinhas
     )
+    st.altair_chart(grafico, use_container_width=True)
 
-    st.altair_chart(line_chart, use_container_width=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)  # Fecha container-custom
-
-# -------------------------------
-# Seção de Indicadores (KPIs)
-# -------------------------------
-# No lugar daquele bloco “Seção de Indicadores (KPIs)”, faça:
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
