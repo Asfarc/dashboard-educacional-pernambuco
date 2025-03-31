@@ -1175,7 +1175,7 @@ else:
             # Layout em uma única linha para controles de paginação
             # --------------------------------------------------------
             # Criação das colunas para a navegação da tabela
-            linha = st.columns([2, 0.1, 1, 1, 1], gap="small", vertical_alignment="bottom", border=True)
+            linha = st.columns([2, 0.2, 0.2, 1, 1], gap="small", vertical_alignment="bottom", border=True)
 
             # 1) Texto: "Total: 6.883 registros | Página 1 de 689"
             with linha[0]:
