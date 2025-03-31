@@ -23,7 +23,7 @@ def obter_estilo_css_container() -> str:
     bloco_estilo = f"""
     <style>
     .container-custom {{
-        border: 1px solid {params["cor_borda"]} 
+        border: 1px solid {params["cor_borda"]};
         border-radius: {params["raio_borda"]}px;
         padding: 1rem;
         margin-bottom: 1rem;
