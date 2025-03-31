@@ -68,6 +68,9 @@ def obter_estilo_css_container() -> str:
         text-align: center;
         color: #364b60;
     }}
+    .custom-table thead th {{
+    border-bottom: none !important; /* Remove a borda inferior do cabeçalho */
+    }}
     .custom-table td:first-child, .custom-table th:first-child {{
         border-left: none;  /* remove borda do lado esquerdo */
         text-align: left;
