@@ -806,21 +806,277 @@ except Exception as e:
 # Cabeçalho e Informações Iniciais
 # -------------------------------
 st.title(TITULO_DASHBOARD)
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import base64
+from pathlib import Path
 
+
+# Função para carregar imagens SVG
+def get_img_as_base64(file_path):
+    path = Path(file_path)
+    with open(path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode()
+
+
+# Carregar ícones (ajuste os caminhos conforme necessário)
+try:
+    escolas_icon = get_img_as_base64("C:/Users/User/Desktop/DashBoard/icones/Escolas.svg")
+    matriculas_icon = get_img_as_base64("C:/Users/User/Desktop/DashBoard/icones/Matrículas.svg")
+    professores_icon = get_img_as_base64("C:/Users/User/Desktop/DashBoard/icones/Professores.svg")
+except:
+    # Fallback para caso os ícones não sejam encontrados
+    escolas_icon = "🏫"
+    matriculas_icon = "👥"
+    professores_icon = "👨‍🏫"
+
+# Dados para a tabela (ajuste conforme necessidade)
+dados = {
+    "Categoria": ["Escolas", "Matrículas", "Professores"],
+    "Estaduais": [408, 274436, 50816],
+    "Municipais": [2228, 607055, 117972],
+    "Privada": [1500, 205000, 45000],  # Você solicitou incluir os dados da rede privada
+    "Total": [4136, 1086491, 213788]
+}
+
+df = pd.DataFrame(dados)
+
+# Dados históricos para o gráfico (simulados para demonstração)
+anos = list(range(2015, 2026))
+# Usando os totais como base e criando uma tendência simulada
+hist_escolas = [round(dados["Total"][0] * (1 - 0.01 * (2025 - ano))) for ano in anos]
+hist_matriculas = [round(dados["Total"][1] * (1 - 0.005 * (2025 - ano))) for ano in anos]
+hist_professores = [round(dados["Total"][2] * (1 - 0.008 * (2025 - ano))) for ano in anos]
+
+df_historico = pd.DataFrame({
+    "Ano": anos,
+    "Escolas": hist_escolas,
+    "Matrículas": hist_matriculas,
+    "Professores": hist_professores
+})
+
+# Configuração de estilo comum
+borda_cor = "#dddddd"
+borda_grossura = 1
+borda_raio = "10px"
+cabecalho_cor = "#364b60"
+cabecalho_fonte = "Open Sans, sans-serif"
+padding = "15px"
+
+# CSS personalizado
+st.markdown("""
+<style>
+    .container {
+        border: %dpx solid %s;
+        border-radius: %s;
+        padding: %s;
+        margin-bottom: 20px;
+        background-color: white;
+    }
+    .cabecalho {
+        font-family: %s;
+        font-weight: bold;
+        color: %s;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    .tabela-container {
+        margin-bottom: 10px;
+    }
+    .icone-img {
+        width: 30px;
+        height: 30px;
+        vertical-align: middle;
+        margin-right: 10px;
+    }
+    .linha-separadora {
+        border-top: %dpx solid %s;
+        margin: 10px 0;
+    }
+    .valor {
+        font-family: %s;
+        color: %s;
+        font-size: 1rem;
+        text-align: right;
+    }
+    .categoria {
+        font-family: %s;
+        font-weight: bold;
+        color: %s;
+        font-size: 1rem;
+    }
+</style>
+""" % (borda_grossura, borda_cor, borda_raio, padding, cabecalho_fonte, cabecalho_cor,
+       borda_grossura, borda_cor, cabecalho_fonte, cabecalho_cor, cabecalho_fonte, cabecalho_cor))
+
+# Layout com duas colunas
+col1, col2 = st.columns(2)
+
+# Primeiro container - Tabela de dados
+with col1:
+    st.markdown('<div class="container">', unsafe_allow_html=True)
+    st.markdown('<div class="cabecalho">Dados Absolutos</div>', unsafe_allow_html=True)
+
+    # Escolas
+    st.markdown(f"""
+    <div class="tabela-container">
+        <table width="100%">
+            <tr>
+                <td width="30%">
+                    <img src="data:image/svg+xml;base64,{escolas_icon}" class="icone-img">
+                    <span class="categoria">Escolas</span>
+                </td>
+                <td class="valor">{dados['Estaduais'][0]:,}</td>
+                <td class="valor">{dados['Municipais'][0]:,}</td>
+                <td class="valor">{dados['Privada'][0]:,}</td>
+                <td class="valor">{dados['Total'][0]:,}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td class="valor" style="font-size: 0.8rem; color: #666;">Estaduais</td>
+                <td class="valor" style="font-size: 0.8rem; color: #666;">Municipais</td>
+                <td class="valor" style="font-size: 0.8rem; color: #666;">Privada</td>
+                <td class="valor" style="font-size: 0.8rem; color: #666;">Total</td>
+            </tr>
+        </table>
+    </div>
+    <div class="linha-separadora"></div>
+    """, unsafe_allow_html=True)
+
+    # Matrículas
+    st.markdown(f"""
+    <div class="tabela-container">
+        <table width="100%">
+            <tr>
+                <td width="30%">
+                    <img src="data:image/svg+xml;base64,{matriculas_icon}" class="icone-img">
+                    <span class="categoria">Matrículas</span>
+                </td>
+                <td class="valor">{dados['Estaduais'][1]:,.0f}</td>
+                <td class="valor">{dados['Municipais'][1]:,.0f}</td>
+                <td class="valor">{dados['Privada'][1]:,.0f}</td>
+                <td class="valor">{dados['Total'][1]:,.0f}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="linha-separadora"></div>
+    """, unsafe_allow_html=True)
+
+    # Professores
+    st.markdown(f"""
+    <div class="tabela-container">
+        <table width="100%">
+            <tr>
+                <td width="30%">
+                    <img src="data:image/svg+xml;base64,{professores_icon}" class="icone-img">
+                    <span class="categoria">Professores</span>
+                </td>
+                <td class="valor">{dados['Estaduais'][2]:,.0f}</td>
+                <td class="valor">{dados['Municipais'][2]:,.0f}</td>
+                <td class="valor">{dados['Privada'][2]:,.0f}</td>
+                <td class="valor">{dados['Total'][2]:,.0f}</td>
+            </tr>
+        </table>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Segundo container - Gráfico de evolução
+with col2:
+    st.markdown('<div class="container">', unsafe_allow_html=True)
+    st.markdown('<div class="cabecalho">Evolução dos números</div>', unsafe_allow_html=True)
+
+    # Criar gráfico com Plotly
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Adicionar linhas para cada categoria
+    fig.add_trace(
+        go.Scatter(
+            x=df_historico['Ano'],
+            y=df_historico['Escolas'],
+            name="Escolas",
+            line=dict(color="#364b60", width=2),
+            marker=dict(size=8, color="#364b60"),
+            mode="lines+markers"
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_historico['Ano'],
+            y=df_historico['Matrículas'],
+            name="Matrículas",
+            line=dict(color="#cccccc", width=2),
+            marker=dict(size=8, color="#cccccc"),
+            mode="lines+markers",
+            yaxis="y2"
+        ), secondary_y=True
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_historico['Ano'],
+            y=df_historico['Professores'],
+            name="Professores",
+            line=dict(color="#a3b8cb", width=2),
+            marker=dict(size=8, color="#a3b8cb"),
+            mode="lines+markers",
+            yaxis="y2"
+        ), secondary_y=True
+    )
+
+    # Configurar layout
+    fig.update_layout(
+        margin=dict(l=20, r=20, t=10, b=20),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=1.1,
+            xanchor="center",
+            x=0.5,
+            font=dict(
+                family=cabecalho_fonte,
+                color=cabecalho_cor
+            )
+        ),
+        hovermode="x unified",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
+
+    # Configurar eixos
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor='#f0f0f0',
+        tickfont=dict(family=cabecalho_fonte, color="#666666")
+    )
+
+    fig.update_yaxes(
+        title_text="Escolas",
+        showgrid=True,
+        gridcolor='#f0f0f0',
+        tickfont=dict(family=cabecalho_fonte, color="#666666"),
+        secondary_y=False
+    )
+
+    fig.update_yaxes(
+        title_text="Matrículas e Professores",
+        showgrid=False,
+        tickfont=dict(family=cabecalho_fonte, color="#666666"),
+        secondary_y=True
+    )
+
+    # Exibir gráfico
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
-st.markdown("## Indicadores")
-
-dados = {
-    " ": ["Escolas", "Matrículas", "Professores"],
-    "Estaduais": ["408", "274,436", "50,816"],
-    "Municipais": ["2,228", "607,055", "117,972"],
-    "Total": ["2,636", "881,491", "168,788"]
-}
-
-df_indicadores = pd.DataFrame(dados)
-st.table(df_indicadores)
+# No lugar daquele bloco “Seção de Indicadores (KPIs)”, faça:
 
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
