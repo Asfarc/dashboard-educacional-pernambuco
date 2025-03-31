@@ -131,8 +131,8 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
 def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, espessura_linha=4, tamanho_ponto=100):
     # Configurações de estilo
     fonte = "Arial"
-    tamanho_texto_eixo = 15
-    tamanho_texto_legenda = 13
+    tamanho_texto_eixo = 14
+    tamanho_texto_legenda = 12
     cor_grafico = "#364b60"
 
     grafico = alt.Chart(df_transformado).mark_line(
