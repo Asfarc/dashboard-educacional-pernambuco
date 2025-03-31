@@ -810,65 +810,17 @@ st.title(TITULO_DASHBOARD)
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
-# Apague ou comente as linhas referentes a col1, col2, col3 e seus st.markdown(...)
-
-# No lugar daquele bloco “Seção de Indicadores (KPIs)”, faça:
 st.markdown("## Indicadores")
 
-html_tabela = """
-<style>
-.custom-table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-bottom: 1rem;
-    border: 1px solid #dee2e6;
+dados = {
+    " ": ["Escolas", "Matrículas", "Professores"],
+    "Estaduais": ["408", "274,436", "50,816"],
+    "Municipais": ["2,228", "607,055", "117,972"],
+    "Total": ["2,636", "881,491", "168,788"]
 }
-.custom-table th, .custom-table td {
-    border: 1px solid #dee2e6;
-    padding: 0.75rem;
-    text-align: center;
-}
-.custom-table thead th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-.custom-table th:first-child, .custom-table td:first-child {
-    text-align: left; /* permite que a primeira coluna fique alinhada à esquerda */
-}
-</style>
-<table class="custom-table">
-    <thead>
-        <tr>
-            <th></th>
-            <th>Estaduais</th>
-            <th>Municipais</th>
-            <th>Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><strong>Escolas</strong></td>
-            <td>408</td>
-            <td>2,228</td>
-            <td>2,636</td>
-        </tr>
-        <tr>
-            <td><strong>Matrículas</strong></td>
-            <td>274,436</td>
-            <td>607,055</td>
-            <td>881,491</td>
-        </tr>
-        <tr>
-            <td><strong>Professores</strong></td>
-            <td>50,816</td>
-            <td>117,972</td>
-            <td>168,788</td>
-        </tr>
-    </tbody>
-</table>
-"""
 
-st.markdown(html_tabela, unsafe_allow_html=True)
+df_indicadores = pd.DataFrame(dados)
+st.table(df_indicadores)
 
 # -------------------------------
 # Seção de Tabela de Dados Detalhados
