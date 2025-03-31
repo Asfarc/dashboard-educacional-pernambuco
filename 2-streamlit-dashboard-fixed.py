@@ -1174,13 +1174,9 @@ else:
             # --------------------------------------------------------
             # Layout em uma única linha para controles de paginação
             # --------------------------------------------------------
-            # Criação das colunas para a navegação da tabela
-            # --------------------------------------------------------
-            # Layout em uma única linha para controles de paginação
-            # --------------------------------------------------------
             try:
-                # Criação das colunas para a navegação da tabela
-                col = st.columns([2, 0.8, 0.8, 2], gap="small", vertical_alignment="bottom", border=True)
+                # Criação das colunas para a navegação da tabela com espaçadores
+                col = st.columns([2, 0.2, 0.8, 0.2, 0.8, 0.2, 2], gap="small", vertical_alignment="bottom")
 
                 # 1) Texto: "Total: registros | Página x de y"
                 with col[0]:
@@ -1190,30 +1186,44 @@ else:
                         f"| Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
                     )
 
-                # 2) Botão ◀ Anterior
+                # Espaçador entre col[0] e col[2]
                 with col[1]:
-                    if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1, use_container_width=True):
+                    st.empty()
+
+                # 2) Botão ◀ Anterior
+                with col[2]:
+                    if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1,
+                                 use_container_width=True):
                         st.session_state["current_page"] -= 1
                         st.rerun()
 
+                # Espaçador entre col[2] e col[4]
+                with col[3]:
+                    st.empty()
+
                 # 3) Botão Próximo ▶
-                with col[2]:
-                    if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages, use_container_width=True):
+                with col[4]:
+                    if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages,
+                                 use_container_width=True):
                         st.session_state["current_page"] += 1
                         st.rerun()
 
+                # Espaçador entre col[4] e col[6]
+                with col[5]:
+                    st.empty()
+
                 # 4) Número da Página e Itens por página (lado a lado em uma única coluna)
-                with col[3]:
+                with col[6]:
                     # Criar duas colunas dentro da quarta coluna principal
                     subcol1, subcol2 = st.columns(2)
 
                     # Número da Página (com label ao lado)
                     with subcol1:
                         # Criar duas subcolunas para o label e o input
-                        label_col, input_col = st.columns([0.4, 0.6])
-                        with label_col:
+                        page_label_col, page_input_col = st.columns([0.4, 0.6])
+                        with page_label_col:
                             st.write("Página:")
-                        with input_col:
+                        with page_input_col:
                             nova_pagina = st.number_input(
                                 "",
                                 min_value=1,
@@ -1229,10 +1239,10 @@ else:
                     # Itens por página (com label ao lado)
                     with subcol2:
                         # Criar duas subcolunas para o label e o select
-                        label_col, select_col = st.columns([0.6, 0.4])
-                        with label_col:
+                        items_label_col, items_select_col = st.columns([0.6, 0.4])
+                        with items_label_col:
                             st.write("Itens por página:")
-                        with select_col:
+                        with items_select_col:
                             novo_page_size = st.selectbox(
                                 "",
                                 options=[10, 25, 50, 100],
