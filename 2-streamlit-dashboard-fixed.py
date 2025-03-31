@@ -49,8 +49,8 @@ css_unificado = """
    position: absolute; /* Posicionamento absoluto para cobrir toda a área */
    
    /* Posicionamento do elemento - controla onde o fundo começa */
-   top: 50;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
-   left: 50;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
+   top: 10;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
+   left: 10;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
    
    /* Dimensões do elemento - controla o tamanho do fundo */
    width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) - pode variar de 0% a 100% ou valores fixos como px */
