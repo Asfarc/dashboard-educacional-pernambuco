@@ -25,6 +25,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Importa tudo do config_containers
+from layout_primeiros_indicadores import (
+    obter_estilo_css_container,
+    aplicar_padrao_numerico_brasileiro,
+    construir_grafico_linha_evolucao,
+    PARAMETROS_ESTILO_CONTAINER
+)
+
+# -----------------------------------------
+# 1) Injetar o CSS de estilo dos containers
+# -----------------------------------------
+st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
+st.title(TITULO_DASHBOARD)
+
 # CSS unificado e otimizado
 css_unificado = """
 /* CSS Unificado e Otimizado para o Dashboard */
@@ -816,19 +830,6 @@ except Exception as e:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-# Importa tudo do config_containers
-from layout_primeiros_indicadores import (
-    obter_estilo_css_container,
-    aplicar_padrao_numerico_brasileiro,
-    construir_grafico_linha_evolucao,
-    PARAMETROS_ESTILO_CONTAINER
-)
-# -----------------------------------------
-# 1) Injetar o CSS de estilo dos containers
-# -----------------------------------------
-st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
-st.title(TITULO_DASHBOARD)
-
 # -----------------------------
 # 2) Dados de exemplo
 # -----------------------------
