@@ -1175,40 +1175,67 @@ else:
             # Layout em uma única linha para controles de paginação
             # --------------------------------------------------------
             try:
-                # Layout principal com 5 colunas
-                col1, col2, col3, col4, col5 = st.columns([3, 1.2, 1.2, 1.8, 1.8])
+                # Definição de parâmetros de layout - AJUSTE AQUI!
+                LARGURA_TOTAL = 10  # Escala relativa total (soma de todas as larguras)
+
+                # Larguras das colunas principais
+                L_INFO = 3.0  # Largura da coluna de informações (Total: registros...)
+                L_ANTERIOR = 1.2  # Largura do botão Anterior
+                L_ESPACO1 = 0.3  # Espaço entre Anterior e Próximo
+                L_PROXIMO = 1.2  # Largura do botão Próximo
+                L_ESPACO2 = 0.3  # Espaço entre Próximo e Página
+                L_PAGINA = 1.8  # Largura da seção Página
+                L_ESPACO3 = 0.3  # Espaço entre Página e Itens por Página
+                L_ITENS = 1.9  # Largura da seção Itens por Página
+
+                # Proporções dentro das subcolunas
+                PROP_LABEL_PAGINA = 0.33  # Proporção do label "Página:" (0-1)
+                PROP_LABEL_ITENS = 0.55  # Proporção do label "Itens por página:" (0-1)
+
+                # Ajuste de padding para alinhamento vertical (em pixels)
+                PADDING_TOP = 5
+
+                # Criação das colunas com base nos parâmetros definidos
+                col_info, col_anterior, col_espaco1, col_proximo, col_espaco2, col_pagina, col_espaco3, col_itens = st.columns(
+                    [L_INFO, L_ANTERIOR, L_ESPACO1, L_PROXIMO, L_ESPACO2, L_PAGINA, L_ESPACO3, L_ITENS]
+                )
 
                 # 1) Texto: "Total: registros | Página x de y"
-                with col1:
+                with col_info:
                     total_registros_br = format_number_br(len(df_texto_filtrado))
                     st.markdown(
                         f"**Total: {total_registros_br} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
                     )
 
                 # 2) Botão ◀ Anterior
-                with col2:
+                with col_anterior:
                     if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1,
                                  use_container_width=True):
                         st.session_state["current_page"] -= 1
                         st.rerun()
 
+                # Espaço entre Anterior e Próximo
+                with col_espaco1:
+                    st.empty()
+
                 # 3) Botão Próximo ▶
-                with col3:
+                with col_proximo:
                     if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages,
                                  use_container_width=True):
                         st.session_state["current_page"] += 1
                         st.rerun()
 
-                # 4) Número da Página com label
-                with col4:
-                    # Use container para alinhar elementos horizontalmente
-                    container = st.container()
+                # Espaço entre Próximo e Página
+                with col_espaco2:
+                    st.empty()
 
-                    # Crie duas colunas dentro do container
-                    label_col, input_col = container.columns([1, 2])
+                # 4) Número da Página com label
+                with col_pagina:
+                    container = st.container()
+                    label_col, input_col = container.columns([PROP_LABEL_PAGINA, 1 - PROP_LABEL_PAGINA])
 
                     with label_col:
-                        st.markdown("<div style='padding-top: 5px;'>Página:</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='padding-top: {PADDING_TOP}px;'>Página:</div>", unsafe_allow_html=True)
 
                     with input_col:
                         nova_pagina = st.number_input(
@@ -1223,16 +1250,18 @@ else:
                             st.session_state["current_page"] = nova_pagina
                             st.rerun()
 
-                # 5) Itens por página com label
-                with col5:
-                    # Use container para alinhar elementos horizontalmente
-                    container = st.container()
+                # Espaço entre Página e Itens por Página
+                with col_espaco3:
+                    st.empty()
 
-                    # Crie duas colunas dentro do container
-                    label_col, select_col = container.columns([1.2, 1])
+                # 5) Itens por página com label
+                with col_itens:
+                    container = st.container()
+                    label_col, select_col = container.columns([PROP_LABEL_ITENS, 1 - PROP_LABEL_ITENS])
 
                     with label_col:
-                        st.markdown("<div style='padding-top: 5px;'>Itens por página:</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='padding-top: {PADDING_TOP}px;'>Itens por página:</div>",
+                                    unsafe_allow_html=True)
 
                     with select_col:
                         novo_page_size = st.selectbox(
@@ -1243,7 +1272,6 @@ else:
                         )
                         if novo_page_size != st.session_state["page_size"]:
                             st.session_state["page_size"] = novo_page_size
-                            # Volta para página 1 ao mudar o page_size
                             st.session_state["current_page"] = 1
                             st.rerun()
 
