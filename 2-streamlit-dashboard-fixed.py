@@ -9,6 +9,8 @@ import re
 from constantes import *  # Importa constantes (rótulos, textos, etc.)
 import time
 import altair as alt
+import base64
+
 
 if 'tempo_inicio' not in st.session_state:
     st.session_state['tempo_inicio'] = time.time()
@@ -854,7 +856,26 @@ with coluna_esquerda:
     # Título do container
     st.markdown('<div class="container-title">Dados Absolutos</div>', unsafe_allow_html=True)
 
-    # Montagem de tabela via HTML
+
+    # Função para converter imagens em strings base64
+    def get_image_as_base64(file_path):
+        with open(file_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode()
+
+
+    # Converter os ícones para base64
+    try:
+        icone_escolas_base64 = get_image_as_base64("icones/Escolas.png")
+        icone_matriculas_base64 = get_image_as_base64("icones/Matriculas.png")
+        icone_professores_base64 = get_image_as_base64("icones/Professores.png")
+    except Exception as e:
+        st.error(f"Erro ao carregar ícones: {e}")
+        # Valores vazios como fallback se houver erro
+        icone_escolas_base64 = ""
+        icone_matriculas_base64 = ""
+        icone_professores_base64 = ""
+
+    # Montagem de tabela via HTML com imagens em base64
     tabela_html = f"""
     <table class="custom-table container-text">
         <colgroup>
@@ -872,7 +893,7 @@ with coluna_esquerda:
         <tbody>
             <tr>
                 <td><strong>
-                    <img class="icone" src="icones/Escolas.png" />
+                    <img class="icone" src="data:image/png;base64,{icone_escolas_base64}" />
                     Escolas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][0])}</td>
@@ -882,7 +903,7 @@ with coluna_esquerda:
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="icones/Matriculas.png" />
+                    <img class="icone" src="data:image/png;base64,{icone_matriculas_base64}" />
                     Matrículas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
@@ -892,7 +913,7 @@ with coluna_esquerda:
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="icones/Professores.png" />
+                    <img class="icone" src="data:image/png;base64,{icone_professores_base64}" />
                     Professores
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][0])}</td>
