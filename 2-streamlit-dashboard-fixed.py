@@ -14,7 +14,7 @@ import base64
 
 if 'tempo_inicio' not in st.session_state:
     st.session_state['tempo_inicio'] = time.time()
-
+st.title(TITULO_DASHBOARD)
 # -------------------------------
 # Configuração Inicial da Página
 # -------------------------------
@@ -24,7 +24,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 
 # CSS unificado e otimizado
 css_unificado = """
@@ -281,12 +280,6 @@ h2 {
 """
 
 st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
-
-# -----------------------------------------
-# 1) Injetar o CSS de estilo dos containers
-# -----------------------------------------
-
-st.title(TITULO_DASHBOARD)
 
 # -------------------------------
 # Funções Auxiliares
@@ -830,6 +823,10 @@ from layout_primeiros_indicadores import (
     construir_grafico_linha_evolucao,
     PARAMETROS_ESTILO_CONTAINER
 )
+# -----------------------------------------
+# 1) Injetar o CSS de estilo dos containers
+# -----------------------------------------
+st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 
 
 # -----------------------------
