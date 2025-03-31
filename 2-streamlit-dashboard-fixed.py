@@ -1181,12 +1181,12 @@ else:
                 # Larguras das colunas principais
                 L_INFO = 3.0  # Largura da coluna de informações (Total: registros...)
                 L_ANTERIOR = 1.2  # Largura do botão Anterior
-                L_ESPACO1 = 0.3  # Espaço entre Anterior e Próximo
+                L_ESPACO1 = 0.1  # Espaço entre Anterior e Próximo
                 L_PROXIMO = 1.2  # Largura do botão Próximo
-                L_ESPACO2 = 0.3  # Espaço entre Próximo e Página
-                L_PAGINA = 1.8  # Largura da seção Página
-                L_ESPACO3 = 0.3  # Espaço entre Página e Itens por Página
-                L_ITENS = 1.9  # Largura da seção Itens por Página
+                L_ESPACO2 = 1.8  # Espaço entre Próximo e Página
+                L_PAGINA = 1.2  # Largura da seção Página
+                L_ESPACO3 = 0.1  # Espaço entre Página e Itens por Página
+                L_ITENS = 1.8  # Largura da seção Itens por Página
 
                 # Proporções dentro das subcolunas
                 PROP_LABEL_PAGINA = 0.33  # Proporção do label "Página:" (0-1)
