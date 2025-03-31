@@ -1176,14 +1176,16 @@ else:
             # --------------------------------------------------------
             try:
                 # Definição de parâmetros de layout - AJUSTE AQUI!
-                # Larguras das colunas principais - os valores são proporções relativas entre si
+                LARGURA_TOTAL = 10  # Escala relativa total (soma de todas as larguras)
+
+                # Larguras das colunas principais
                 L_INFO = 3.0  # Largura da coluna de informações (Total: registros...)
-                L_ANTERIOR = 1.2  # Largura do botão Anterior
+                L_ANTERIOR = 0.2  # Largura do botão Anterior
                 L_ESPACO1 = 0.3  # Espaço entre Anterior e Próximo
-                L_PROXIMO = 2.2  # Largura do botão Próximo
+                L_PROXIMO = 1.2  # Largura do botão Próximo
                 L_ESPACO2 = 2.0  # Espaço entre Próximo e Página
-                L_PAGINA = 2.2  # Largura da seção Página
-                L_ESPACO3 = 4.3  # Espaço entre Página e Itens por Página
+                L_PAGINA = 1.2  # Largura da seção Página
+                L_ESPACO3 = 0.3  # Espaço entre Página e Itens por Página
                 L_ITENS = 1.8  # Largura da seção Itens por Página
 
                 # Proporções dentro das subcolunas
@@ -1198,34 +1200,36 @@ else:
                     [L_INFO, L_ANTERIOR, L_ESPACO1, L_PROXIMO, L_ESPACO2, L_PAGINA, L_ESPACO3, L_ITENS]
                 )
 
-                # Para depuração - mostra visualmente as colunas
+                # 1) Texto: "Total: registros | Página x de y"
                 with col_info:
+                    total_registros_br = format_number_br(len(df_texto_filtrado))
                     st.markdown(
-                        f"**Total: {format_number_br(len(df_texto_filtrado))} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**")
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#f0f2f6;'>Info</div>", unsafe_allow_html=True)
+                        f"**Total: {total_registros_br} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
+                    )
 
+                # 2) Botão ◀ Anterior
                 with col_anterior:
                     if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1,
                                  use_container_width=True):
                         st.session_state["current_page"] -= 1
                         st.rerun()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#e6e9ef;'>Ant</div>", unsafe_allow_html=True)
 
+                # Espaço entre Anterior e Próximo
                 with col_espaco1:
                     st.empty()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#d1d6e2;'>Esp1</div>", unsafe_allow_html=True)
 
+                # 3) Botão Próximo ▶
                 with col_proximo:
                     if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages,
                                  use_container_width=True):
                         st.session_state["current_page"] += 1
                         st.rerun()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#e6e9ef;'>Prox</div>", unsafe_allow_html=True)
 
+                # Espaço entre Próximo e Página
                 with col_espaco2:
                     st.empty()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#d1d6e2;'>Esp2</div>", unsafe_allow_html=True)
 
+                # 4) Número da Página com label
                 with col_pagina:
                     container = st.container()
                     label_col, input_col = container.columns([PROP_LABEL_PAGINA, 1 - PROP_LABEL_PAGINA])
@@ -1245,12 +1249,12 @@ else:
                         if nova_pagina != st.session_state["current_page"]:
                             st.session_state["current_page"] = nova_pagina
                             st.rerun()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#e6e9ef;'>Pag</div>", unsafe_allow_html=True)
 
+                # Espaço entre Página e Itens por Página
                 with col_espaco3:
                     st.empty()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#d1d6e2;'>Esp3</div>", unsafe_allow_html=True)
 
+                # 5) Itens por página com label
                 with col_itens:
                     container = st.container()
                     label_col, select_col = container.columns([PROP_LABEL_ITENS, 1 - PROP_LABEL_ITENS])
@@ -1270,7 +1274,6 @@ else:
                             st.session_state["page_size"] = novo_page_size
                             st.session_state["current_page"] = 1
                             st.rerun()
-                    # st.markdown("<div style='width:100%;height:20px;background-color:#e6e9ef;'>Itens</div>", unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"Erro ao exibir a tabela: {str(e)}")
