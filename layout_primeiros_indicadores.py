@@ -135,7 +135,8 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
     tamanho_texto_legenda = 12
     cor_grafico = "#364b60"
 
-    grafico = alt.Chart(df_transformado).mark_line(
+    # Crie o gráfico de linha básico
+    grafico_linha = alt.Chart(df_transformado).mark_line(
         strokeWidth=espessura_linha
     ).encode(
         x=alt.X('Ano:O',  # O :O força o tratamento como ordinal
@@ -166,7 +167,19 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
                             titleAnchor='middle'
                         ),
                         scale=alt.Scale(scheme='category10'))
-    ).properties(
+    )
+
+    # Crie o gráfico de pontos
+    grafico_pontos = alt.Chart(df_transformado).mark_circle(
+        size=tamanho_ponto
+    ).encode(
+        x='Ano:O',
+        y='Valor:Q',
+        color='Categoria:N'
+    )
+
+    # Combine os dois gráficos em uma camada
+    grafico_combinado = alt.layer(grafico_linha, grafico_pontos).properties(
         width=largura,
         height=altura
     ).configure_view(
@@ -181,13 +194,4 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
         font=fonte
     )
 
-    # Adiciona pontos nos anos específicos
-    pontos = alt.Chart(df_transformado).mark_circle(
-        size=tamanho_ponto
-    ).encode(
-        x='Ano:O',
-        y='Valor:Q',
-        color='Categoria:N'
-    )
-
-    return grafico + pontos
+    return grafico_combinado
