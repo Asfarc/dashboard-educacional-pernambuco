@@ -1106,7 +1106,7 @@ else:
                 # Larguras das colunas principais
                 L_INFO = 3.0  # Largura da coluna de informações (Total: registros...)
                 L_ANTERIOR = 1.2  # Largura do botão Anterior
-                L_ESPACO1 = 0.1  # Espaço entre Anterior e Próximo
+                L_ESPACO1 = 0.3  # Espaço entre Anterior e Próximo
                 L_PROXIMO = 1.2  # Largura do botão Próximo
                 L_ESPACO2 = 1.0  # Espaço entre Próximo e Página
                 L_PAGINA = 1.2  # Largura da seção Página
@@ -1131,12 +1131,6 @@ else:
                     st.markdown(
                         f"**Total: {total_registros_br} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
                     )
-                # Defina proporções diferentes para testar
-                col1, col2 = st.columns([1, 3])
-                with col1:
-                    st.markdown("Coluna 1")
-                with col2:
-                    st.markdown("Coluna 2")
 
                 # 2) Botão ◀ Anterior
                 with col_anterior:
