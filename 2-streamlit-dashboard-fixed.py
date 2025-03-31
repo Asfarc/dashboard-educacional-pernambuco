@@ -38,21 +38,30 @@ from layout_primeiros_indicadores import (
 # -----------------------------------------
 st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 
-
-# CSS unificado e otimizado
 css_unificado = """
-/* Ajuste do título principal */
-.stApp h1:first-of-type {
-    margin-top: 0 !important;
+/* =================== RESET DO TÍTULO =================== */
+/* Container principal do app */
+.stApp {
+    margin-top: -2rem !important;
     padding-top: 0 !important;
 }
-/* Ajuste fino de posicionamento */
+
+/* Container do título */
 .stMarkdown:has(h1:first-of-type) {
-    margin-top: -1.5rem;
+    margin: -3rem 0 -4rem !important;
+    padding: 0 !important;
 }
-/* Remove espaçamento superior do container principal */
+
+/* Texto do título */
+.stMarkdown h1:first-of-type {
+    padding: 0.25rem 0 !important;
+    margin: 0 0 0.5rem !important;
+}
+
+/* Espaço acima do primeiro elemento */
 .stApp > div:first-child {
-    padding-top: 1rem !important;
+    padding-top: 0 !important;
+    margin-top: -1rem !important;
 }
 
 /* CSS Unificado e Otimizado para o Dashboard */
