@@ -59,8 +59,7 @@ css_unificado = """
    background-color: #364b60; /* Cor de fundo azul escuro - pode ser qualquer código de cor HEX, RGB ou nome de cor */
    z-index: -1; /* Coloca o fundo atrás do conteúdo (valores negativos = atrás, positivos = na frente) */
    border-radius: 1px; /* Arredondamento dos cantos - pode variar de 0px (quadrado) até valores altos para mais arredondamento */
-   margin: 1rem; /* Margem externa - pode variar de 0 a valores positivos em px/rem */
-   padding: 1rem; /* Preenchimento interno - pode variar de 0 a valores positivos em px/rem */
+
 }
 
 /* Garante que o conteúdo da barra lateral fique acima do fundo */
