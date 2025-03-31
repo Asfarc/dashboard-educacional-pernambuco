@@ -146,7 +146,8 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
                     labelFontSize=tamanho_texto_eixo,
                     titleFontSize=tamanho_texto_eixo + 2,
                     titleFont=fonte,
-                    labelFont=fonte
+                    labelFont=fonte,
+                    labelAngle=0  # Garante que os rótulos estejam na horizontal
                 )),
         y=alt.Y('Valor:Q',
                 axis=alt.Axis(
@@ -163,10 +164,11 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400, e
                             labelFontSize=tamanho_texto_legenda,
                             titleFont=fonte,
                             labelFont=fonte,
-                            orient='bottom',  # Posiciona a legenda embaixo
+                            orient='top',  # Posiciona a legenda no topo
                             titleAnchor='middle'
                         ),
-                        scale=alt.Scale(scheme='category10'))
+                        scale=alt.Scale(domain=['Escolas', 'Matrículas', 'Professores'],
+                                       range=['#364b60', '#cccccc', '#a3b8cb']))
     )
 
     # Crie o gráfico de pontos
