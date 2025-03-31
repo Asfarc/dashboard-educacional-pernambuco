@@ -934,7 +934,7 @@ with coluna_direita:
         df_transformado=df_transformado,
         largura=450,         # Ajuste se preferir
         altura=300,         # Ajuste se preferir
-        espessura_linha=1,  # Espessura da linha
+        espessura_linha=5,  # Espessura da linha
         tamanho_ponto=100     # Tamanho das bolinhas
     )
     st.altair_chart(grafico, use_container_width=True)

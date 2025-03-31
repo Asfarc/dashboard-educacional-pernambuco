@@ -128,28 +128,26 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
 
 
 # Função para construir o gráfico de linha de evolução
-def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400):
+def construir_grafico_linha_evolucao(df_transformado, largura=450, altura=300, espessura_linha=5, tamanho_ponto=100):
     # Configurações de estilo
     fonte = "Arial"
-    tamanho_titulo = 25  # Aumentado para 25
-    tamanho_texto_eixo = 16  # Aumentado para 16
+    tamanho_texto_eixo = 16
     tamanho_texto_legenda = 16
     cor_grafico = "#364b60"
 
-    # Título do gráfico
-    titulo = alt.TitleParams(
-        "Evolução dos números",
-        fontSize=tamanho_titulo,
-        font=fonte,
-        color=cor_grafico
-    )
+    # Cores específicas para cada categoria
+    cores_categorias = {
+        'Escolas': '#364b60',  # Azul escuro
+        'Matrículas': '#cccccc',  # Cinza claro
+        'Professores': '#a3b8cb'  # Azul claro
+    }
 
-    # Crie o gráfico de linha básico (sem pontos separados)
+    # Crie o gráfico de linha com pontos integrados
     grafico = alt.Chart(df_transformado).mark_line(
-        strokeWidth=4,  # Espessura da linha
+        strokeWidth=espessura_linha,
         point={  # Configuração dos pontos integrados à linha
             "filled": True,
-            "size": 150  # Tamanho do ponto
+            "size": tamanho_ponto
         }
     ).encode(
         x=alt.X('Ano:O',  # O :O força o tratamento como ordinal
@@ -181,12 +179,11 @@ def construir_grafico_linha_evolucao(df_transformado, largura=600, altura=400):
                             orient='top',  # Posiciona a legenda no topo
                             titleAnchor='middle'
                         ),
-                        scale=alt.Scale(domain=['Escolas', 'Matrículas', 'Professores'],
-                                        range=['#364b60', '#cccccc', '#a3b8cb']))
+                        scale=alt.Scale(domain=list(cores_categorias.keys()),
+                                        range=list(cores_categorias.values())))
     ).properties(
         width=largura,
-        height=altura,
-        title=titulo
+        height=altura
     ).configure_view(
         strokeWidth=0  # Remove a borda do gráfico
     ).configure_axis(
