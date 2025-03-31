@@ -467,7 +467,7 @@ def gerar_planilha_excel(df):
         return output.getvalue()
 
 # -----------------------------------------------------------------------------
-# Função para Paginação (chunk) - inspirada no snippet que você viu na internet
+# Função para Paginação (chunk)
 # -----------------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def split_frame(input_df: pd.DataFrame, rows_per_page: int):
@@ -932,7 +932,7 @@ with coluna_direita:
     # Utilizamos nossa função construir_grafico_linha_evolucao
     grafico = construir_grafico_linha_evolucao(
         df_transformado=df_transformado,
-        largura=450,         # Ajuste se preferir
+        largura=200,         # Ajuste se preferir
         altura=300,         # Ajuste se preferir
         espessura_linha=4,  # Espessura da linha
         tamanho_ponto=100     # Tamanho das bolinhas
