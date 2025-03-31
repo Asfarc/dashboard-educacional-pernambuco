@@ -10,7 +10,7 @@ PARAMETROS_ESTILO_CONTAINER = {
     "tamanho_fonte_conteudo": "1rem",
 }
 
-def obter_estilo_css_container() -> str:
+def obter_estilo_css_container(params) -> str:
     """
     Retorna um bloco de <style> contendo as configurações de borda,
     cor de texto, etc. para estilizar os containers e a tabela.
