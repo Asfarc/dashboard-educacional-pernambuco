@@ -8,6 +8,7 @@ import json
 import re
 from constantes import *  # Importa constantes (rótulos, textos, etc.)
 import time
+import altair as alt
 
 if 'tempo_inicio' not in st.session_state:
     st.session_state['tempo_inicio'] = time.time()
@@ -805,274 +806,176 @@ except Exception as e:
 # -------------------------------
 # Cabeçalho e Informações Iniciais
 # -------------------------------
-st.title(TITULO_DASHBOARD)
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import base64
-from pathlib import Path
-
-
-# Função para carregar imagens SVG
-def get_img_as_base64(file_path):
-    path = Path(file_path)
-    with open(path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode()
-
-
-# Carregar ícones (ajuste os caminhos conforme necessário)
-try:
-    escolas_icon = get_img_as_base64("C:/Users/User/Desktop/DashBoard/icones/Escolas.svg")
-    matriculas_icon = get_img_as_base64("C:/Users/User/Desktop/DashBoard/icones/Matrículas.svg")
-    professores_icon = get_img_as_base64("C:/Users/User/Desktop/DashBoard/icones/Professores.svg")
-except:
-    # Fallback para caso os ícones não sejam encontrados
-    escolas_icon = "🏫"
-    matriculas_icon = "👥"
-    professores_icon = "👨‍🏫"
-
-# Dados para a tabela (ajuste conforme necessidade)
-dados = {
-    "Categoria": ["Escolas", "Matrículas", "Professores"],
-    "Estaduais": [408, 274436, 50816],
-    "Municipais": [2228, 607055, 117972],
-    "Privada": [1500, 205000, 45000],  # Você solicitou incluir os dados da rede privada
-    "Total": [4136, 1086491, 213788]
+# Exemplo de dados estáticos (você pode substituir pelos que já calculou)
+dados_absolutos = {
+    "Rede": ["Estaduais", "Municipais", "Privadas"],  # Pode incluir "Privadas"
+    "Escolas": [408, 2228, 350],      # Números fictícios
+    "Matrículas": [274436, 607055, 100000],
+    "Professores": [50816, 117972, 25000]
 }
+df_absolutos = pd.DataFrame(dados_absolutos)
+df_absolutos["Total"] = df_absolutos[["Escolas", "Matrículas", "Professores"]].sum(axis=1)
 
-df = pd.DataFrame(dados)
-
-# Dados históricos para o gráfico (simulados para demonstração)
-anos = list(range(2015, 2026))
-# Usando os totais como base e criando uma tendência simulada
-hist_escolas = [round(dados["Total"][0] * (1 - 0.01 * (2025 - ano))) for ano in anos]
-hist_matriculas = [round(dados["Total"][1] * (1 - 0.005 * (2025 - ano))) for ano in anos]
-hist_professores = [round(dados["Total"][2] * (1 - 0.008 * (2025 - ano))) for ano in anos]
-
-df_historico = pd.DataFrame({
-    "Ano": anos,
-    "Escolas": hist_escolas,
-    "Matrículas": hist_matriculas,
-    "Professores": hist_professores
+# Para o gráfico (Evolução 2015 a 2025): dados fictícios
+# A ideia é que você obtenha esses valores dinamicamente
+df_evolucao = pd.DataFrame({
+    "Ano": list(range(2015, 2026)),
+    "Escolas": [400+(i*5) for i in range(11)],      # Exemplo
+    "Matrículas": [800000+(i*8000) for i in range(11)],
+    "Professores": [15000+(i*600) for i in range(11)],
 })
+# Faz pivot para plotar 3 linhas (Escolas, Matrículas, Professores)
+df_melt = df_evolucao.melt(id_vars="Ano",
+                           var_name="Categoria",
+                           value_name="Valor")
 
-# Configuração de estilo comum
-borda_cor = "#dddddd"
-borda_grossura = 1
-borda_raio = "10px"
-cabecalho_cor = "#364b60"
-cabecalho_fonte = "Open Sans, sans-serif"
-padding = "15px"
-
-# CSS personalizado
+# ---------------------------------------------------------
+# CSS básico para bordas, fontes, etc. (ajuste conforme quiser)
+# ---------------------------------------------------------
 st.markdown("""
 <style>
-    .container {
-        border: %dpx solid %s;
-        border-radius: %s;
-        padding: %s;
-        margin-bottom: 20px;
-        background-color: white;
-    }
-    .cabecalho {
-        font-family: %s;
-        font-weight: bold;
-        color: %s;
-        font-size: 1.2rem;
-        margin-bottom: 15px;
-    }
-    .tabela-container {
-        margin-bottom: 10px;
-    }
-    .icone-img {
-        width: 30px;
-        height: 30px;
-        vertical-align: middle;
-        margin-right: 10px;
-    }
-    .linha-separadora {
-        border-top: %dpx solid %s;
-        margin: 10px 0;
-    }
-    .valor {
-        font-family: %s;
-        color: %s;
-        font-size: 1rem;
-        text-align: right;
-    }
-    .categoria {
-        font-family: %s;
-        font-weight: bold;
-        color: %s;
-        font-size: 1rem;
-    }
+.container-custom {
+    border: 1px solid #ddd;       /* borda cinza clara */
+    border-radius: 8px;          /* cantos semi-arredondados */
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+/* Título dentro de cada container */
+.container-title {
+    font-family: "Open Sans", sans-serif;
+    font-weight: 700;           /* negrito */
+    color: #364b60;
+    font-size: 1.1rem;         /* ajuste conforme necessário */
+    margin-bottom: 0.5rem;
+}
+/* Texto/numérico dentro do container */
+.container-text {
+    font-family: "Open Sans", sans-serif;
+    font-weight: 400;          /* seminegrito ou normal */
+    font-size: 1rem;
+    color: #333;
+}
+/* Tabela customizada */
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.custom-table th, .custom-table td {
+    text-align: left;
+    padding: 8px;
+}
+.custom-table tr + tr {
+    border-top: 1px solid #ddd;  /* linha separadora entre Escolas, Matrículas, Professores */
+}
+.icone {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;  /* alinhar ao texto */
+    margin-right: 6px;
+}
 </style>
-""" % (borda_grossura, borda_cor, borda_raio, padding, cabecalho_fonte, cabecalho_cor,
-       borda_grossura, borda_cor, cabecalho_fonte, cabecalho_cor, cabecalho_fonte, cabecalho_cor))
+""", unsafe_allow_html=True)
 
-# Layout com duas colunas
+# =========================
+# CRIA AS DUAS COLUNAS (SIDE BY SIDE)
+# =========================
 col1, col2 = st.columns(2)
 
-# Primeiro container - Tabela de dados
+# -------------------------
+# CONTAINER 1: Tabela
+# -------------------------
 with col1:
-    st.markdown('<div class="container">', unsafe_allow_html=True)
-    st.markdown('<div class="cabecalho">Dados Absolutos</div>', unsafe_allow_html=True)
+    st.markdown('<div class="container-custom">', unsafe_allow_html=True)
 
-    # Escolas
-    st.markdown(f"""
-    <div class="tabela-container">
-        <table width="100%">
+    st.markdown('<div class="container-title">Dados Absolutos</div>', unsafe_allow_html=True)
+
+    # Exemplo de HTML para exibir a tabela com ícones
+    # Ajuste os caminhos dos ícones conforme a sua máquina
+    # e, se quiser, altere para .svg
+    tabela_html = f"""
+    <table class="custom-table container-text">
+        <thead>
             <tr>
-                <td width="30%">
-                    <img src="data:image/svg+xml;base64,{escolas_icon}" class="icone-img">
-                    <span class="categoria">Escolas</span>
+                <th></th>
+                <th>Estaduais</th>
+                <th>Municipais</th>
+                <th>Privadas</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <img class="icone" src="file://C:/Users/User/Desktop/DashBoard/icones/Escolas.png"/>
+                    Escolas
                 </td>
-                <td class="valor">{dados['Estaduais'][0]:,}</td>
-                <td class="valor">{dados['Municipais'][0]:,}</td>
-                <td class="valor">{dados['Privada'][0]:,}</td>
-                <td class="valor">{dados['Total'][0]:,}</td>
+                <td>{df_absolutos['Escolas'][0]:,}</td>
+                <td>{df_absolutos['Escolas'][1]:,}</td>
+                <td>{df_absolutos['Escolas'][2]:,}</td>
+                <td>{df_absolutos['Escolas'].sum():,}</td>
             </tr>
             <tr>
-                <td></td>
-                <td class="valor" style="font-size: 0.8rem; color: #666;">Estaduais</td>
-                <td class="valor" style="font-size: 0.8rem; color: #666;">Municipais</td>
-                <td class="valor" style="font-size: 0.8rem; color: #666;">Privada</td>
-                <td class="valor" style="font-size: 0.8rem; color: #666;">Total</td>
-            </tr>
-        </table>
-    </div>
-    <div class="linha-separadora"></div>
-    """, unsafe_allow_html=True)
-
-    # Matrículas
-    st.markdown(f"""
-    <div class="tabela-container">
-        <table width="100%">
-            <tr>
-                <td width="30%">
-                    <img src="data:image/svg+xml;base64,{matriculas_icon}" class="icone-img">
-                    <span class="categoria">Matrículas</span>
+                <td>
+                    <img class="icone" src="file://C:/Users/User/Desktop/DashBoard/icones/Matriculas.png"/>
+                    Matrículas
                 </td>
-                <td class="valor">{dados['Estaduais'][1]:,.0f}</td>
-                <td class="valor">{dados['Municipais'][1]:,.0f}</td>
-                <td class="valor">{dados['Privada'][1]:,.0f}</td>
-                <td class="valor">{dados['Total'][1]:,.0f}</td>
+                <td>{df_absolutos['Matrículas'][0]:,}</td>
+                <td>{df_absolutos['Matrículas'][1]:,}</td>
+                <td>{df_absolutos['Matrículas'][2]:,}</td>
+                <td>{df_absolutos['Matrículas'].sum():,}</td>
             </tr>
-        </table>
-    </div>
-    <div class="linha-separadora"></div>
-    """, unsafe_allow_html=True)
-
-    # Professores
-    st.markdown(f"""
-    <div class="tabela-container">
-        <table width="100%">
             <tr>
-                <td width="30%">
-                    <img src="data:image/svg+xml;base64,{professores_icon}" class="icone-img">
-                    <span class="categoria">Professores</span>
+                <td>
+                    <img class="icone" src="file://C:/Users/User/Desktop/DashBoard/icones/Professores.png"/>
+                    Professores
                 </td>
-                <td class="valor">{dados['Estaduais'][2]:,.0f}</td>
-                <td class="valor">{dados['Municipais'][2]:,.0f}</td>
-                <td class="valor">{dados['Privada'][2]:,.0f}</td>
-                <td class="valor">{dados['Total'][2]:,.0f}</td>
+                <td>{df_absolutos['Professores'][0]:,}</td>
+                <td>{df_absolutos['Professores'][1]:,}</td>
+                <td>{df_absolutos['Professores'][2]:,}</td>
+                <td>{df_absolutos['Professores'].sum():,}</td>
             </tr>
-        </table>
-    </div>
-    """, unsafe_allow_html=True)
+        </tbody>
+    </table>
+    """
+    # Observação: Usamos "{valor:,}" para inserir separadores de milhar como "123,456".
+    # Se quiser usar ponto no lugar de vírgula, troque por:
+    #   f"{df_absolutos['Escolas'][0]:_.0f}".replace("_", ".")
+    # ou faça manualmente com .replace().
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(tabela_html, unsafe_allow_html=True)
 
-# Segundo container - Gráfico de evolução
+    st.markdown('</div>', unsafe_allow_html=True)  # Fecha container-custom
+
+# -------------------------
+# CONTAINER 2: Gráfico de Linha
+# -------------------------
 with col2:
-    st.markdown('<div class="container">', unsafe_allow_html=True)
-    st.markdown('<div class="cabecalho">Evolução dos números</div>', unsafe_allow_html=True)
+    st.markdown('<div class="container-custom">', unsafe_allow_html=True)
+    st.markdown('<div class="container-title">Evolução dos números</div>', unsafe_allow_html=True)
 
-    # Criar gráfico com Plotly
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-    # Adicionar linhas para cada categoria
-    fig.add_trace(
-        go.Scatter(
-            x=df_historico['Ano'],
-            y=df_historico['Escolas'],
-            name="Escolas",
-            line=dict(color="#364b60", width=2),
-            marker=dict(size=8, color="#364b60"),
-            mode="lines+markers"
+    # Monta um gráfico de linhas usando Altair
+    # Usaremos as cores: Escolas (#364b60), Matrículas (#cccccc), Professores (#a3b8cb)
+    chart = (
+        alt.Chart(df_melt)
+        .mark_line(point=True)  # colque point=False se quiser sem marcadores
+        .encode(
+            x=alt.X("Ano:O", title=""),
+            y=alt.Y("Valor:Q", title=""),
+            color=alt.Color(
+                "Categoria",
+                scale=alt.Scale(
+                    domain=["Escolas", "Matrículas", "Professores"],
+                    range=["#364b60", "#cccccc", "#a3b8cb"]
+                )
+            ),
+            tooltip=["Ano", "Categoria", "Valor"]
         )
+        .properties(width="container", height=200)
+        .interactive()
     )
 
-    fig.add_trace(
-        go.Scatter(
-            x=df_historico['Ano'],
-            y=df_historico['Matrículas'],
-            name="Matrículas",
-            line=dict(color="#cccccc", width=2),
-            marker=dict(size=8, color="#cccccc"),
-            mode="lines+markers",
-            yaxis="y2"
-        ), secondary_y=True
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=df_historico['Ano'],
-            y=df_historico['Professores'],
-            name="Professores",
-            line=dict(color="#a3b8cb", width=2),
-            marker=dict(size=8, color="#a3b8cb"),
-            mode="lines+markers",
-            yaxis="y2"
-        ), secondary_y=True
-    )
-
-    # Configurar layout
-    fig.update_layout(
-        margin=dict(l=20, r=20, t=10, b=20),
-        legend=dict(
-            orientation="h",
-            yanchor="top",
-            y=1.1,
-            xanchor="center",
-            x=0.5,
-            font=dict(
-                family=cabecalho_fonte,
-                color=cabecalho_cor
-            )
-        ),
-        hovermode="x unified",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-    )
-
-    # Configurar eixos
-    fig.update_xaxes(
-        showgrid=True,
-        gridcolor='#f0f0f0',
-        tickfont=dict(family=cabecalho_fonte, color="#666666")
-    )
-
-    fig.update_yaxes(
-        title_text="Escolas",
-        showgrid=True,
-        gridcolor='#f0f0f0',
-        tickfont=dict(family=cabecalho_fonte, color="#666666"),
-        secondary_y=False
-    )
-
-    fig.update_yaxes(
-        title_text="Matrículas e Professores",
-        showgrid=False,
-        tickfont=dict(family=cabecalho_fonte, color="#666666"),
-        secondary_y=True
-    )
-
-    # Exibir gráfico
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.altair_chart(chart, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # Fecha container-custom
 # -------------------------------
 # Seção de Indicadores (KPIs)
 # -------------------------------
