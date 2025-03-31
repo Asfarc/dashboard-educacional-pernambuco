@@ -1232,7 +1232,7 @@ else:
                     label_col, select_col = container.columns([1.2, 1])
 
                     with label_col:
-                        st.markdown("<div style='padding-top: 1px;'>Itens por página:</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='padding-top: 5px;'>Itens por página:</div>", unsafe_allow_html=True)
 
                     with select_col:
                         novo_page_size = st.selectbox(
