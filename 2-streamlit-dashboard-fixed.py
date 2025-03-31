@@ -200,14 +200,6 @@ h2 {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     margin-bottom: 20px;
 }
-/* Container Custom (Dados Absolutos e Evolução) */
-.container-custom {
-    background-color: transparent !important; /* Remove o fundo */
-    border: none !important; /* Remove bordas */
-    box-shadow: none !important; /* Remove sombras */
-    padding: 0 !important;
-    margin: 0 !important;
-}
 .kpi-title {
     font-size: 0.9rem;
     color: #666;
