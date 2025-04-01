@@ -521,14 +521,20 @@ def split_frame(input_df: pd.DataFrame, rows_per_page: int):
     """
     Recebe um DataFrame e o número de linhas por página (rows_per_page).
     Retorna uma lista de DataFrames, cada qual com 'rows_per_page' linhas.
-    Se a última página tiver menos linhas que rows_per_page, também é retornada.
+    Se o DataFrame estiver vazio, retorna uma lista com um DataFrame vazio.
     """
-    # Por exemplo, se len(input_df)=100 e rows_per_page=25,
-    # cria 4 DataFrames de 25 linhas cada.
+    if input_df.empty:
+        return [input_df]  # Retorna lista com DataFrame vazio
+
     chunks = []
     for i in range(0, len(input_df), rows_per_page):
-        chunk = input_df.iloc[i : i + rows_per_page]
+        chunk = input_df.iloc[i: i + rows_per_page]
         chunks.append(chunk)
+
+    # Garante que a lista nunca esteja vazia
+    if not chunks:
+        chunks = [input_df]
+
     return chunks
 
 # -------------------------------
@@ -565,6 +571,14 @@ tipo_nivel_agregacao_selecionado = st.sidebar.radio(
     "Nível de Agregação:",
     ["Escola", "Município", "Estado"]
 )
+
+# Resetar página atual ao mudar de nível de agregação
+if "ultimo_nivel_agregacao" not in st.session_state:
+    st.session_state["ultimo_nivel_agregacao"] = tipo_nivel_agregacao_selecionado
+elif st.session_state["ultimo_nivel_agregacao"] != tipo_nivel_agregacao_selecionado:
+    if "current_page" in st.session_state:
+        st.session_state["current_page"] = 1
+    st.session_state["ultimo_nivel_agregacao"] = tipo_nivel_agregacao_selecionado
 
 if tipo_nivel_agregacao_selecionado == "Escola":
     df = escolas_df.copy()
@@ -1107,8 +1121,10 @@ else:
                 st.session_state["current_page"] = 1
 
             # Exibe a página atual
-            df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
-            st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
+            if paginated_frames and st.session_state["current_page"] <= len(paginated_frames):
+                df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
+            else:
+                df_pagina_atual = pd.DataFrame()  # DataFrame vazio em caso de erro
 
             # --- Controles de paginação ---
             # Caso as constantes de proporção e padding não estejam definidas, as define:
