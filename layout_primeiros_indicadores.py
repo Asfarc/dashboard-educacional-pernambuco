@@ -32,8 +32,13 @@ def obter_estilo_css_container(params=None) -> str:
 
     bloco_estilo = f"""
     <style>
-    /* Container principal - ESSENCIAL para conter a tabela */
-    .st-emotion-cache-16tyu1 .container-custom {{
+    /* 1. Remove retângulos extras - ESSENCIAL */
+    .st-emotion-cache-16tyu1 .container-custom:not(:has(table)) {{
+        display: none !important;
+    }}
+
+    /* 2. Container principal apenas onde tem tabela */
+    .st-emotion-cache-16tyu1 .container-custom:has(table) {{
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: {params["raio_borda"]}px !important;
         padding: 1rem !important;
@@ -41,47 +46,23 @@ def obter_estilo_css_container(params=None) -> str:
         background-color: white !important;
     }}
 
-    /* Tabela customizada - CORREÇÃO DE ESPECIFICIDADE */
-    .st-emotion-cache-16tyu1 .custom-table {{
-        width: 100% !important;
-        border: 1px solid {params["cor_borda"]} !important;
-        border-radius: 8px !important;
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-        overflow: hidden !important;
+    /* 3. Remove linha do cabeçalho - CORREÇÃO CRÍTICA */
+    .st-emotion-cache-16tyu1 .custom-table thead tr th {{
+        border-bottom: none !important;
+        box-shadow: none !important;
     }}
 
-    /* Linha de Matrículas (segunda linha do tbody) */
+    /* 4. Mantém borda apenas na linha de Matrículas */
     .st-emotion-cache-16tyu1 .custom-table tbody tr:nth-child(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* Remove todas as bordas padrão */
+    /* 5. Remove bordas residuais */
     .st-emotion-cache-16tyu1 .custom-table td,
     .st-emotion-cache-16tyu1 .custom-table th {{
         border: none !important;
-        padding: 8px !important;
         background: transparent !important;
-    }}
-
-    /* Remove bordas laterais internas */
-    .st-emotion-cache-16tyu1 .custom-table td {{
-        border-left: none !important;
-        border-right: none !important;
-    }}
-
-    /* Estilo do cabeçalho */
-    .st-emotion-cache-16tyu1 .custom-table thead tr th {{
-        border-bottom: 1px solid {params["cor_borda"]} !important;
-        background: transparent !important;
-        color: {params["cor_titulo"]} !important;
-    }}
-
-    /* Alinhamento primeira coluna */
-    .st-emotion-cache-16tyu1 .custom-table td:first-child {{
-        padding-left: 1rem !important;
-        text-align: left !important;
     }}
     </style>
     """
