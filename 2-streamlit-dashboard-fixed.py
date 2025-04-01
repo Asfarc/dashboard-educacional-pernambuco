@@ -879,7 +879,7 @@ except Exception as e:
 # 2) Dados de exemplo
 # -----------------------------
 dados_absolutos = {
-    "Rede": ["Federal", "Estaduais", "Municipais", "Privadas"],
+    "Rede": ["Federal", "Estadual", "Municipal", "Privada"],
     "Escolas": [26, 1053, 4759, 2157],
     "Matrículas": [16377, 539212, 1082028, 512022],
     "Professores": [1609, 21845, 46454, 26575]
