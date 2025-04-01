@@ -195,7 +195,7 @@ def construir_grafico_linha_evolucao(
                     titleFont=fonte,
                     labelFont=fonte,
                     format='.0f',
-                    labelExpr="replace(format(datum.value, '.0f'), ',', '.')"
+                    labelExpr="replace(format(datum.value, ',.0f'), ',', 'X').replace('X', '.')"
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
