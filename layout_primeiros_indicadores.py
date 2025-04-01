@@ -72,7 +72,7 @@ def obter_estilo_css_container(params=None) -> str:
         overflow: hidden !important;
         border-collapse: separate !important;
         table-layout: fixed !important;
-        width: 680px !important;
+        width: 100% !important;
         font-size: {params["tamanho_fonte_conteudo"]} !important;  /* Novo */
     }}
 
