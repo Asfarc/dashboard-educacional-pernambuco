@@ -1004,17 +1004,21 @@ else:
         try:
             # Define as colunas essenciais para exibição
             colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
-            if coluna_real in tabela_exibicao.columns:
+            if coluna_real and coluna_real in tabela_exibicao.columns:
                 colunas_essenciais.append(coluna_real)
             for col in ["ANO", "CODIGO DA UF", "NOME DA UF"]:
                 if col in tabela_exibicao.columns:
                     colunas_essenciais.append(col)
+
             tabela_simplificada = tabela_exibicao[colunas_essenciais].copy()
+            # Redefine o índice e converte os nomes das colunas para strings
+            tabela_simplificada.reset_index(drop=True, inplace=True)
+            tabela_simplificada.columns = tabela_simplificada.columns.astype(str)
 
             st.write("Dados por Dependência Administrativa:")
             st.dataframe(tabela_simplificada, height=altura_tabela, use_container_width=True)
 
-            if coluna_real in tabela_simplificada.columns:
+            if coluna_real and coluna_real in tabela_simplificada.columns:
                 total_col = tabela_dados[coluna_real].sum() if coluna_real in tabela_dados.columns else 0
                 st.markdown(
                     f"**Total de {coluna_real}:** {aplicar_padrao_numerico_brasileiro(total_col)}"
@@ -1027,7 +1031,8 @@ else:
                 if ("DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and
                         coluna_matriculas_por_etapa in df_filtrado.columns):
                     resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[
-                        coluna_matriculas_por_etapa].sum().reset_index()
+                        coluna_matriculas_por_etapa
+                    ].sum().reset_index()
                     st.write("Resumo por Dependência Administrativa:")
                     st.dataframe(resumo, use_container_width=True)
                 else:
@@ -1035,6 +1040,7 @@ else:
                     st.dataframe(df_filtrado.head(100), use_container_width=True)
             except Exception as ex:
                 st.error("Não foi possível exibir dados mesmo no formato simplificado.")
+
 
     # ----- Exibição para os demais níveis (Ex.: Escola ou Município) com filtros e paginação -----
     else:
