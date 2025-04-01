@@ -1016,7 +1016,8 @@ else:
             tabela_simplificada.columns = tabela_simplificada.columns.astype(str)
 
             st.write("Dados por Dependência Administrativa:")
-            st.dataframe(tabela_simplificada, height=altura_tabela, use_container_width=True)
+            # Use st.table em vez de st.dataframe para o caso Estado
+            st.table(tabela_simplificada)
 
             if coluna_real and coluna_real in tabela_simplificada.columns:
                 total_col = tabela_dados[coluna_real].sum() if coluna_real in tabela_dados.columns else 0
