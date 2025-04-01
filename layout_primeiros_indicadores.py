@@ -183,7 +183,7 @@ def construir_grafico_linha_evolucao(
                     titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    format='.d'
+                    format=',d'
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
