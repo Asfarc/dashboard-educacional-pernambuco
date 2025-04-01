@@ -13,7 +13,7 @@ alt.renderers.set_embed_options({
 
 # Dicionário que centraliza parâmetros estilísticos e facilita ajustes # dee2e6
 PARAMETROS_ESTILO_CONTAINER = {
-    "raio_borda": 50,
+    "raio_borda": 8,
     "cor_borda": "#dee2e6",
     "cor_titulo": "#364b60",
     "tamanho_fonte_titulo": "1.1rem",
@@ -43,8 +43,8 @@ def obter_estilo_css_container(params=None) -> str:
         border-collapse: separate !important;
     }}
 
-    /* 3. Linha de Matrículas */
-    .custom-table tbody tr:nth-child(2) td {{
+    /* 3. Linha de Matrículas - A partir da coluna Federal */
+    .custom-table tbody tr:nth-child(2) td:nth-child(n+2) {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
