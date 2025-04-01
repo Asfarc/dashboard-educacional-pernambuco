@@ -52,11 +52,12 @@ def obter_estilo_css_container(params) -> str:
         border-radius: 8px;
         overflow: hidden;
     }}
-    .custom-table col:nth-child(1) {{ width: 30%; }}
-    .custom-table col:nth-child(2) {{ width: 15%; }}
-    .custom-table col:nth-child(3) {{ width: 15%; }}
-    .custom-table col:nth-child(4) {{ width: 15%; }}
-    .custom-table col:nth-child(5) {{ width: 15%; }}
+    .custom-table col:nth-child(1) {{ width: 25%; }}
+    .custom-table col:nth-child(2) {{ width: 13%; }}
+    .custom-table col:nth-child(3) {{ width: 13%; }}
+    .custom-table col:nth-child(4) {{ width: 13%; }}
+    .custom-table col:nth-child(5) {{ width: 13%; }}
+    .custom-table col:nth-child(6) {{ width: 13%; }}
     .custom-table td, .custom-table th {{
         border: none;         /* Remove qualquer borda das células */
         padding: 8px;
@@ -167,7 +168,7 @@ def construir_grafico_linha_evolucao(
     ).encode(
         x=alt.X('Ano:O',
                 axis=alt.Axis(
-                    values=[2015, 2020, 2025],
+                    values=[2015, 2020, 2023],
                     title="Ano",
                     labelFontSize=tamanho_texto_eixo,          # Usa novo parâmetro
                     titleFontSize=tamanho_titulo_eixo,         # Usa novo parâmetro
@@ -182,11 +183,11 @@ def construir_grafico_linha_evolucao(
                     titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    format=',d'
+                    format='.d'
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
-                            title="Categoria",
+                            title="",
                             titleFontSize=tamanho_titulo_legenda,  # Usa novo parâmetro
                             labelFontSize=tamanho_texto_legenda,   # Usa novo parâmetro
                             titleFont=fonte,
