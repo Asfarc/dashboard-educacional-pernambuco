@@ -26,8 +26,8 @@ PARAMETROS_ESTILO_CONTAINER = {
 
 CONFIG_GRAFICO = {
     # Dimensões
-    "largura": 450,
-    "altura": 280,
+    "largura": 680,
+    "altura": 380,
 
     # Estilo da Linha
     "espessura_linha": 5,
@@ -72,7 +72,7 @@ def obter_estilo_css_container(params=None) -> str:
         overflow: hidden !important;
         border-collapse: separate !important;
         table-layout: fixed !important;
-        width: 100% !important;
+        width: 680px !important;
         font-size: {params["tamanho_fonte_conteudo"]} !important;  /* Novo */
     }}
 
