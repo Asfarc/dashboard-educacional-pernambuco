@@ -1,5 +1,16 @@
 import altair as alt
 
+# Configuração ESSENCIAL para formato numérico brasileiro
+alt.renderers.set_embed_options({
+    'formatLocale': {
+        'decimal': ',',
+        'thousands': '.',
+        'grouping': [3],
+        'currency': ['R$', '']
+    },
+    'timeFormatLocale': 'pt_BR'  # Opcional para datas em português
+})
+
 # Dicionário que centraliza parâmetros estilísticos e facilita ajustes
 PARAMETROS_ESTILO_CONTAINER = {
     "raio_borda": 8,
@@ -128,7 +139,6 @@ def aplicar_padrao_numerico_brasileiro(numero):
     except (ValueError, TypeError):
         return str(numero)
 
-
 # Mantemos a função anterior por compatibilidade, mas usando a nova implementação
 def formatar_numero_com_pontos_milhar(numero: float) -> str:
     """
@@ -136,11 +146,6 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
     aplicar_padrao_numerico_brasileiro.
     """
     return aplicar_padrao_numerico_brasileiro(numero)
-
-# Configurar locale brasileiro para formatação de números
-alt.renderers.set_embed_options({
-    'locale': 'pt_BR'  # Configura separadores numéricos brasileiros
-})
 
 # Função modificada com controle de tamanho de texto
 def construir_grafico_linha_evolucao(
@@ -187,7 +192,7 @@ def construir_grafico_linha_evolucao(
                     titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    format='.0f'
+                    format='~s'
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
