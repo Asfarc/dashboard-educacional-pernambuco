@@ -1040,8 +1040,11 @@ else:
     else:
         # Função para dividir o DataFrame em pedaços (chunks)
         def split_frame(df, size):
+            # Verifica se o DataFrame está vazio ou tem menos linhas que o tamanho da página
+            if df.empty or len(df) <= size:
+                return [df] # Retorna uma lista contendo apenas o DataFrame original
+            # Divide o DataFrame em chunks do tamanho especificado
             return [df[i:i + size] for i in range(0, len(df), size)]
-
 
         # Função para formatar números com separador de milhar (padrão brasileiro)
         def format_number_br(num):
@@ -1109,7 +1112,17 @@ else:
             if df_texto_filtrado.empty:
                 st.warning("Não há dados para exibir após filtragem.")
             else:
-                paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
+                # Define um tamanho de página adequado para o nível de agregação
+                if tipo_nivel_agregacao_selecionado == "Estado" and len(df_texto_filtrado) < st.session_state[
+                    "page_size"]:
+                    # Se for nível Estado e houver menos registros que o tamanho da página,
+                    # ajusta o tamanho da página para o número de registros
+                    tamanho_pagina_ajustado = len(df_texto_filtrado)
+                else:
+                    tamanho_pagina_ajustado = st.session_state["page_size"]
+
+                # Divide o DataFrame em páginas usando o tamanho ajustado
+                paginated_frames = split_frame(df_texto_filtrado, tamanho_pagina_ajustado)
                 total_pages = max(1, len(paginated_frames))
 
                 if "current_page" not in st.session_state:
