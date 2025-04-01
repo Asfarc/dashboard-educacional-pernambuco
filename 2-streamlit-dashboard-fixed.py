@@ -982,13 +982,8 @@ with coluna_direita:
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
     st.markdown('<div class="container-title">Evolução dos números</div>', unsafe_allow_html=True)
 
-    # Na seção onde o gráfico é renderizado
-    grafico = construir_grafico_linha_evolucao(
-        df_transformado=df_transformado,
-        altura=300,  # TESTE COM VALOR ALTO PARA VER EFEITO IMEDIATO
-        largura=400,
-        espessura_linha=5
-    )
+    # Chama SEM parâmetros (usa apenas configurações do módulo)
+    grafico = construir_grafico_linha_evolucao(df_transformado)
 
     st.altair_chart(grafico, use_container_width=False)  # Force o container width
 

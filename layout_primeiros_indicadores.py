@@ -11,16 +11,44 @@ alt.renderers.set_embed_options({
     'timeFormatLocale': 'pt_BR'  # Opcional para datas em português
 })
 
-# Dicionário que centraliza parâmetros estilísticos e facilita ajustes # dee2e6
+# -----------------------------------------------------
+# Dicionário Central de Configurações (ATUALIZADO)
+# -----------------------------------------------------
 PARAMETROS_ESTILO_CONTAINER = {
     "raio_borda": 8,
     "cor_borda": "#dee2e6",
     "cor_titulo": "#364b60",
     "tamanho_fonte_titulo": "1.1rem",
     "tamanho_fonte_conteudo": "1rem",
-    "cor_fonte_conteudo": "#364b60"
+    "cor_fonte_conteudo": "#364b60",
+    "largura_colunas": [30, 14, 14, 14, 14, 14]  # Novo: porcentagens das colunas
 }
 
+CONFIG_GRAFICO = {
+    # Dimensões
+    "largura": 450,
+    "altura": 280,
+
+    # Estilo da Linha
+    "espessura_linha": 5,
+    "tamanho_ponto": 100,
+
+    # Texto
+    "tamanho_texto_eixo": 14,
+    "tamanho_texto_legenda": 16,
+    "tamanho_titulo_eixo": 14,
+    "tamanho_titulo_legenda": 18,
+    "fonte": "Arial",
+
+    # Cores
+    "cor_fundo": "#ffffff",
+    "cor_grade": "#f0f0f0",
+    "cores_categorias": {
+        'Escolas': '#364b60',
+        'Matrículas': '#cccccc',
+        'Professores': '#a3b8cb'
+    }
+}
 def obter_estilo_css_container(params=None) -> str:
     if params is None:
         params = PARAMETROS_ESTILO_CONTAINER
@@ -145,78 +173,64 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
     return aplicar_padrao_numerico_brasileiro(numero)
 
 # Função modificada com controle de tamanho de texto
-def construir_grafico_linha_evolucao(
-    df_transformado,
-    largura=450,
-    altura=280,
-    espessura_linha=5,
-    tamanho_ponto=100,
-    tamanho_texto_eixo=14,
-    tamanho_texto_legenda=16,
-    tamanho_titulo_eixo=14,
-    tamanho_titulo_legenda=18
-):
-    # Antes de criar o gráfico, faça:
-    df_transformado['Valor'] = df_transformado['Valor'].astype(float)
-    # Configurações de estilo
-    fonte = "Arial"
-    cor_grafico = "#364b60"
+def construir_grafico_linha_evolucao(df_transformado, **kwargs):
+    config = {**CONFIG_GRAFICO, **kwargs}
 
-    # Mantém as cores das categorias
-    cores_categorias = {
-        'Escolas': '#364b60',
-        'Matrículas': '#cccccc',
-        'Professores': '#a3b8cb'
-    }
+    # Pré-processamento
+    df = df_transformado.copy()
+    df['Valor'] = df['Valor'].astype(float)
 
-    # Criação do gráfico com parâmetros ajustáveis
-    grafico = alt.Chart(df_transformado).mark_line(
-        strokeWidth=espessura_linha,
-        point={"filled": True, "size": tamanho_ponto}
+    # Construção do gráfico
+    grafico = alt.Chart(df).mark_line(
+        strokeWidth=config['espessura_linha'],
+        point=alt.OverlayMarkDef(
+            size=config['tamanho_ponto'],
+            filled=True,
+            color='white',
+            stroke=CONFIG_GRAFICO['cores_categorias']['Escolas']
+        )
     ).encode(
         x=alt.X('Ano:O',
                 axis=alt.Axis(
-                    #values=[2015, 2020, 2023],
                     title="Ano",
-                    labelFontSize=tamanho_texto_eixo,          # Usa novo parâmetro
-                    titleFontSize=tamanho_titulo_eixo,         # Usa novo parâmetro
-                    titleFont=fonte,
-                    labelFont=fonte,
-                    labelAngle=0
+                    labelFontSize=config['tamanho_texto_eixo'],
+                    titleFontSize=config['tamanho_titulo_eixo'],
+                    titleFont=config['fonte'],
+                    labelFont=config['fonte']
                 )),
         y=alt.Y('Valor:Q',
                 axis=alt.Axis(
                     title="Quantidade",
-                    labelFontSize=tamanho_texto_eixo,          # Usa novo parâmetro
-                    titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
-                    titleFont=fonte,
-                    labelFont=fonte,
-                    format='.0f',
+                    labelFontSize=config['tamanho_texto_eixo'],
+                    titleFontSize=config['tamanho_titulo_eixo'],
+                    titleFont=config['fonte'],
+                    labelFont=config['fonte'],
+                    format='.0f'
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
-                            title="",
-                            titleFontSize=tamanho_titulo_legenda,  # Usa novo parâmetro
-                            labelFontSize=tamanho_texto_legenda,   # Usa novo parâmetro
-                            titleFont=fonte,
-                            labelFont=fonte,
-                            orient='top',
-                            titleAnchor='middle'
+                            title=None,
+                            labelFontSize=config['tamanho_texto_legenda'],
+                            titleFontSize=config['tamanho_titulo_legenda'],
+                            labelFont=config['fonte'],
+                            orient='top'
                         ),
                         scale=alt.Scale(
-                            domain=list(cores_categorias.keys()),
-                            range=list(cores_categorias.values())
-                        ))
+                            domain=list(config['cores_categorias'].keys()),
+                            range=list(config['cores_categorias'].values())
+                        )
+                        )  # <-- Fechamento do color
     ).properties(
-        width=largura,
-        height=altura
+        width=config['largura'],
+        height=config['altura']
     ).configure_view(
-        strokeWidth=0
-    ).configure_axis(
-        gridColor='#f0f0f0',
-        domainColor=cor_grafico,
-        titleColor=cor_grafico,
-        labelColor=cor_grafico
+        strokeWidth=0,
+        fill=config['cor_fundo']
+    ).configure_axis(  # <-- Vírgula adicionada aqui
+        gridColor=config['cor_grade'],
+        domainColor=config['cores_categorias']['Escolas'],
+        titleColor=config['cores_categorias']['Escolas'],
+        labelColor=config['cores_categorias']['Escolas']
     )
 
     return grafico
