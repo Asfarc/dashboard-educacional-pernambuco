@@ -43,20 +43,45 @@ def obter_estilo_css_container(params=None) -> str:
         border-collapse: separate !important;
     }}
 
-    /* 3. Linha de Matrículas - A partir da coluna Federal */
+    /* 3. Largura das Colunas  */
+    .custom-table col:nth-child(1) {{ width: 25%; }}  /* Coluna do ícone + label */
+    .custom-table col:nth-child(2) {{ width: 15%; }}  /* Federal */
+    .custom-table col:nth-child(3) {{ width: 15%; }}  /* Estaduais */
+    .custom-table col:nth-child(4) {{ width: 15%; }}  /* Municipais */
+    .custom-table col:nth-child(5) {{ width: 15%; }}  /* Privadas */
+    .custom-table col:nth-child(6) {{ width: 15%; }}  /* Total */
+
+    /* 4. Tamanho da Fonte  */
+    .container-title {{
+        font-size: {params["tamanho_fonte_titulo"]} !important;
+    }}
+
+    .container-text {{
+        font-size: {params["tamanho_fonte_conteudo"]} !important;
+    }}
+
+    /* 5. Tamanho dos Ícones  */
+    .icone {{
+        width: 50px !important;
+        height: 50px !important;
+        vertical-align: middle !important;
+        margin-right: 6px !important;
+    }}
+
+    /* 6. Linha de Matrículas - A partir da coluna Federal */
     .custom-table tbody tr:nth-child(2) td:nth-child(n+2) {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* 4. Remove Bordas Internas */
+    /* 7. Remove Bordas Internas */
     .custom-table td,
     .custom-table th {{
         border: none !important;
         background: transparent !important;
     }}
 
-    /* 5. Remove Borda do Cabeçalho */
+    /* 8. Remove Borda do Cabeçalho */
     .custom-table thead tr {{
         border-bottom: none !important;
         box-shadow: none !important;
