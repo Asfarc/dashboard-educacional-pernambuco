@@ -329,7 +329,7 @@ h2 {
 
 .container-custom .container-title {
     font-size: 1.2rem !important;  /* Título aumentado */
-    color: #cfe2f3 !important;
+    color: #364b60 !important;
 }
 
 .container-custom .custom-table {
