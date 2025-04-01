@@ -232,7 +232,7 @@ def construir_grafico_linha_evolucao(df_transformado, **kwargs):
         width=config['largura'],
         height=config['altura']
     ).configure_view(
-        strokeWidth=1,  # Espessura da borda
+        strokeWidth=0,  # Espessura da borda
         stroke=config['cor_borda'],  # Cor da borda
         cornerRadius=config['raio_borda'],  # Arredondamento
         fill=config['cor_fundo']
