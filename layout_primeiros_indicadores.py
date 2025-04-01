@@ -137,6 +137,10 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
     """
     return aplicar_padrao_numerico_brasileiro(numero)
 
+# Configurar locale brasileiro para formatação de números
+alt.renderers.set_embed_options({
+    'locale': 'pt_BR'  # Configura separadores numéricos brasileiros
+})
 
 # Função modificada com controle de tamanho de texto
 def construir_grafico_linha_evolucao(
@@ -145,10 +149,10 @@ def construir_grafico_linha_evolucao(
     altura=300,
     espessura_linha=5,
     tamanho_ponto=100,
-    tamanho_texto_eixo=16,       # Novo parâmetro
-    tamanho_texto_legenda=16,     # Novo parâmetro
-    tamanho_titulo_eixo=18,       # Novo parâmetro
-    tamanho_titulo_legenda=18     # Novo parâmetro
+    tamanho_texto_eixo=16,
+    tamanho_texto_legenda=16,
+    tamanho_titulo_eixo=18,
+    tamanho_titulo_legenda=18
 ):
     # Configurações de estilo
     fonte = "Arial"
@@ -183,8 +187,7 @@ def construir_grafico_linha_evolucao(
                     titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    #format=',d'
-                    labelExpr="datum.value.toLocaleString('pt-BR', {maximumFractionDigits: 0})"  # Formato brasileiro
+                    format='.0f'
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
