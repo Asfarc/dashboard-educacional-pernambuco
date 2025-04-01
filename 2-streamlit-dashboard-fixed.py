@@ -51,68 +51,45 @@ def get_css():
 st.markdown(get_css(), unsafe_allow_html=True)
 
 css_unificado = """
-/* =================== RESET DO TÍTULO =================== */
-/* Container principal do app */
+/* =================== AJUSTES GERAIS =================== */
 .stApp {
-    padding-top: 1rem !important;
+    padding-top: 1rem !important;  /* Espaçamento saudável no topo */
 }
 
-/* Container do título */
-.stMarkdown:has(h1:first-of-type) {
-    margin-bottom: 1.5rem !important;
-}
-
-/* Texto do título */
-.stMarkdown h1:first-of-type {
-    padding: 0.25rem 0 !important;
-    margin: 0 0 0.5rem !important;
-}
-
-/* Espaço acima do primeiro elemento */
-.stApp > div:first-child {
-    padding-top: 0 !important;
-    margin-top: -1rem !important;
-}
-
-/* CSS Unificado e Otimizado para o Dashboard */
-
-/* Estilo da Barra Lateral - Define o fundo da barra lateral */
+/* =================== BARRA LATERAL =================== */
 [data-testid="stSidebar"]::before {
-   content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
-   position: absolute; /* Posicionamento absoluto para cobrir toda a área */
-   
-   /* Posicionamento do elemento - controla onde o fundo começa */
-   top: 50px;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
-   left: 0px;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
-   
-   /* Dimensões do elemento - controla o tamanho do fundo */
-   width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) - pode variar de 0% a 100% ou valores fixos como px */
-   height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) - pode variar de 0% a 100% ou valores fixos como px */
-   
-   background-color: #364b60; /* Cor de fundo azul escuro - pode ser qualquer código de cor HEX, RGB ou nome de cor */
-   z-index: -1; /* Coloca o fundo atrás do conteúdo (valores negativos = atrás, positivos = na frente) */
-   border-radius: 1px; /* Arredondamento dos cantos - pode variar de 0px (quadrado) até valores altos para mais arredondamento */
-   margin: 0; /* Margem externa - pode variar de 0 a valores positivos em px/rem */
-   padding: 0; /* Preenchimento interno - pode variar de 0 a valores positivos em px/rem */
+    content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
+    position: absolute; /* Posicionamento absoluto para cobrir toda a área */
+
+    /* Posicionamento do elemento - controla onde o fundo começa */
+    top: 0 !important; /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
+    left: 0px;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
+
+    /* Dimensões do elemento - controla o tamanho do fundo */
+    width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) */
+    height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) */
+
+    background-color: #364b60; /* Cor de fundo azul escuro */
+    z-index: 0 !important; /* Camada correta (valores negativos = atrás, positivos = na frente) */
+    border-radius: 1px; /* Arredondamento dos cantos */
+    margin: 0; /* Margem externa */
+    padding: 0; /* Preenchimento interno */
 }
 
-/* Garante que o conteúdo da barra lateral fique acima do fundo */
 [data-testid="stSidebar"] > div {
-   position: relative;
-   z-index: 1; /* Mantém o conteúdo acima do fundo */
-   margin: 0 !important;
-   padding: 0 !important;
+    position: relative;
+    z-index: 1; /* Mantém o conteúdo acima do fundo */
+    padding: 2rem 1rem !important; /* Espaçamento interno adequado */
 }
 
 /* Define a cor do texto na barra lateral como branca */
-/* Aplica-se a títulos, labels, parágrafos e elementos de rádio */
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
-   color: white !important; /* Força a cor do texto como branca - altere para mudar a cor do texto */
+   color: white !important; /* Força a cor do texto como branca */
 }
 
 /* Mantém o texto das opções em preto */
@@ -143,6 +120,38 @@ css_unificado = """
 /* Estilo dos pills na barra lateral (botões) */
 [data-testid="stSidebar"] div[data-testid="stPills"] {
     margin-top: 8px;
+}
+
+/* =================== TÍTULO PRINCIPAL =================== */
+.stMarkdown h1:first-of-type {
+    margin: 0 0 1.5rem 2rem !important; /* Alinhamento e espaçamento correto */
+    color: #364b60;
+    font-size: 2.2rem !important;
+    padding: 0.25rem 0 !important;
+}
+
+/* =================== CONTEÚDO PRINCIPAL =================== */
+.main-content {
+    padding-left: 2rem;
+    margin-top: -0.5rem !important;  /* Ajuste fino de alinhamento */
+}
+
+/* Espaço acima do primeiro elemento */
+.stApp > div:first-child {
+    padding-top: 0 !important;
+    margin-top: -1rem !important;
+}
+
+/* =================== TABELAS =================== */
+.custom-table {
+    margin: 1.5rem 0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* =================== GRÁFICOS =================== */
+.vega-embed {
+    margin-top: 1rem !important;
+    border-radius: 8px !important;
 }
 
 /* Botões não selecionados (kind="pills") */
@@ -232,22 +241,6 @@ h2 {
     margin-top: 0.5rem;
 }
 
-/* Responsividade para telas menores */
-@media screen and (max-width: 768px) {
-    .metric-value {
-        font-size: 1.5rem;
-    }
-
-    .metric-label {
-        font-size: 0.8rem;
-    }
-
-    [data-testid="stSidebar"] {
-        width: 100% !important;
-        margin: 0 !important;
-    }
-}
-
 /* Estilo KPIs */
 .kpi-container {
     background-color: #f9f9f9;
@@ -326,6 +319,27 @@ h2 {
     gap: 2px;
     align-items: center;
 } 
+
+/* =================== RESPONSIVIDADE =================== */
+@media screen and (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+    }
+
+    .stMarkdown h1:first-of-type {
+        margin-left: 1rem !important;
+        font-size: 1.8rem !important;
+    }
+
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 1rem !important;
+    }
 }
 """
 
