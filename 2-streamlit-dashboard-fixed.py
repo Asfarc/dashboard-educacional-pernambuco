@@ -289,7 +289,7 @@ h2 {
     color: #4c8bf5;
     font-size: 14px;
     margin-top: 10px;
-    padding: 8px;
+    # padding: 8px;
     background-color: #f0f7ff;
     border-radius: 5px;
     border-left: 3px solid #4c8bf5;
@@ -298,7 +298,7 @@ h2 {
     color: #dc3545;
     font-size: 14px;
     margin-top: 10px;
-    padding: 8px;
+    # padding: 8px;
     background-color: #fff5f5;
     border-radius: 5px;
     border-left: 3px solid #dc3545;
