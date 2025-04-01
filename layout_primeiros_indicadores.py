@@ -28,43 +28,35 @@ def obter_estilo_css_container(params=None) -> str:
 
     return f"""
     <style>
-    /* 1. Container da Tabela */
+    /* 1. Container Pai - SEM BORDA */
     .container-custom {{
-        border: 1px solid {params["cor_borda"]} !important;
-        border-radius: {params["raio_borda"]}px !important;
         padding: 1rem !important;
         margin-bottom: 1rem !important;
-        background: white !important;
+        background: transparent !important;
+        border: none !important;
     }}
 
-    /* 2. Tabela */
-    .custom-table {{
-        width: 100% !important;
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-    }}
-
-    /* 3. Borda Externa da Tabela */
+    /* 2. Tabela - Borda Externa */
     .custom-table {{
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: 8px !important;
         overflow: hidden !important;
     }}
 
-    /* 4. Linha de Matrículas */
+    /* 3. Linha de Matrículas */
     .custom-table tbody tr:nth-child(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* 5. Remove Bordas Internas */
+    /* 4. Remove Bordas Internas */
     .custom-table td,
     .custom-table th {{
         border: none !important;
         background: transparent !important;
     }}
 
-    /* 6. Remove Borda do Cabeçalho */
+    /* 5. Remove Borda do Cabeçalho */
     .custom-table thead tr {{
         border-bottom: none !important;
         box-shadow: none !important;
