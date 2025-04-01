@@ -148,7 +148,7 @@ def formatar_numero_com_pontos_milhar(numero: float) -> str:
 def construir_grafico_linha_evolucao(
     df_transformado,
     largura=450,
-    altura=280,
+    altura=200,
     espessura_linha=5,
     tamanho_ponto=100,
     tamanho_texto_eixo=14,
