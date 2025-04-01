@@ -1115,8 +1115,6 @@ else:
                 # Define um tamanho de página adequado para o nível de agregação
                 if tipo_nivel_agregacao_selecionado == "Estado" and len(df_texto_filtrado) < st.session_state[
                     "page_size"]:
-                    # Se for nível Estado e houver menos registros que o tamanho da página,
-                    # ajusta o tamanho da página para o número de registros
                     tamanho_pagina_ajustado = len(df_texto_filtrado)
                 else:
                     tamanho_pagina_ajustado = st.session_state["page_size"]
@@ -1130,9 +1128,10 @@ else:
                 if st.session_state["current_page"] > total_pages:
                     st.session_state["current_page"] = 1
 
-                # Exibe a página atual com verificação de índice segura
+                # Exibe a página atual com verificação de índice segura,
+                # redefinindo o índice para evitar problemas de renderização.
                 current_page_index = min(st.session_state["current_page"] - 1, len(paginated_frames) - 1)
-                df_pagina_atual = paginated_frames[current_page_index]
+                df_pagina_atual = paginated_frames[current_page_index].reset_index(drop=True)
                 st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
 
             # --- Controles de paginação ---
