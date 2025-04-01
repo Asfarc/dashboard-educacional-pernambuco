@@ -23,57 +23,54 @@ PARAMETROS_ESTILO_CONTAINER = {
 
 
 def obter_estilo_css_container(params=None) -> str:
-    """
-    Retorna o CSS corrigido para:
-    1. Borda externa semi-circular visível
-    2. Linhas horizontais apenas na linha de Matrículas
-    3. Remoção de bordas indesejadas
-    4. Correção de containers vazios
-    """
     if params is None:
         params = PARAMETROS_ESTILO_CONTAINER
 
     return f"""
     <style>
-    /* Remove containers vazios */
-    .st-emotion-cache-16tyu1 > div.container-custom:empty {{
-        display: none !important;
+    /* 1. Container da Tabela */
+    .container-custom {{
+        border: 1px solid {params["cor_borda"]} !important;
+        border-radius: {params["raio_borda"]}px !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        background: white !important;
     }}
 
-    /* Borda externa da tabela */
-    .st-emotion-cache-16tyu1 .custom-table {{
+    /* 2. Tabela */
+    .custom-table {{
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }}
+
+    /* 3. Borda Externa da Tabela */
+    .custom-table {{
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: 8px !important;
         overflow: hidden !important;
     }}
 
-    /* Linhas horizontais apenas na Matrículas (segunda linha do corpo) */
-    .st-emotion-cache-16tyu1 .custom-table tbody tr:nth-of-type(2) td {{
+    /* 4. Linha de Matrículas */
+    .custom-table tbody tr:nth-child(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* Remove bordas do cabeçalho */
-    .st-emotion-cache-16tyu1 .custom-table thead tr {{
-        border-bottom: none !important;
-        box-shadow: none !important;
-    }}
-
-    /* Remove todas as bordas internas */
-    .st-emotion-cache-16tyu1 .custom-table td,
-    .st-emotion-cache-16tyu1 .custom-table th {{
+    /* 5. Remove Bordas Internas */
+    .custom-table td,
+    .custom-table th {{
         border: none !important;
         background: transparent !important;
     }}
 
-    /* Remove bordas laterais */
-    .st-emotion-cache-16tyu1 .custom-table td {{
-        border-left: none !important;
-        border-right: none !important;
+    /* 6. Remove Borda do Cabeçalho */
+    .custom-table thead tr {{
+        border-bottom: none !important;
+        box-shadow: none !important;
     }}
     </style>
     """
-
 
 # Importando pandas para acesso à função isna
 import pandas as pd
