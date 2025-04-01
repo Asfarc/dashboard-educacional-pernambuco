@@ -29,8 +29,10 @@ def obter_estilo_css_container(params=None) -> str:
     """
     if params is None:
         params = PARAMETROS_ESTILO_CONTAINER
+
     bloco_estilo = f"""
     <style>
+    /* Container principal */
     .container-custom {{
         border: 1px solid {params["cor_borda"]};
         border-radius: {params["raio_borda"]}px;
@@ -38,6 +40,7 @@ def obter_estilo_css_container(params=None) -> str:
         margin-bottom: 1rem;
         background-color: white;
     }}
+
     .container-title {{
         font-family: "Open Sans", sans-serif;
         font-weight: 700;
@@ -45,6 +48,7 @@ def obter_estilo_css_container(params=None) -> str:
         font-size: {params["tamanho_fonte_titulo"]};
         margin-bottom: 0.5rem;
     }}
+
     .container-text {{
         font-family: "Open Sans", sans-serif;
         color: {params["cor_fonte_conteudo"]};
@@ -53,62 +57,52 @@ def obter_estilo_css_container(params=None) -> str:
     }}
 
     /* ----- Tabela customizada ----- */
-    .container-custom .custom-table {{
-        width: 100%;
-        border-collapse: separate; 
-        border-spacing: 0;
-        table-layout: fixed;
+    .container-custom table {{
+        width: 100% !important;
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: 8px !important;
-        overflow: hidden;
+        overflow: hidden !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
     }}
 
-    .container-custom .custom-table col:nth-child(1) {{ width: 25%; }}
-    .container-custom .custom-table col:nth-child(2) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(3) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(4) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(5) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(6) {{ width: 13%; }}
+    /* Células da tabela */
+    .container-custom table td,
+    .container-custom table th {{
+        border: none !important;
+        padding: 8px !important;
+        vertical-align: middle !important;
+        background: transparent !important;
+    }}
 
-    /* Bordas apenas na linha de Matrículas */
-    .container-custom .custom-table tbody tr:nth-child(2) td {{
+    /* Linha de Matrículas - ajuste o índice conforme necessário */
+    .container-custom table tbody tr:nth-child(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* Remove todas as bordas padrão */
-    .container-custom .custom-table td,
-    .container-custom .custom-table th {{
-        border: none !important;
-        padding: 8px;
-        vertical-align: middle;
-        text-align: center;
+    /* Cabeçalho da tabela */
+    .container-custom table thead tr th {{
+        border-bottom: 1px solid {params["cor_borda"]} !important;
+        background: transparent !important;
+        color: {params["cor_titulo"]} !important;
+        font-weight: 700 !important;
     }}
 
-    /* Remove bordas laterais internas */
-    .container-custom .custom-table td {{
-        border-left: none !important;
-        border-right: none !important;
+    /* Primeira coluna */
+    .container-custom table td:first-child,
+    .container-custom table th:first-child {{
+        padding-left: 1rem !important;
+        text-align: left !important;
     }}
 
-    .container-custom .custom-table th {{
-        font-weight: 700;
-        text-align: center;
-        color: #364b60;
+    /* Última coluna */
+    .container-custom table td:last-child,
+    .container-custom table th:last-child {{
+        padding-right: 1rem !important;
     }}
 
-    .container-custom .custom-table thead tr th {{
-        border-bottom: none !important;
-        border-top: none !important;
-        box-shadow: none !important;
-        background-color: transparent !important;
-    }}
-
-    .container-custom .custom-table td:first-child,
-    .container-custom .custom-table th:first-child {{
-        text-align: left;
-    }}
-
+    /* Ícones */
     .icone {{
         width: 50px;
         height: 50px;
@@ -118,7 +112,6 @@ def obter_estilo_css_container(params=None) -> str:
     </style>
     """
     return bloco_estilo
-
 
 # Importando pandas para acesso à função isna
 import pandas as pd
