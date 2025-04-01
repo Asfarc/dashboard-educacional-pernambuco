@@ -13,7 +13,7 @@ alt.renderers.set_embed_options({
 
 # Dicionário que centraliza parâmetros estilísticos e facilita ajustes # dee2e6
 PARAMETROS_ESTILO_CONTAINER = {
-    "raio_borda": 20,
+    "raio_borda": 50,
     "cor_borda": "#dee2e6",
     "cor_titulo": "#364b60",
     "tamanho_fonte_titulo": "1.1rem",
