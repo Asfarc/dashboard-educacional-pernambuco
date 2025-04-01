@@ -42,15 +42,24 @@ def obter_estilo_css_container(params=None) -> str:
         border-collapse: separate !important;
         table-layout: fixed !important;
         width: 100% !important;
+        font-size: {params["tamanho_fonte_conteudo"]} !important;  /* Novo */
     }}
 
-    /* 3. Largura das Colunas  */
-    .custom-table colgroup col:nth-child(1) {{ width: 35% !important; }}  /* Coluna do ícone + label */
-    .custom-table col:nth-child(2) {{ width: 15%; }}  /* Federal */
-    .custom-table col:nth-child(3) {{ width: 15%; }}  /* Estaduais */
-    .custom-table col:nth-child(4) {{ width: 15%; }}  /* Municipais */
-    .custom-table col:nth-child(5) {{ width: 15%; }}  /* Privadas */
-    .custom-table col:nth-child(6) {{ width: 10%; }}  /* Total */
+    /* 3. Largura das Colunas Ajustada */
+    .custom-table colgroup col:nth-child(1) {{ width: 30% !important; }}  /* Reduzido de 35% */
+    .custom-table colgroup col:nth-child(2) {{ width: 14% !important; }}  /* Federal */
+    .custom-table colgroup col:nth-child(3) {{ width: 14% !important; }}  /* Estaduais */
+    .custom-table colgroup col:nth-child(4) {{ width: 14% !important; }}  /* Municipais */
+    .custom-table colgroup col:nth-child(5) {{ width: 14% !important; }}  /* Privadas */
+    .custom-table colgroup col:nth-child(6) {{ width: 14% !important; }}  /* Aumentado de 10% */
+    
+    /* Espaçamento interno das células */
+    .custom-table td, .custom-table th {{
+        padding: 8px 10px !important;  /* Reduz padding vertical */
+        white-space: nowrap !important;  /* Evita quebra de linha */
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }}
 
     /* 4. Tamanho da Fonte  */
     .container-title {{
