@@ -228,8 +228,8 @@ def construir_grafico_linha_evolucao(df_transformado, **kwargs):
         height=config['altura']
     ).configure_view(
         strokeWidth=1,  # Espessura da borda
-        stroke=PARAMETROS_ESTILO_CONTAINER["cor_borda"],  # Cor da borda
-        cornerRadius=PARAMETROS_ESTILO_CONTAINER["raio_borda"],  # Arredondamento
+        stroke=config['cor_borda'],  # Cor da borda
+        cornerRadius=config['raio_borda'],  # Arredondamento
         fill=config['cor_fundo']
     ).configure_axis(
         gridColor=config['cor_grade'],
