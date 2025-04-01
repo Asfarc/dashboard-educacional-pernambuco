@@ -36,7 +36,11 @@ from layout_primeiros_indicadores import (
 # -----------------------------------------
 # 1) Injetar o CSS de estilo dos containers
 # -----------------------------------------
-st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
+@st.cache_data
+def get_css():
+    return obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER)
+
+st.markdown(get_css(), unsafe_allow_html=True)
 
 css_unificado = """
 /* =================== RESET DO TÍTULO =================== */
