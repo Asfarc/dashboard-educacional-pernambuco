@@ -334,7 +334,7 @@ h2 {
 
 .container-custom .custom-table {
     border: 1px solid #dee2e6 !important;  /* Borda restaurada */
-    font-size: 1.05rem !important;  /* Tamanho do conteúdo */
+    font-size: 0.9rem !important;  /* Tamanho do conteúdo */
 }
 """
 
