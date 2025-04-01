@@ -15,7 +15,7 @@ alt.renderers.set_embed_options({
 PARAMETROS_ESTILO_CONTAINER = {
     "raio_borda": 8,
     "cor_borda": "#dee2e6",
-    "cor_titulo": "#cfe2f3",
+    "cor_titulo": "#364b60",
     "tamanho_fonte_titulo": "1.2rem",  # Aumentei para 19.2px
     "tamanho_fonte_conteudo": "1.05rem", # 16.8px (sutilmente maior)
     "cor_fonte_conteudo": "#364b60"
