@@ -24,47 +24,55 @@ PARAMETROS_ESTILO_CONTAINER = {
 
 def obter_estilo_css_container(params=None) -> str:
     """
-    Retorna um bloco de <style> contendo as configurações de borda,
-    cor de texto, etc. para estilizar os containers e a tabela.
+    Retorna o CSS corrigido para:
+    1. Borda externa semi-circular visível
+    2. Linhas horizontais apenas na linha de Matrículas
+    3. Remoção de bordas indesejadas
+    4. Correção de containers vazios
     """
     if params is None:
         params = PARAMETROS_ESTILO_CONTAINER
 
-    bloco_estilo = f"""
+    return f"""
     <style>
-    /* 1. Remove containers vazios */
+    /* Remove containers vazios */
     .st-emotion-cache-16tyu1 > div.container-custom:empty {{
         display: none !important;
     }}
 
-    /* 2. Borda externa da tabela */
+    /* Borda externa da tabela */
     .st-emotion-cache-16tyu1 .custom-table {{
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: 8px !important;
         overflow: hidden !important;
     }}
 
-    /* 3. Linha de Matrículas (segunda linha do corpo) */
-    .st-emotion-cache-16tyu1 .custom-table tbody tr:nth-child(2) td {{
+    /* Linhas horizontais apenas na Matrículas (segunda linha do corpo) */
+    .st-emotion-cache-16tyu1 .custom-table tbody tr:nth-of-type(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* 4. Remove bordas do cabeçalho */
+    /* Remove bordas do cabeçalho */
     .st-emotion-cache-16tyu1 .custom-table thead tr {{
         border-bottom: none !important;
         box-shadow: none !important;
     }}
 
-    /* 5. Remove todas as bordas internas */
+    /* Remove todas as bordas internas */
     .st-emotion-cache-16tyu1 .custom-table td,
     .st-emotion-cache-16tyu1 .custom-table th {{
         border: none !important;
         background: transparent !important;
     }}
+
+    /* Remove bordas laterais */
+    .st-emotion-cache-16tyu1 .custom-table td {{
+        border-left: none !important;
+        border-right: none !important;
+    }}
     </style>
     """
-    return bloco_estilo
 
 
 # Importando pandas para acesso à função isna
