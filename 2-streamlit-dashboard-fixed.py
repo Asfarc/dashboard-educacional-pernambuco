@@ -986,7 +986,7 @@ with coluna_direita:
     grafico = construir_grafico_linha_evolucao(
         df_transformado=df_transformado,
         altura=300,  # TESTE COM VALOR ALTO PARA VER EFEITO IMEDIATO
-        largura=200,
+        largura=400,
         espessura_linha=5
     )
 
