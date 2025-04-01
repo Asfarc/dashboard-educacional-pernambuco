@@ -904,19 +904,13 @@ coluna_esquerda, coluna_direita = st.columns(2)
 # 4) CONTAINER ESQUERDO: Tabela de dados absolutos
 # -----------------------------------------------------
 with coluna_esquerda:
-    # Abre um container HTML
-    st.markdown('<div class="container-custom">', unsafe_allow_html=True)
-    # Título do container
-    st.markdown('<div class="container-title">Dados da Educação básica de Pernambuco em 2023 - Inep</div>', unsafe_allow_html=True)
-
     # Definir o caminho base para os ícones no GitHub
     github_raw_url = "https://raw.githubusercontent.com/Asfarc/dashboard-educacional-pernambuco/main/icones"
-
-    # Montagem de tabela via HTML
+    # Construir tabela_html DENTRO do bloco
     tabela_html = f"""
     <table class="custom-table container-text">
         <colgroup>
-            <col /><col /><col /><col /><col /><col />
+            <col><col><col><col><col><col>
         </colgroup>
         <thead>
             <tr>
@@ -931,7 +925,7 @@ with coluna_esquerda:
         <tbody>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Escolas.svg" />
+                    <img class="icone" src="{github_raw_url}/Escolas.svg">
                     Escolas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][0])}</td>
@@ -940,9 +934,9 @@ with coluna_esquerda:
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][3])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(7995)}</td>
             </tr>
-             <tr class="linha-matriculas">
+            <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Matrículas.svg" />
+                    <img class="icone" src="{github_raw_url}/Matrículas.svg">
                     Matrículas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
@@ -953,7 +947,7 @@ with coluna_esquerda:
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Professores.svg" />
+                    <img class="icone" src="{github_raw_url}/Professores.svg">
                     Professores
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][0])}</td>
@@ -966,10 +960,13 @@ with coluna_esquerda:
     </table>
     """
 
-    st.markdown(tabela_html, unsafe_allow_html=True)
-
-    # Fecha o container
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Renderizar TUDO em um único markdown
+    st.markdown(f'''
+    <div class="container-custom">
+        <div class="container-title">Dados da Educação básica de Pernambuco em 2023 - Inep</div>
+        {tabela_html}
+    </div>
+    ''', unsafe_allow_html=True)
 
 # -----------------------------------------------------
 # 5) CONTAINER DIREITO: Gráfico de linhas

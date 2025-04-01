@@ -32,33 +32,31 @@ def obter_estilo_css_container(params=None) -> str:
 
     bloco_estilo = f"""
     <style>
-    /* 1. Remove retângulos extras - ESSENCIAL */
-    .st-emotion-cache-16tyu1 .container-custom:not(:has(table)) {{
+    /* 1. Remove containers vazios */
+    .st-emotion-cache-16tyu1 > div.container-custom:empty {{
         display: none !important;
     }}
 
-    /* 2. Container principal apenas onde tem tabela */
-    .st-emotion-cache-16tyu1 .container-custom:has(table) {{
+    /* 2. Borda externa da tabela */
+    .st-emotion-cache-16tyu1 .custom-table {{
         border: 1px solid {params["cor_borda"]} !important;
-        border-radius: {params["raio_borda"]}px !important;
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
-        background-color: white !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
     }}
 
-    /* 3. Remove linha do cabeçalho - CORREÇÃO CRÍTICA */
-    .st-emotion-cache-16tyu1 .custom-table thead tr th {{
-        border-bottom: none !important;
-        box-shadow: none !important;
-    }}
-
-    /* 4. Mantém borda apenas na linha de Matrículas */
+    /* 3. Linha de Matrículas (segunda linha do corpo) */
     .st-emotion-cache-16tyu1 .custom-table tbody tr:nth-child(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* 5. Remove bordas residuais */
+    /* 4. Remove bordas do cabeçalho */
+    .st-emotion-cache-16tyu1 .custom-table thead tr {{
+        border-bottom: none !important;
+        box-shadow: none !important;
+    }}
+
+    /* 5. Remove todas as bordas internas */
     .st-emotion-cache-16tyu1 .custom-table td,
     .st-emotion-cache-16tyu1 .custom-table th {{
         border: none !important;
@@ -67,6 +65,7 @@ def obter_estilo_css_container(params=None) -> str:
     </style>
     """
     return bloco_estilo
+
 
 # Importando pandas para acesso à função isna
 import pandas as pd
