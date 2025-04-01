@@ -24,20 +24,31 @@ PARAMETROS_ESTILO_CONTAINER = {
 
 def obter_estilo_css_container(params=None) -> str:
     """
-    Retorna um bloco de <style> contendo as configurações de borda,
-    cor de texto, etc. para estilizar os containers e a tabela.
+    Retorna um bloco de <style> com as configurações de estilo para os containers e a tabela.
+
+    Aplicamos duas soluções:
+      1. O container (.container-custom) exibe uma borda externa com efeito semi circular,
+         arredondando somente os cantos superiores.
+      2. A linha de Matrículas (identificada com a classe .linha-matriculas na tabela)
+         terá apenas as bordas horizontais (superior e inferior).
     """
     if params is None:
         params = PARAMETROS_ESTILO_CONTAINER
     bloco_estilo = f"""
     <style>
+    /* 1. Estilo do container com borda externa semi circular */
     .container-custom {{
         border: 1px solid {params["cor_borda"]};
-        border-radius: {params["raio_borda"]}px;
+        /* Arredonda somente os cantos superiores para criar o efeito semi circular */
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
         padding: 1rem;
         margin-bottom: 1rem;
         background-color: white;
     }}
+
     .container-title {{
         font-family: "Open Sans", sans-serif;
         font-weight: 700;
@@ -45,6 +56,7 @@ def obter_estilo_css_container(params=None) -> str:
         font-size: {params["tamanho_fonte_titulo"]};
         margin-bottom: 0.5rem;
     }}
+
     .container-text {{
         font-family: "Open Sans", sans-serif;
         color: {params["cor_fonte_conteudo"]};
@@ -52,61 +64,62 @@ def obter_estilo_css_container(params=None) -> str:
         font-size: {params["tamanho_fonte_conteudo"]};
     }}
 
-    /* ----- Tabela customizada ----- */
-    .container-custom .custom-table {{
+    /* 2. Estilização da tabela customizada */
+    .custom-table {{
         width: 100%;
         border-collapse: separate; 
         border-spacing: 0;
         table-layout: fixed;
         border: 1px solid {params["cor_borda"]} !important;
-        border-radius: 8px !important;
+        /* Se desejar aplicar o mesmo efeito semi circular na tabela, use os mesmos valores */
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
         overflow: hidden;
     }}
+    .custom-table col:nth-child(1) {{ width: 25%; }}
+    .custom-table col:nth-child(2) {{ width: 13%; }}
+    .custom-table col:nth-child(3) {{ width: 13%; }}
+    .custom-table col:nth-child(4) {{ width: 13%; }}
+    .custom-table col:nth-child(5) {{ width: 13%; }}
+    .custom-table col:nth-child(6) {{ width: 13%; }}
 
-    .container-custom .custom-table col:nth-child(1) {{ width: 25%; }}
-    .container-custom .custom-table col:nth-child(2) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(3) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(4) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(5) {{ width: 13%; }}
-    .container-custom .custom-table col:nth-child(6) {{ width: 13%; }}
-
-    /* Bordas apenas na linha de Matrículas */
-    .container-custom .custom-table tbody tr:nth-child(2) td {{
-        border-top: 1px solid {params["cor_borda"]} !important;
-        border-bottom: 1px solid {params["cor_borda"]} !important;
-    }}
-
-    /* Remove todas as bordas padrão */
-    .container-custom .custom-table td,
-    .container-custom .custom-table th {{
-        border: none !important;
+    .custom-table td, .custom-table th {{
+        border: none;  /* Remove bordas padrão das células */
         padding: 8px;
         vertical-align: middle;
         text-align: center;
     }}
 
-    /* Remove bordas laterais internas */
-    .container-custom .custom-table td {{
-        border-left: none !important;
-        border-right: none !important;
-    }}
-
-    .container-custom .custom-table th {{
+    .custom-table th {{
         font-weight: 700;
         text-align: center;
         color: #364b60;
     }}
 
-    .container-custom .custom-table thead tr th {{
+    .custom-table thead tr th {{
         border-bottom: none !important;
         border-top: none !important;
         box-shadow: none !important;
         background-color: transparent !important;
     }}
 
-    .container-custom .custom-table td:first-child,
-    .container-custom .custom-table th:first-child {{
+    .custom-table td:first-child, .custom-table th:first-child {{
+        border-left: none;
         text-align: left;
+    }}
+
+    .custom-table td:last-child, .custom-table th:last-child {{
+        border-right: none;
+    }}
+
+    /* Estilo específico para a linha de Matrículas: somente bordas horizontais */
+    .custom-table tr.linha-matriculas td {{
+        border-top: 1px solid {params["cor_borda"]};
+        border-bottom: 1px solid {params["cor_borda"]};
+        border-left: none;
+        border-right: none;
     }}
 
     .icone {{
