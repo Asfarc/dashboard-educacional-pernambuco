@@ -1186,8 +1186,8 @@ else:
                                 unsafe_allow_html=True)
                 with select_col:
                     novo_page_size = st.selectbox(
-                        "", options=[25, 50, 100],
-                        index=[25, 50, 100].index(st.session_state["page_size"]),
+                        "", options=[10, 25, 50, 100],
+                        index=[10, 25, 50, 100].index(st.session_state["page_size"]),
                         label_visibility="collapsed"
                     )
                     if novo_page_size != st.session_state["page_size"]:
