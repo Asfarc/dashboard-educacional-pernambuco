@@ -61,7 +61,7 @@ def obter_estilo_css_container(params=None) -> str:
     /* 1. Container Pai - Apenas Espaçamento */
     .container-custom {{
         padding: 1rem !important;
-        margin-bottom: 10rem !important;
+        margin-bottom: 0rem !important;
         background: transparent !important;
     }}
 
