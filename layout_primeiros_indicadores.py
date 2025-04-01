@@ -118,8 +118,8 @@ def obter_estilo_css_container(params=None) -> str:
     }}
 
     .icone {{
-        width: 50px;
-        height: 50px;
+        width: 40px;
+        height: 40px;
         vertical-align: middle;
         margin-right: 6px;
     }}
