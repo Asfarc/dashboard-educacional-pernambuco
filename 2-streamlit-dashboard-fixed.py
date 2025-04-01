@@ -1104,23 +1104,23 @@ else:
                 st.session_state["page_size"] = 50
             if "page_size" not in st.session_state:
                 st.session_state["page_size"] = 50
-            paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
-            total_pages = max(1, len(paginated_frames))  # Garante que seja pelo menos 1
 
-            if total_pages == 0:
-                st.warning("Nenhum registro para exibir após filtragem.")
-                st.stop()
-
-            if "current_page" not in st.session_state:
-                st.session_state["current_page"] = 1
-            if st.session_state["current_page"] > total_pages:
-                st.session_state["current_page"] = 1
-
-            # Exibe a página atual
-            if paginated_frames and st.session_state["current_page"] <= len(paginated_frames):
-                df_pagina_atual = paginated_frames[st.session_state["current_page"] - 1]
+            # Verifica se há dados para paginar
+            if df_texto_filtrado.empty:
+                st.warning("Não há dados para exibir após filtragem.")
             else:
-                df_pagina_atual = pd.DataFrame()  # DataFrame vazio em caso de erro
+                paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
+                total_pages = max(1, len(paginated_frames))
+
+                if "current_page" not in st.session_state:
+                    st.session_state["current_page"] = 1
+                if st.session_state["current_page"] > total_pages:
+                    st.session_state["current_page"] = 1
+
+                # Exibe a página atual com verificação de índice segura
+                current_page_index = min(st.session_state["current_page"] - 1, len(paginated_frames) - 1)
+                df_pagina_atual = paginated_frames[current_page_index]
+                st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True)
 
             # --- Controles de paginação ---
             # Caso as constantes de proporção e padding não estejam definidas, as define:
