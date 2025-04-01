@@ -272,7 +272,7 @@ h2 {
 .table-container {
     background-color: white;
     border-radius: 10px;
-    padding: 15px;
+    # padding: 15px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .table-header {
