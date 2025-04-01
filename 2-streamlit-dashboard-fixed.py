@@ -853,6 +853,7 @@ try:
         except Exception as e:
             st.error(f"Erro ao preparar CSV para download: {str(e)}")
 
+
         try:
             excel_data = gerar_planilha_excel(tabela_dados)
             with col2:
