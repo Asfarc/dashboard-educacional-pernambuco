@@ -338,7 +338,7 @@ h2 {
     [data-testid="stSidebar"] {
         width: 100% !important;
         margin: 0 !important;
-        padding: 2rem !important;
+        padding: 8rem !important;
     }
 }
 """
