@@ -40,6 +40,8 @@ def obter_estilo_css_container(params=None) -> str:
         border-radius: 8px !important;
         overflow: hidden !important;
         border-collapse: separate !important;
+        table-layout: fixed !important;
+        width: 100% !important;
     }}
 
     /* 3. Largura das Colunas  */
