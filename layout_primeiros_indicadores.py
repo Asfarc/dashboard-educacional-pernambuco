@@ -32,6 +32,7 @@ CONFIG_GRAFICO = {
     # Estilo da Linha
     "espessura_linha": 5,
     "tamanho_ponto": 100,
+    "raio_borda": PARAMETROS_ESTILO_CONTAINER["raio_borda"],
 
     # Texto
     "tamanho_texto_eixo": 14,
@@ -43,11 +44,13 @@ CONFIG_GRAFICO = {
     # Cores
     "cor_fundo": "#ffffff",
     "cor_grade": "#f0f0f0",
+    "cor_borda": PARAMETROS_ESTILO_CONTAINER["cor_borda"],
     "cores_categorias": {
         'Escolas': '#364b60',
         'Matrículas': '#cccccc',
         'Professores': '#a3b8cb'
     }
+
 }
 def obter_estilo_css_container(params=None) -> str:
     if params is None:
@@ -224,9 +227,11 @@ def construir_grafico_linha_evolucao(df_transformado, **kwargs):
         width=config['largura'],
         height=config['altura']
     ).configure_view(
-        strokeWidth=0,
+        strokeWidth=1,  # Espessura da borda
+        stroke=PARAMETROS_ESTILO_CONTAINER["cor_borda"],  # Cor da borda
+        cornerRadius=PARAMETROS_ESTILO_CONTAINER["raio_borda"],  # Arredondamento
         fill=config['cor_fundo']
-    ).configure_axis(  # <-- Vírgula adicionada aqui
+    ).configure_axis(
         gridColor=config['cor_grade'],
         domainColor=config['cores_categorias']['Escolas'],
         titleColor=config['cores_categorias']['Escolas'],
