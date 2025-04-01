@@ -185,7 +185,7 @@ button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
 /* Estilo para a área principal do dashboard */
 .main-header {
     background-color: #f9f9f9;
-    padding: 1rem;
+    padding: 0rem;
     border-radius: 5px;
     margin-bottom: 1rem;
     border-left: 5px solid #364b60;
@@ -218,7 +218,7 @@ h2 {
 .metric-container {
     background-color: white;
     border-radius: 5px;
-    padding: 1rem;
+    padding: 0rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
     transition: all 0.3s ease;
@@ -338,7 +338,7 @@ h2 {
     [data-testid="stSidebar"] {
         width: 100% !important;
         margin: 0 !important;
-        padding: 1rem !important;
+        padding: 0rem !important;
     }
 }
 """
