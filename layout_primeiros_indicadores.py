@@ -52,17 +52,19 @@ def obter_estilo_css_container(params=None) -> str:
 
     /* 4. Tamanho da Fonte  */
     .container-title {{
-        font-size: {params["tamanho_fonte_titulo"]} !important;
+        font-size: {params["tamanho_fonte_titulo"]} !important;  /* Deve ser 1.2rem */
+        color: {params["cor_titulo"]} !important;
     }}
 
     .container-text {{
-        font-size: {params["tamanho_fonte_conteudo"]} !important;
+        font-size: {params["tamanho_fonte_conteudo"]} !important;  /* Deve ser 1.05rem */
+        color: {params["cor_fonte_conteudo"]} !important;
     }}
 
     /* 5. Tamanho dos Ícones  */
     .icone {{
-        width: 50px !important;
-        height: 50px !important;
+        width: 40px !important;
+        height: 40px !important;
         vertical-align: middle !important;
         margin-right: 6px !important;
     }}
