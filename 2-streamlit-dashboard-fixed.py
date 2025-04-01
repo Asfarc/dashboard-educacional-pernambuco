@@ -940,7 +940,7 @@ with coluna_esquerda:
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][3])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(7995)}</td>
             </tr>
-            <tr>
+            <tr class="linha-matriculas">
                 <td><strong>
                     <img class="icone" src="{github_raw_url}/Matrículas.svg" />
                     Matrículas
