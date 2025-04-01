@@ -21,25 +21,35 @@ PARAMETROS_ESTILO_CONTAINER = {
     "tamanho_fonte_conteudo": "1rem",
 }
 
+
 def obter_estilo_css_container(params=None) -> str:
     """
     Retorna um bloco de <style> contendo as configurações de borda,
     cor de texto, etc. para estilizar os containers e a tabela.
 
-    Ajuste as chaves do dicionário PARAMETROS_ESTILO_CONTAINER para personalizar
-    facilmente cores, bordas, tamanhos de fonte etc.
+    São aplicadas duas soluções:
+      1. O container (classe .container-custom) agora possui uma borda externa
+         com efeito semi circular (apenas os cantos superiores arredondados).
+      2. A tabela (classe .custom-table) mantém a borda e a linha de Matrículas,
+         identificada com a classe .linha-matriculas, exibe somente bordas horizontais.
     """
     if params is None:
         params = PARAMETROS_ESTILO_CONTAINER
     bloco_estilo = f"""
     <style>
+    /* Solução 1: Container com borda externa e efeito semi circular */
     .container-custom {{
-        border: 1px solid {params["cor_borda"]};  /* Corrigido */
-        border-radius: {params["raio_borda"]}px;
+        border: 1px solid {params["cor_borda"]};
+        /* Arredondamento somente dos cantos superiores para efeito semi circular */
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
         padding: 1rem;
         margin-bottom: 1rem;
         background-color: white;
     }}
+
     .container-title {{
         font-family: "Open Sans", sans-serif;
         font-weight: 700;
@@ -53,14 +63,19 @@ def obter_estilo_css_container(params=None) -> str:
         font-weight: 400;
         font-size: {params["tamanho_fonte_conteudo"]};
     }}
-    /* ----- Tabela customizada ----- */
+
+    /* Solução 2: Estilização da tabela */
     .custom-table {{
         width: 100%;
         border-collapse: separate; 
         border-spacing: 0;
         table-layout: fixed;
-        border: 1px solid {params["cor_borda"]} !important; /* Borda garantida */
-        border-radius: 8px;
+        border: 1px solid {params["cor_borda"]} !important;
+        /* Também aplicamos borda semi circular à tabela, se preferir */
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
         overflow: hidden;
     }}
     .custom-table col:nth-child(1) {{ width: 25%; }}
@@ -70,29 +85,38 @@ def obter_estilo_css_container(params=None) -> str:
     .custom-table col:nth-child(5) {{ width: 13%; }}
     .custom-table col:nth-child(6) {{ width: 13%; }}
     .custom-table td, .custom-table th {{
-        border: none;         /* Remove qualquer borda das células */
+        border: none;  /* Remove as bordas padrão das células */
         padding: 8px;
         vertical-align: middle;
         text-align: center;
     }}
     .custom-table th {{
-        font-weight: 700; /* negrito */
+        font-weight: 700;
         text-align: center;
         color: #364b60;
     }}
     .custom-table thead tr th {{
         border-bottom: none !important;
         border-top: none !important;
-        box-shadow: none !important;  /* Streamlit adiciona sombra como borda */
+        box-shadow: none !important;
         background-color: transparent !important;
     }}
     .custom-table td:first-child, .custom-table th:first-child {{
-        border-left: none;  /* remove borda do lado esquerdo */
+        border-left: none;
         text-align: left;
     }}
     .custom-table td:last-child, .custom-table th:last-child {{
-        border-right: none; /* remove borda do lado direito */
+        border-right: none;
     }}
+
+    /* Regra para a linha de Matrículas: somente bordas horizontais */
+    .custom-table tr.linha-matriculas td {{
+        border-top: 1px solid {params["cor_borda"]};
+        border-bottom: 1px solid {params["cor_borda"]};
+        border-left: none;
+        border-right: none;
+    }}
+
     .icone {{
         width: 50px;
         height: 50px;
@@ -102,7 +126,6 @@ def obter_estilo_css_container(params=None) -> str:
     </style>
     """
     return bloco_estilo
-
 
 # Importando pandas para acesso à função isna
 import pandas as pd
