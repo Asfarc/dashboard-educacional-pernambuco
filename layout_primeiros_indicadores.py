@@ -11,10 +11,10 @@ alt.renderers.set_embed_options({
     'timeFormatLocale': 'pt_BR'  # Opcional para datas em português
 })
 
-# Dicionário que centraliza parâmetros estilísticos e facilita ajustes
+# Dicionário que centraliza parâmetros estilísticos e facilita ajustes # dee2e6
 PARAMETROS_ESTILO_CONTAINER = {
     "raio_borda": 8,
-    "cor_borda": "#dee2e6",
+    "cor_borda": "#ff0000",
     "cor_titulo": "#364b60",
     "tamanho_fonte_titulo": "1.1rem",
     "cor_fonte_conteudo": "#364b60",
