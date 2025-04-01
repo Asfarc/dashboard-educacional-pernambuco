@@ -1091,7 +1091,7 @@ else:
         # --- Paginação manual ---
         try:
             if "page_size" not in st.session_state:
-                st.session_state["page_size"] = 10
+                st.session_state["page_size"] = 50
             paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
             total_pages = len(paginated_frames)
 
