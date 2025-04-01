@@ -11,10 +11,6 @@ import time
 import altair as alt
 import base64
 
-
-if 'tempo_inicio' not in st.session_state:
-    st.session_state['tempo_inicio'] = time.time()
-
 # -------------------------------
 # Configuração Inicial da Página
 # -------------------------------
@@ -24,6 +20,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# -------------------------------
+# 2) Gestão de Cache e Estado
+# -------------------------------
+# Limpa o cache APENAS na primeira execução
+if 'cache_limpo' not in st.session_state:
+    st.session_state.clear()  # Limpa todo o cache
+    st.session_state['cache_limpo'] = True  # Marca como limpo
+
+# Inicializa o tempo de processamento
+if 'tempo_inicio' not in st.session_state:
+    st.session_state['tempo_inicio'] = time.time()
 
 # Importa tudo do config_containers
 from layout_primeiros_indicadores import (
@@ -978,7 +986,7 @@ with coluna_direita:
     grafico = construir_grafico_linha_evolucao(
         df_transformado=df_transformado,
         largura=450,         # Ajuste se preferir
-        altura=300,         # Ajuste se preferir
+        altura=200,         # Ajuste se preferir
         espessura_linha=4,  # Espessura da linha
         tamanho_ponto=100     # Tamanho das bolinhas
     )
