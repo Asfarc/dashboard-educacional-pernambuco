@@ -26,7 +26,7 @@ PARAMETROS_ESTILO_CONTAINER = {
 
 CONFIG_GRAFICO = {
     # Dimensões
-    "largura": 680,
+    "largura": 500,
     "altura": 280,
 
     # Estilo da Linha
