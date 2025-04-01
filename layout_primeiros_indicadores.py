@@ -21,7 +21,7 @@ PARAMETROS_ESTILO_CONTAINER = {
     "tamanho_fonte_conteudo": "1rem",
 }
 
-def obter_estilo_css_container(params) -> str:
+def obter_estilo_css_container() -> str:
     """
     Retorna um bloco de <style> contendo as configurações de borda,
     cor de texto, etc. para estilizar os containers e a tabela.
@@ -34,7 +34,7 @@ def obter_estilo_css_container(params) -> str:
     bloco_estilo = f"""
     <style>
     .container-custom {{
-        border: 1px solid {params["cor_borda"]};  <!-- Corrigido -->
+        border: 1px solid {params["cor_borda"]};  /* Corrigido */
         border-radius: {params["raio_borda"]}px;
         padding: 1rem;
         margin-bottom: 1rem;
