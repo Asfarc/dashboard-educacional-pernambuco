@@ -906,7 +906,7 @@ with coluna_esquerda:
     # Abre um container HTML
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
     # Título do container
-    st.markdown('<div class="container-title">Dados Absolutos</div>', unsafe_allow_html=True)
+    st.markdown('<div class="container-title">Dados da Educação básica de Pernambuco em 2023 - Inep</div>', unsafe_allow_html=True)
 
     # Definir o caminho base para os ícones no GitHub
     github_raw_url = "https://raw.githubusercontent.com/Asfarc/dashboard-educacional-pernambuco/main/icones"
