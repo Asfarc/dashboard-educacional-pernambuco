@@ -43,7 +43,7 @@ def obter_estilo_css_container(params=None) -> str:
     }}
 
     /* 3. Largura das Colunas  */
-    .custom-table col:nth-child(1) {{ width: 40%; }}  /* Coluna do ícone + label */
+    .custom-table col:nth-child(1) {{ width: 50%; }}  /* Coluna do ícone + label */
     .custom-table col:nth-child(2) {{ width: 15%; }}  /* Federal */
     .custom-table col:nth-child(3) {{ width: 15%; }}  /* Estaduais */
     .custom-table col:nth-child(4) {{ width: 15%; }}  /* Municipais */
