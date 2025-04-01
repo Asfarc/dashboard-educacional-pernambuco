@@ -1090,6 +1090,8 @@ else:
 
         # --- Paginação manual ---
         try:
+            if "page_size" in st.session_state and st.session_state["page_size"] != 50:
+                st.session_state["page_size"] = 50
             if "page_size" not in st.session_state:
                 st.session_state["page_size"] = 50
             paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
@@ -1187,7 +1189,7 @@ else:
                 with select_col:
                     novo_page_size = st.selectbox(
                         "", options=[10, 25, 50, 100],
-                        index=[10, 25, 50, 100].index(st.session_state["page_size"]),
+                        index=2,
                         label_visibility="collapsed"
                     )
                     if novo_page_size != st.session_state["page_size"]:
