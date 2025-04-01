@@ -159,6 +159,8 @@ def construir_grafico_linha_evolucao(
     tamanho_titulo_eixo=18,
     tamanho_titulo_legenda=18
 ):
+    # Antes de criar o gráfico, faça:
+    df_transformado['Valor'] = df_transformado['Valor'].astype(float)
     # Configurações de estilo
     fonte = "Arial"
     cor_grafico = "#364b60"
@@ -192,7 +194,8 @@ def construir_grafico_linha_evolucao(
                     titleFontSize=tamanho_titulo_eixo,          # Usa novo parâmetro
                     titleFont=fonte,
                     labelFont=fonte,
-                    format='~s'
+                    format='.0f',
+                    labelExpr="replace(format(datum.value, '.0f'), ',', '.')"
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
