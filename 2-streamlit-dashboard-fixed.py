@@ -320,23 +320,6 @@ h2 {
     gap: 2px;
     align-items: center;
 }
-/* Exceções para os Containers Customizados */
-.container-custom,
-.container-custom *:not(button):not(div[data-testid]) {
-    background-color: transparent !important;
-    color: #cfe2f3 !important;  /* Sua nova cor de texto */
-    font-family: 'Open Sans', sans-serif !important;
-}
-
-.container-custom .container-title {
-    font-size: 1.2rem !important;  /* Título aumentado */
-    color: #cfe2f3 !important;
-}
-
-.container-custom .custom-table {
-    border: 1px solid #dee2e6 !important;  /* Borda restaurada */
-    font-size: 1.05rem !important;  /* Tamanho do conteúdo */
-}
 """
 
 st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
