@@ -17,7 +17,7 @@ PARAMETROS_ESTILO_CONTAINER = {
     "cor_borda": "#dee2e6",
     "cor_titulo": "#364b60",
     "tamanho_fonte_titulo": "1.1rem",
-    "tamanho_fonte_conteudo": "0.8rem",
+    "tamanho_fonte_conteudo": "1rem",
     "cor_fonte_conteudo": "#364b60"
 }
 
