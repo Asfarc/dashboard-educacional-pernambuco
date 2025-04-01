@@ -48,7 +48,7 @@ def obter_estilo_css_container(params=None) -> str:
     .custom-table col:nth-child(3) {{ width: 15%; }}  /* Estaduais */
     .custom-table col:nth-child(4) {{ width: 15%; }}  /* Municipais */
     .custom-table col:nth-child(5) {{ width: 15%; }}  /* Privadas */
-    .custom-table col:nth-child(6) {{ width: 15%; }}  /* Total */
+    .custom-table col:nth-child(6) {{ width: 10%; }}  /* Total */
 
     /* 4. Tamanho da Fonte  */
     .container-title {{
