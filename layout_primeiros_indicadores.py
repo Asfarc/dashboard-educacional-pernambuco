@@ -187,7 +187,7 @@ def construir_grafico_linha_evolucao(
                 )),
         color=alt.Color('Categoria:N',
                         legend=alt.Legend(
-                            title="",
+                            title="Categoria",
                             titleFontSize=tamanho_titulo_legenda,  # Usa novo parâmetro
                             labelFontSize=tamanho_texto_legenda,   # Usa novo parâmetro
                             titleFont=fonte,
