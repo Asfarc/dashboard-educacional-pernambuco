@@ -319,22 +319,7 @@ h2 {
     display: flex;
     gap: 2px;
     align-items: center;
-}
-/* Exceções para os Containers Customizados */
-.container-custom,
-.container-custom *:not(button):not(div[data-testid]) {
-    background-color: transparent !important;
-    font-family: 'Open Sans', sans-serif !important;
-}
-
-.container-custom .container-title {
-    font-size: 1.2rem !important;  /* Título aumentado */
-    color: #364b60 !important;
-}
-
-.container-custom .custom-table {
-    border: 1px solid #dee2e6 !important;  /* Borda restaurada */
-    font-size: 0.9rem !important;  /* Tamanho do conteúdo */
+} 
 }
 """
 
