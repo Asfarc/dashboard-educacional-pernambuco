@@ -523,17 +523,13 @@ def split_frame(input_df: pd.DataFrame, rows_per_page: int):
     Retorna uma lista de DataFrames, cada qual com 'rows_per_page' linhas.
     Se o DataFrame estiver vazio, retorna uma lista com um DataFrame vazio.
     """
-    if input_df.empty:
+    if len(input_df) == 0:
         return [input_df]  # Retorna lista com DataFrame vazio
 
     chunks = []
     for i in range(0, len(input_df), rows_per_page):
         chunk = input_df.iloc[i: i + rows_per_page]
         chunks.append(chunk)
-
-    # Garante que a lista nunca esteja vazia
-    if not chunks:
-        chunks = [input_df]
 
     return chunks
 
