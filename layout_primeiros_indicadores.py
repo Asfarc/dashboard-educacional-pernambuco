@@ -63,8 +63,8 @@ def obter_estilo_css_container(params=None) -> str:
 
     /* 5. Tamanho dos Ícones  */
     .icone {{
-        width: 40px !important;
-        height: 40px !important;
+        width: 50px !important;
+        height: 50px !important;
         vertical-align: middle !important;
         margin-right: 6px !important;
     }}
