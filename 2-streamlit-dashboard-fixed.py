@@ -54,14 +54,12 @@ css_unificado = """
 /* =================== RESET DO TÍTULO =================== */
 /* Container principal do app */
 .stApp {
-    margin-top: -2rem !important;
-    padding-top: 0 !important;
+    padding-top: 1rem !important;
 }
 
 /* Container do título */
 .stMarkdown:has(h1:first-of-type) {
-    margin: -3rem 0 -4rem !important;
-    padding: 0 !important;
+    margin-bottom: 1.5rem !important;
 }
 
 /* Texto do título */
