@@ -168,7 +168,7 @@ def construir_grafico_linha_evolucao(
     ).encode(
         x=alt.X('Ano:O',
                 axis=alt.Axis(
-                    values=[2015, 2020, 2023],
+                    #values=[2015, 2020, 2023],
                     title="Ano",
                     labelFontSize=tamanho_texto_eixo,          # Usa novo parâmetro
                     titleFontSize=tamanho_titulo_eixo,         # Usa novo parâmetro
