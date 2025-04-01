@@ -262,7 +262,7 @@ h2 {
 }
 .kpi-badge {
     background-color: #e6f2ff;
-    padding: 2px 8px;
+    # padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.8rem;
     color: #364b60;
