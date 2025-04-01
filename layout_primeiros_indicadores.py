@@ -32,56 +32,82 @@ def obter_estilo_css_container(params=None) -> str:
 
     bloco_estilo = f"""
     <style>
-    /* Container principal - ESSENCIAL para conter a tabela */
-    .st-emotion-cache-16tyu1 .container-custom {{
-        border: 1px solid {params["cor_borda"]} !important;
-        border-radius: {params["raio_borda"]}px !important;
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
-        background-color: white !important;
+    /* Container principal */
+    .container-custom {{
+        border: 1px solid {params["cor_borda"]};
+        border-radius: {params["raio_borda"]}px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: white;
     }}
 
-    /* Tabela customizada - CORREÇÃO DE ESPECIFICIDADE */
-    .st-emotion-cache-16tyu1 .custom-table {{
+    .container-title {{
+        font-family: "Open Sans", sans-serif;
+        font-weight: 700;
+        color: {params["cor_titulo"]};
+        font-size: {params["tamanho_fonte_titulo"]};
+        margin-bottom: 0.5rem;
+    }}
+
+    .container-text {{
+        font-family: "Open Sans", sans-serif;
+        color: {params["cor_fonte_conteudo"]};
+        font-weight: 400;
+        font-size: {params["tamanho_fonte_conteudo"]};
+    }}
+
+    /* ----- Tabela customizada ----- */
+    .container-custom table {{
         width: 100% !important;
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: 8px !important;
+        overflow: hidden !important;
         border-collapse: separate !important;
         border-spacing: 0 !important;
-        overflow: hidden !important;
     }}
 
-    /* Linha de Matrículas (segunda linha do tbody) */
-    .st-emotion-cache-16tyu1 .custom-table tbody tr:nth-child(2) td {{
+    /* Células da tabela */
+    .container-custom table td,
+    .container-custom table th {{
+        border: none !important;
+        padding: 8px !important;
+        vertical-align: middle !important;
+        background: transparent !important;
+    }}
+
+    /* Linha de Matrículas - ajuste o índice conforme necessário */
+    .container-custom table tbody tr:nth-child(2) td {{
         border-top: 1px solid {params["cor_borda"]} !important;
         border-bottom: 1px solid {params["cor_borda"]} !important;
     }}
 
-    /* Remove todas as bordas padrão */
-    .st-emotion-cache-16tyu1 .custom-table td,
-    .st-emotion-cache-16tyu1 .custom-table th {{
-        border: none !important;
-        padding: 8px !important;
-        background: transparent !important;
-    }}
-
-    /* Remove bordas laterais internas */
-    .st-emotion-cache-16tyu1 .custom-table td {{
-        border-left: none !important;
-        border-right: none !important;
-    }}
-
-    /* Estilo do cabeçalho */
-    .st-emotion-cache-16tyu1 .custom-table thead tr th {{
+    /* Cabeçalho da tabela */
+    .container-custom table thead tr th {{
         border-bottom: 1px solid {params["cor_borda"]} !important;
         background: transparent !important;
         color: {params["cor_titulo"]} !important;
+        font-weight: 700 !important;
     }}
 
-    /* Alinhamento primeira coluna */
-    .st-emotion-cache-16tyu1 .custom-table td:first-child {{
+    /* Primeira coluna */
+    .container-custom table td:first-child,
+    .container-custom table th:first-child {{
         padding-left: 1rem !important;
         text-align: left !important;
+    }}
+
+    /* Última coluna */
+    .container-custom table td:last-child,
+    .container-custom table th:last-child {{
+        padding-right: 1rem !important;
+    }}
+
+    /* Ícones */
+    .icone {{
+        width: 50px;
+        height: 50px;
+        vertical-align: middle;
+        margin-right: 6px;
     }}
     </style>
     """
