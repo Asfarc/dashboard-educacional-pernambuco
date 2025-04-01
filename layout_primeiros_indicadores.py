@@ -28,12 +28,11 @@ def obter_estilo_css_container(params=None) -> str:
 
     return f"""
     <style>
-    /* 1. Container Pai - SEM BORDA */
+    /* 1. Container Pai - Apenas Espaçamento */
     .container-custom {{
         padding: 1rem !important;
         margin-bottom: 1rem !important;
         background: transparent !important;
-        border: none !important;
     }}
 
     /* 2. Tabela - Borda Externa */
@@ -41,6 +40,7 @@ def obter_estilo_css_container(params=None) -> str:
         border: 1px solid {params["cor_borda"]} !important;
         border-radius: 8px !important;
         overflow: hidden !important;
+        border-collapse: separate !important;
     }}
 
     /* 3. Linha de Matrículas */
