@@ -878,18 +878,18 @@ except Exception as e:
 # 2) Dados de exemplo
 # -----------------------------
 dados_absolutos = {
-    "Rede": ["Estaduais", "Municipais", "Privadas"],
-    "Escolas": [408, 2228, 350],
-    "Matrículas": [274436, 607055, 100000],
-    "Professores": [50816, 117972, 25000]
+    "Rede": ["Federal", "Estaduais", "Municipais", "Privadas"],
+    "Escolas": [26, 1053, 4759, 2157],
+    "Matrículas": [16377, 539212, 1082028, 512022],
+    "Professores": [1609, 21845, 46454, 26575]
 }
 df_absolutos = pd.DataFrame(dados_absolutos)
 
 df_evolucao = pd.DataFrame({
-    "Ano": list(range(2015, 2026)),
-    "Escolas": [400 + (i * 5) for i in range(11)],
-    "Matrículas": [800000 + (i * 8000) for i in range(11)],
-    "Professores": [15000 + (i * 600) for i in range(11)],
+    "Ano": list(range(2015, 2024)),  # Alterado para 2015-2023
+    "Escolas": [9208, 9210, 8943, 8660, 8502, 8349, 8149, 8058, 7995],
+    "Matrículas": [2295215, 2275551, 2263728, 2251952, 2232556, 2206605, 2139772, 2159399, 2149639],
+    "Professores": [97331, 96052, 94480, 94185, 93991, 92809, 91676, 95105, 96483],
 })
 
 # Transformamos em formato 'melt' para plotar 3 linhas separadas no Altair
@@ -915,11 +915,12 @@ with coluna_esquerda:
     tabela_html = f"""
     <table class="custom-table container-text">
         <colgroup>
-            <col /><col /><col /><col /><col />
+            <col /><col /><col /><col /><col /><col />
         </colgroup>
         <thead>
             <tr>
                 <th></th>
+                <th><strong>Federal</strong></th>
                 <th><strong>Estaduais</strong></th>
                 <th><strong>Municipais</strong></th>
                 <th><strong>Privadas</strong></th>
@@ -935,7 +936,8 @@ with coluna_esquerda:
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][0])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][1])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][2])}</td>
-                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'].sum())}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][3])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(7995)}</td>
             </tr>
             <tr>
                 <td><strong>
@@ -945,7 +947,8 @@ with coluna_esquerda:
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][1])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][2])}</td>
-                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'].sum())}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][3])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(2149639)}</td>
             </tr>
             <tr>
                 <td><strong>
@@ -955,7 +958,8 @@ with coluna_esquerda:
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][0])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][1])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][2])}</td>
-                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'].sum())}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][3])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(96483)}</td>
             </tr>
         </tbody>
     </table>
