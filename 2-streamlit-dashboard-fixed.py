@@ -1095,7 +1095,7 @@ else:
             if "page_size" not in st.session_state:
                 st.session_state["page_size"] = 50
             paginated_frames = split_frame(df_texto_filtrado, st.session_state["page_size"])
-            total_pages = len(paginated_frames)
+            total_pages = max(1, len(paginated_frames))  # Garante que seja pelo menos 1
 
             if total_pages == 0:
                 st.warning("Nenhum registro para exibir após filtragem.")
