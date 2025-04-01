@@ -79,7 +79,7 @@ css_unificado = """
 [data-testid="stSidebar"] > div {
     position: relative;
     z-index: 1; /* Mantém o conteúdo acima do fundo */
-    padding: 2rem 1rem !important; /* Espaçamento interno adequado */
+    # padding: 2rem 1rem !important; /* Espaçamento interno adequado */
 }
 
 /* Define a cor do texto na barra lateral como branca */
