@@ -982,15 +982,15 @@ with coluna_direita:
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
     st.markdown('<div class="container-title">Evolução dos números</div>', unsafe_allow_html=True)
 
-    # Utilizamos nossa função construir_grafico_linha_evolucao
+    # Na seção onde o gráfico é renderizado
     grafico = construir_grafico_linha_evolucao(
         df_transformado=df_transformado,
-        largura=450,         # Ajuste se preferir
-        altura=200,         # Ajuste se preferir
-        espessura_linha=4,  # Espessura da linha
-        tamanho_ponto=100     # Tamanho das bolinhas
+        altura=350,  # TESTE COM VALOR ALTO PARA VER EFEITO IMEDIATO
+        largura=600,
+        espessura_linha=5
     )
-    st.altair_chart(grafico, use_container_width=True)
+
+    st.altair_chart(grafico, use_container_width=False)  # Force o container width
 
     st.markdown('</div>', unsafe_allow_html=True)
 
