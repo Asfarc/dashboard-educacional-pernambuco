@@ -129,6 +129,11 @@ def obter_estilo_css_container(params=None) -> str:
         border-bottom: none !important;
         box-shadow: none !important;
     }}
+    .vega-embed {{
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    }}
     </style>
     """
 
