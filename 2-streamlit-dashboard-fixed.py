@@ -678,7 +678,6 @@ else:
 # Filtro de Dependência Administrativa
 if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
     dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
-    st.sidebar.caption(f"Total de {len(dependencias_disponiveis)} dependências disponíveis")
 
     if "dep_selection" not in st.session_state:
         st.session_state["dep_selection"] = dependencias_disponiveis
