@@ -14,7 +14,8 @@ st.set_page_config(page_title="Dashboard PNE", page_icon="📊", layout="wide")
 CSS_PATH = Path("static/style.css")
 
 st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
-st.markdown(Path("static/style.css").read_text(), unsafe_allow_html=True)
+st.markdown(Path("static/style.css").read_text(encoding="utf-8"),
+            unsafe_allow_html=True)
 
 # ---------- Dados ---------------------------------------------------
 escolas_df, estado_df, municipio_df = load_parquets()
