@@ -632,22 +632,13 @@ lista_etapas_ensino = list(dicionario_das_etapas_de_ensino.keys())
 # mantemos a variável com o valor-padrão que o restante do
 # código já espera (“Todas”)
 serie_selecionada = "Todas"
-lista_de_series_das_etapas_de_ensino = []      # opcional: mantida vazia
+
 # ------------------------------------------------------------------
 
 
 # =========================================================
 # NOVO PAINEL SUPERIOR (FILTROS ANO / ETAPA / REDE)
-# — substitui todo o trecho da antiga “CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)”
 # =========================================================
-#
-# ▸ O painel fica logo abaixo do título (ou logo depois de escolher “df”).
-# ▸ Mantém as mesmas variáveis usadas depois no script, de forma que
-#   o restante do código continua funcionando sem ajustes.
-# ▸ Cada filtro funciona como “bloco de seleção” com a opção “Selecionar tudo”.
-# ▸ O rádio “Número de Matrículas por:” e as configurações avançadas da
-#   tabela permanecem na barra lateral; só estes três filtros foram movidos.
-# ---------------------------------------------------------
 
 # ~~~ estilo simples do painel ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 st.markdown(
@@ -784,23 +775,24 @@ with st.container():
 # (substitui o trecho antigo logo após os filtros da sidebar)
 # ---------------------------------------------------------
 #
-# → filtra por Ano(s)
-if "ANO" in df.columns:
-    df_filtrado = df[df["ANO"].isin(st.session_state["anos_multiselect"])]
+# BLOCO 1: aplica filtro de ano
+if "ANO" in df.columns:                 # ⇢ linha-cabeçalho
+    df_filtrado = df[...]               # ← sub-bloco (indentado 4 espaços)
 else:
-    st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
-    st.stop()
+    st.error(...)
+    st.stop()                           # ← fim do sub-bloco
+# ← dedent (volta para a coluna 0) → BLOCO 1 termina aqui
 
-# → filtra por Rede(s)  (pode resultar em DataFrame vazio, mas sem warnings)
+# BLOCO 2: aplica filtro de rede
 if st.session_state["dep_selection"]:
-    df_filtrado = df_filtrado[
-        df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(st.session_state["dep_selection"])
-    ]
+    df_filtrado = df_filtrado[...]      # ← sub-bloco
 else:
-    df_filtrado = df_filtrado[0:0]  # nada selecionado → DataFrame vazio
+    df_filtrado = df_filtrado[0:0]      # ← sub-bloco
+# ← dedent → BLOCO 2 termina aqui
 
-# as variáveis ‘etapa_ensino_selecionada’ e ‘subetapa_selecionada’
-# já estão definidas acima e continuam válidas para o restante do script
+# linha independente (mesmo nível da esquerda) —
+# não pertence mais aos blocos acima
+anos_selecionados = st.session_state["anos_multiselect"]
 
 
 # Identifica a coluna de dados
