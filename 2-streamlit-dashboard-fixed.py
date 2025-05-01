@@ -532,6 +532,14 @@ def gerar_planilha_excel(df):
         output.write("Erro na conversão".encode('utf-8'))
         return output.getvalue()
 
+def beautify(col: str) -> str:
+    """
+    Deixa 'ANO' → 'Ano', 'CODIGO DO MUNICIPIO' → 'Codigo Do Municipio'.
+    Não altera o identificador real da coluna, só devolve uma string bonita.
+    """
+    col = col.replace("\n", " ").strip()          # tira \n se existir
+    return " ".join(p.capitalize() for p in col.lower().split())
+
 # -----------------------------------------------------------------------------
 # Função para Paginação (chunk) - inspirada no snippet que você viu na internet
 # -----------------------------------------------------------------------------
@@ -1027,18 +1035,20 @@ else:
     ALTURA_TITULO = 46  # px – ajuste se quiser
 
     for i, col_name in enumerate(df_para_tabela.columns):
+        label = beautify(col_name)
         with header_cols[i]:
             st.markdown(
                 f"<div style='height:{ALTURA_TITULO}px;"
                 f"font-weight:600;line-height:1.1;overflow-wrap:break-word;"
-                f"overflow:hidden'>{col_name}</div>",
+                f"overflow:hidden'>{label}</div>",
                 unsafe_allow_html=True
             )
+
         with filter_cols[i]:
             col_filters[col_name] = st.text_input(
-                label="",
+                label="",  # label escondido
                 key=f"filter_{col_name}",
-                placeholder=f"Filtrar {col_name}…",
+                placeholder=f"Filtrar {label}…",  # placeholder já formatado
                 label_visibility="collapsed"
             )
 
@@ -1076,8 +1086,11 @@ else:
     df_pagina = chunks[pg_atual - 1].reset_index(drop=True)
 
     # -------------- EXIBE A TABELA ----------------------------------------------
+    df_display = df_pagina.copy()
+    df_display.columns = [beautify(c) for c in df_display.columns]
+
     st.dataframe(
-        df_pagina,
+        df_display,
         height=altura_tabela,
         use_container_width=True,
         hide_index=True
