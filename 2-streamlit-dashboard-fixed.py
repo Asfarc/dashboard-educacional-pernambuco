@@ -777,19 +777,24 @@ with st.container():
 #
 # BLOCO 1: aplica filtro de ano
 if "ANO" in df.columns:                 # ⇢ linha-cabeçalho
-    df_filtrado = df[...]               # ← sub-bloco (indentado 4 espaços)
+    df_filtrado = df[df["ANO"].isin(st.session_state["anos_multiselect"])]
 else:
-    st.error(...)
+    st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()                           # ← fim do sub-bloco
 # ← dedent (volta para a coluna 0) → BLOCO 1 termina aqui
 
 # BLOCO 2: aplica filtro de rede
-if st.session_state["dep_selection"]:
-    df_filtrado = df_filtrado[...]      # ← sub-bloco
-else:
-    df_filtrado = df_filtrado[0:0]      # ← sub-bloco
+if "DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns:                 #  ← NEW
+    if st.session_state["dep_selection"]:
+        df_filtrado = df_filtrado[
+            df_filtrado["DEPENDENCIA ADMINISTRATIVA"]
+            .isin(st.session_state["dep_selection"])
+        ]
+    else:
+        df_filtrado = df_filtrado[0:0]  # nada selecionado → DataFrame vazio     # ← sub-bloco
 # ← dedent → BLOCO 2 termina aqui
-
+else:                                                                         #  ← NEW
+    pass  # nenhum erro, apenas prossegue
 # linha independente (mesmo nível da esquerda) —
 # não pertence mais aos blocos acima
 anos_selecionados = st.session_state["anos_multiselect"]
