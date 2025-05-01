@@ -56,33 +56,6 @@ css_unificado = """
     padding-top: 1rem !important;  /* Espaçamento saudável no topo */
 }
 
-/* =================== FILTROS DE TABELA =================== */
-/* Container principal dos filtros */
-div[data-testid="column"] {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 90px; /* Altura mínima para 2 linhas de texto + input */
-}
-
-/* Texto do cabeçalho das colunas */
-div[data-testid="column"] > .stMarkdown {
-    margin-bottom: 8px !important;
-    min-height: 40px; /* Altura fixa para caber 2 linhas */
-    display: flex;
-    align-items: flex-end;
-}
-
-/* Inputs de filtro */
-div[data-testid="column"] .stTextInput {
-    margin-top: auto; /* Empurra o input para baixo */
-}
-
-div[data-testid="column"] input {
-    padding: 8px !important;
-    height: 38px !important;
-}
-
 /* =================== BARRA LATERAL =================== */
 [data-testid="stSidebar"]::before {
     content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
@@ -1103,19 +1076,32 @@ else:
 
         # --- Aplicação de filtros manuais ---
         df_sem_filtros_texto = tabela_exibicao.copy()
+
+        # LINHA 1 – só os títulos
+        header_cols = st.columns(len(df_sem_filtros_texto.columns))
+        # LINHA 2 – só os campos de filtro
+        filter_cols = st.columns(len(df_sem_filtros_texto.columns))
+
         col_filters = {}
-        if len(df_sem_filtros_texto.columns) > 0:
-            # Cria uma coluna de filtros para cada coluna do DataFrame
-            filtro_cols = st.columns(len(df_sem_filtros_texto.columns))
-            for i, col_name in enumerate(df_sem_filtros_texto.columns):
-                with filtro_cols[i]:
-                    st.write(f"**{col_name}**")
-                    col_filters[col_name] = st.text_input(
-                        label=f"Filtro para {col_name}",
-                        key=f"filter_{col_name}",
-                        label_visibility="collapsed",
-                        placeholder=f"Filtrar {col_name}..."
-                    )
+        ALTURA_TITULO = 42  # px; ajuste se precisar
+
+        for i, col_name in enumerate(df_sem_filtros_texto.columns):
+            # -------- TÍTULO (linha 1) --------
+            with header_cols[i]:
+                st.markdown(
+                    f"<div style='height:{ALTURA_TITULO}px;"
+                    f"font-weight:600;line-height:1.1;overflow:hidden'>{col_name}</div>",
+                    unsafe_allow_html=True
+                )
+
+            # -------- CAMPO DE FILTRO (linha 2) --------
+            with filter_cols[i]:
+                col_filters[col_name] = st.text_input(
+                    label="",
+                    key=f"filter_{col_name}",
+                    placeholder=f"Filtrar {col_name}…",
+                    label_visibility="collapsed"
+                )
 
         df_texto_filtrado = df_sem_filtros_texto.copy()
         for col_name, filter_text in col_filters.items():
