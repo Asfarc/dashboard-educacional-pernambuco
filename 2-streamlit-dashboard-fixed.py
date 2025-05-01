@@ -671,7 +671,7 @@ if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
         st.session_state["dep_selection"] = []
 
     dependencia_selecionada = st.sidebar.multiselect(
-        "DEPENDENCIA ADMINISTRATIVA:",
+        "Rede de Ensino",
         options=dependencias_disponiveis,
         default=st.session_state["dep_selection"]
     )
