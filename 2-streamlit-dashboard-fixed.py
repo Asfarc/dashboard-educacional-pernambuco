@@ -1154,7 +1154,9 @@ else:
                 # redefinindo o índice para evitar problemas de renderização.
                 current_page_index = min(st.session_state["current_page"] - 1, len(paginated_frames) - 1)
                 df_pagina_atual = paginated_frames[current_page_index].reset_index(drop=True)
-                st.dataframe(df_pagina_atual, height=altura_tabela, use_container_width=True, index=False)
+                df_pagina_atual = df_pagina_atual.reset_index(drop=True)  # Já existe essa linha no código
+                st.dataframe(df_pagina_atual.iloc[:, 1:] if not df_pagina_atual.empty else df_pagina_atual,
+                             height=altura_tabela, use_container_width=True)
 
             # --- Controles de paginação ---
             # Caso as constantes de proporção e padding não estejam definidas, as define:
