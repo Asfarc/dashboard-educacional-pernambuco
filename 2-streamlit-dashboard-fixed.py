@@ -1109,8 +1109,18 @@ else:
                 .sum()
                 .sort_values(["DEPENDENCIA ADMINISTRATIVA", "ANO"])
             )
+
+            # renomeia só para mostrar
+            resumo_display = resumo.copy()
+            resumo_display.columns = [beautify(c) for c in resumo_display.columns]
+
             st.markdown("### Resumo por Dependência Administrativa")
-            st.dataframe(resumo, use_container_width=True, hide_index=True)
+            st.dataframe(
+                resumo_display,
+                use_container_width=True,
+                hide_index=True
+            )
+
         except Exception as e:
             st.warning(f"Não foi possível gerar o resumo: {e}")
 
