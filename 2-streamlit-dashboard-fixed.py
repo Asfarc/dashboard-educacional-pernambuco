@@ -1168,23 +1168,6 @@ else:
                 st.session_state["current_page"] = 1
                 st.rerun()
 
-    # ---------- RESUMO POR DEPENDÊNCIA (apenas p/ Estado) --------------------
-    if tipo_nivel_agregacao_selecionado == "Estado":
-        try:
-            resumo = (
-                df_filtrado
-                .groupby(["DEPENDENCIA ADMINISTRATIVA", "ANO"], as_index=False)[coluna_real]
-                .sum()
-                .sort_values(["DEPENDENCIA ADMINISTRATIVA", "ANO"])
-            )
-            resumo_display = resumo.copy()
-            resumo_display.columns = [beautify(c) for c in resumo_display.columns]
-
-            st.markdown("### Resumo por Dependência Administrativa")
-            st.dataframe(resumo_display, use_container_width=True, hide_index=True)
-        except Exception as e:
-            st.warning(f"Não foi possível gerar o resumo: {e}")
-
 # ----- Fim da seção de Tabela de Dados Detalhados ---------------------------
 
 
