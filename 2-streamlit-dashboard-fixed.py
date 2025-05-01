@@ -1074,24 +1074,28 @@ else:
             return f"{num:,}".replace(",", ".")
 
 
-        # --- Aplicação de filtros manuais ---  ← mantém o comentário
-
+        # --- Aplicação de filtros manuais ---
         df_sem_filtros_texto = tabela_exibicao.copy()
 
-        filtro_cols = st.columns(len(df_sem_filtros_texto.columns))
-        col_filters = {}
+        # LINHA 1 – só os títulos
+        header_cols = st.columns(len(df_sem_filtros_texto.columns))
+        # LINHA 2 – só os campos de filtro
+        filter_cols = st.columns(len(df_sem_filtros_texto.columns))
 
-        ALTURA_TITULO = 40  # px
+        col_filters = {}
+        ALTURA_TITULO = 60  # px; ajuste se precisar
 
         for i, col_name in enumerate(df_sem_filtros_texto.columns):
-            with filtro_cols[i]:
-                # Título (altura fixa)
+            # -------- TÍTULO (linha 1) --------
+            with header_cols[i]:
                 st.markdown(
-                    f"<div style='height:{ALTURA_TITULO}px;font-weight:600;"
-                    f"line-height:1.1;overflow:hidden'>{col_name}</div>",
+                    f"<div style='height:{ALTURA_TITULO}px;"
+                    f"font-weight:600;line-height:1.1;overflow:hidden'>{col_name}</div>",
                     unsafe_allow_html=True
                 )
-                # Campo de filtro
+
+            # -------- CAMPO DE FILTRO (linha 2) --------
+            with filter_cols[i]:
                 col_filters[col_name] = st.text_input(
                     label="",
                     key=f"filter_{col_name}",
