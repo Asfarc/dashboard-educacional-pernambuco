@@ -1014,51 +1014,93 @@ else:
         unsafe_allow_html=True
     )
 
-    # ----- Exibição para o nível "Estado" -----
+    # ----- TABELA DETALHADA (todos os níveis) -----------------------------------
+    df_para_tabela = tabela_exibicao.copy()  # mesma fonte p/ Estado, Município, Escola
+
+    # -------------- FILTROS (duas fileiras alinhadas) ---------------------------
+    num_cols = len(df_para_tabela.columns)
+    pesos = [1] * num_cols  # mesma largura nas duas linhas
+    header_cols = st.columns(pesos, gap="small")  # linha 1 – títulos
+    filter_cols = st.columns(pesos, gap="small")  # linha 2 – caixas de filtro
+
+    col_filters = {}
+    ALTURA_TITULO = 46  # px – ajuste se quiser
+
+    for i, col_name in enumerate(df_para_tabela.columns):
+        with header_cols[i]:
+            st.markdown(
+                f"<div style='height:{ALTURA_TITULO}px;"
+                f"font-weight:600;line-height:1.1;overflow-wrap:break-word;"
+                f"overflow:hidden'>{col_name}</div>",
+                unsafe_allow_html=True
+            )
+        with filter_cols[i]:
+            col_filters[col_name] = st.text_input(
+                label="",
+                key=f"filter_{col_name}",
+                placeholder=f"Filtrar {col_name}…",
+                label_visibility="collapsed"
+            )
+
+    # -------------- APLICAÇÃO DOS FILTROS ---------------------------------------
+    df_texto_filtrado = df_para_tabela.copy()
+    for col_name, filtro in col_filters.items():
+        if filtro:
+            try:
+                expr = re.escape(filtro)
+                if col_name.startswith("Número de") or pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name]):
+                    ponto = filtro.replace(",", ".")
+                    if ponto.replace(".", "", 1).isdigit() and ponto.count(".") <= 1:
+                        df_texto_filtrado = df_texto_filtrado[df_texto_filtrado[col_name] == float(ponto)]
+                    else:
+                        df_texto_filtrado = df_texto_filtrado[
+                            df_texto_filtrado[col_name].astype(str).str.contains(expr, case=False, regex=True)
+                        ]
+                else:
+                    df_texto_filtrado = df_texto_filtrado[
+                        df_texto_filtrado[col_name].astype(str).str.contains(expr, case=False, regex=True)
+                    ]
+            except Exception as e:
+                st.warning(f"Erro ao filtrar {col_name}: {e}")
+
+    # -------------- PAGINAÇÃO ----------------------------------------------------
+    PAGE_DEF = st.session_state.get("page_size", 50)
+    chunks = [df_texto_filtrado[i:i + PAGE_DEF] for i in range(0, len(df_texto_filtrado), PAGE_DEF)] or [
+        df_texto_filtrado]
+    total_pg = len(chunks)
+
+    pg_atual = st.session_state.get("current_page", 1)
+    pg_atual = max(1, min(pg_atual, total_pg))
+    st.session_state["current_page"] = pg_atual
+
+    df_pagina = chunks[pg_atual - 1].reset_index(drop=True)
+
+    # -------------- EXIBE A TABELA ----------------------------------------------
+    st.dataframe(
+        df_pagina,
+        height=altura_tabela,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # -------------- CONTROLES DE PAGINAÇÃO - igual aos que você já tinha --------
+    # (copie aqui seu bloco de “Anterior / Próximo / Itens por página”… sem mudanças)
+    # ---------------------------------------------------------------------------
+
+    # -------------- RESUMO POR DEPENDÊNCIA (opcional) ---------------------------
     if tipo_nivel_agregacao_selecionado == "Estado":
         try:
-            # Define as colunas essenciais para exibição
-            colunas_essenciais = ["DEPENDENCIA ADMINISTRATIVA"]
-            if coluna_real and coluna_real in tabela_exibicao.columns:
-                colunas_essenciais.append(coluna_real)
-            for col in ["ANO", "CODIGO DA UF", "NOME DA UF"]:
-                if col in tabela_exibicao.columns:
-                    colunas_essenciais.append(col)
-
-            tabela_simplificada = tabela_exibicao[colunas_essenciais].copy()
-            # Redefine o índice e converte os nomes das colunas para strings
-            tabela_simplificada.reset_index(drop=True, inplace=True)
-            tabela_simplificada.columns = tabela_simplificada.columns.astype(str)
-
-            st.write("Dados por Dependência Administrativa:")
-            # Use st.table em vez de st.dataframe para o caso Estado
-            st.table(tabela_simplificada)
-
-            if coluna_real and coluna_real in tabela_simplificada.columns:
-                total_col = tabela_dados[coluna_real].sum() if coluna_real in tabela_dados.columns else 0
-                st.markdown(
-                    f"**Total de {coluna_real}:** {aplicar_padrao_numerico_brasileiro(total_col)}"
-                )
-
+            resumo = (
+                df_filtrado
+                .groupby(["DEPENDENCIA ADMINISTRATIVA", "ANO"], as_index=False)[coluna_real]
+                .sum()
+                .sort_values(["DEPENDENCIA ADMINISTRATIVA", "ANO"])
+            )
+            st.markdown("### Resumo por Dependência Administrativa")
+            st.dataframe(resumo, use_container_width=True, hide_index=True)
         except Exception as e:
-            st.error(f"Erro ao exibir tabela para nível Estado: {e}")
-            st.write("Tentando exibição alternativa...")
-            try:
-                if ("DEPENDENCIA ADMINISTRATIVA" in df_filtrado.columns and
-                        coluna_matriculas_por_etapa in df_filtrado.columns):
-                    resumo = df_filtrado.groupby("DEPENDENCIA ADMINISTRATIVA")[
-                        coluna_matriculas_por_etapa
-                    ].sum().reset_index()
-                    st.write("Resumo por Dependência Administrativa:")
-                    st.dataframe(resumo, use_container_width=True)
-                else:
-                    st.write("Dados disponíveis:")
-                    st.dataframe(df_filtrado.head(100), use_container_width=True)
-            except Exception as ex:
-                st.error("Não foi possível exibir dados mesmo no formato simplificado.")
+            st.warning(f"Não foi possível gerar o resumo: {e}")
 
-
-    # ----- Exibição para os demais níveis (Ex.: Escola ou Município) com filtros e paginação -----
     else:
         # Função para dividir o DataFrame em pedaços (chunks)
         def split_frame(df, size):
