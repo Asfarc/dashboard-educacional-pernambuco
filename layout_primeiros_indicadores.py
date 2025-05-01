@@ -137,49 +137,6 @@ def obter_estilo_css_container(params=None) -> str:
     </style>
     """
 
-# Importando pandas para acesso à função isna
-import pandas as pd
-
-
-# Função para formatar números com padrão brasileiro
-def aplicar_padrao_numerico_brasileiro(numero):
-    """
-    Formata números grandes adicionando separadores de milhar em padrão BR:
-    Ex.: 1234567 -> '1.234.567'
-         1234.56 -> '1.234,56'
-    Se o número for NaN ou '-', retorna '-'.
-    Aplica formatação apenas a valores numéricos.
-
-    Parâmetros:
-        numero: O número a ser formatado
-
-    Retorna:
-        String formatada com o padrão brasileiro de números
-    """
-    if pd.isna(numero) or numero == "-":
-        return "-"
-
-    try:
-        float_numero = float(numero)
-        if float_numero.is_integer():
-            return f"{int(float_numero):,}".replace(",", ".")
-        else:
-            parte_inteira = int(float_numero)
-            parte_decimal = abs(float_numero - parte_inteira)
-            inteiro_fmt = f"{parte_inteira:,}".replace(",", ".")
-            decimal_fmt = f"{parte_decimal:.2f}".replace("0.", "").replace(".", ",")
-            return f"{inteiro_fmt},{decimal_fmt}"
-    except (ValueError, TypeError):
-        return str(numero)
-
-# Mantemos a função anterior por compatibilidade, mas usando a nova implementação
-def formatar_numero_com_pontos_milhar(numero: float) -> str:
-    """
-    Função compatível com o código existente que usa a implementação de
-    aplicar_padrao_numerico_brasileiro.
-    """
-    return aplicar_padrao_numerico_brasileiro(numero)
-
 # Função modificada com controle de tamanho de texto
 def construir_grafico_linha_evolucao(df_transformado, **kwargs):
     config = {**CONFIG_GRAFICO, **kwargs}
