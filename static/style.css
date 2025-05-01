@@ -1,0 +1,296 @@
+css_unificado = """
+/* =================== AJUSTES GERAIS =================== */
+.stApp {
+    padding-top: 1rem !important;  /* Espaçamento saudável no topo */
+}
+
+/* =================== BARRA LATERAL =================== */
+[data-testid="stSidebar"]::before {
+    content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
+    position: absolute; /* Posicionamento absoluto para cobrir toda a área */
+
+    /* Posicionamento do elemento - controla onde o fundo começa */
+    top: 0 !important; /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
+    left: 0px;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
+
+    /* Dimensões do elemento - controla o tamanho do fundo */
+    width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) */
+    height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) */
+
+    background-color: #364b60; /* Cor de fundo azul escuro */
+    z-index: 0 !important; /* Camada correta (valores negativos = atrás, positivos = na frente) */
+    border-radius: 1px; /* Arredondamento dos cantos */
+    margin: 0; /* Margem externa */
+    padding: 0; /* Preenchimento interno */
+}
+
+[data-testid="stSidebar"] > div {
+    position: relative;
+    z-index: 1; /* Mantém o conteúdo acima do fundo */
+    # padding: 2rem 1rem !important; /* Espaçamento interno adequado */
+}
+
+/* Define a cor do texto na barra lateral como branca */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
+   color: white !important; /* Força a cor do texto como branca */
+}
+
+/* Mantém o texto das opções em preto */
+[data-testid="stSidebar"] option,
+[data-testid="stSidebar"] select,
+[data-testid="stSidebar"] [data-baseweb="select"] div {
+    color: black !important;
+}
+
+/* Estilo de itens selecionados na barra lateral */
+[data-testid="stSidebar"] .stMultiSelect [aria-selected="true"] {
+    background-color: #e37777 !important;
+    color: white !important;
+    border-radius: 1px !important;
+}
+
+/* Estilo do hover */
+[data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:hover {
+    background-color: #d66c6c !important;
+    cursor: pointer;
+}
+
+/* Remove a cor azul padrão do Streamlit */
+[data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]:focus {
+    box-shadow: none !important;
+}
+
+/* Estilo dos pills na barra lateral (botões) */
+[data-testid="stSidebar"] div[data-testid="stPills"] {
+    margin-top: 8px;
+}
+
+/* =================== TÍTULO PRINCIPAL =================== */
+.stMarkdown h1:first-of-type {
+    margin: 0 0 1.5rem 2rem !important; /* Alinhamento e espaçamento correto */
+    color: #364b60;
+    font-size: 2.2rem !important;
+    padding: 0.25rem 0 !important;
+}
+
+/* =================== CONTEÚDO PRINCIPAL =================== */
+.main-content {
+    padding-left: 2rem;
+    margin-top: -0.5rem !important;  /* Ajuste fino de alinhamento */
+}
+
+/* Espaço acima do primeiro elemento */
+.stApp > div:first-child {
+    padding-top: 0 !important;
+    margin-top: -1rem !important;
+}
+
+/* =================== TABELAS =================== */
+.custom-table {
+    margin: 1.5rem 0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* =================== GRÁFICOS =================== */
+.vega-embed {
+    margin-top: 1rem !important;
+    border-radius: 8px !important;
+}
+
+/* Botões não selecionados (kind="pills") */
+button[kind="pills"][data-testid="stBaseButton-pills"] {
+    background-color: transparent !important;
+    color: white !important;
+    border: 1px solid #e37777 !important;
+    border-radius: 1px !important;
+    transition: all 0.3s ease;
+}
+
+/* Hover em botões não selecionados */
+button[kind="pills"][data-testid="stBaseButton-pills"]:hover {
+    background-color: rgba(227, 119, 119, 0.2) !important;
+}
+
+/* Botões selecionados (kind="pillsActive") */
+button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] {
+    background-color: #e37777 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 1px !important;
+}
+
+/* Texto nos botões ativos */
+button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Estilo para a área principal do dashboard */
+.main-header {
+    background-color: #f9f9f9;
+    padding: 0rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border-left: 5px solid #364b60;
+}
+
+/* Estilo para os botões e controles */
+.stButton > button, .stDownloadButton > button {
+    background-color: #364b60 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 3px !important;
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background-color: #25344d !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Títulos de seção */
+h2 {
+    color: #364b60;
+    border-bottom: 1px solid #e37777;
+    padding-bottom: 0.3rem;
+    margin-top: 1.5rem;
+}
+
+/* Containers para KPIs e métricas */
+.metric-container {
+    background-color: white;
+    border-radius: 5px;
+    padding: 0rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #364b60;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+/* Estilo KPIs */
+.kpi-container {
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    # padding: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.kpi-title {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+.kpi-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #364b60;
+}
+.kpi-badge {
+    background-color: #e6f2ff;
+    # padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #364b60;
+}
+
+/* Estilos para filtros de tabela */
+.table-container {
+    background-color: white;
+    border-radius: 10px;
+    # padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.table-header {
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #364b60;
+    font-size: 18px;
+}
+.filter-input {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.info-text {
+    color: #4c8bf5;
+    font-size: 14px;
+    margin-top: 10px;
+    # padding: 8px;
+    background-color: #f0f7ff;
+    border-radius: 5px;
+    border-left: 3px solid #4c8bf5;
+}
+.warning-text {
+    color: #dc3545;
+    font-size: 14px;
+    margin-top: 10px;
+    # padding: 8px;
+    background-color: #fff5f5;
+    border-radius: 5px;
+    border-left: 3px solid #dc3545;
+}
+.icon-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.icon-filters-container {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+/* =================== RESPONSIVIDADE =================== */
+@media screen and (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+    }
+
+    .stMarkdown h1:first-of-type {
+        margin-left: 1rem !important;
+        font-size: 1.8rem !important;
+    }
+
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0rem !important;
+    }
+}
+"""
+
+st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
+st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
+st.title(TITULO_DASHBOARD)
