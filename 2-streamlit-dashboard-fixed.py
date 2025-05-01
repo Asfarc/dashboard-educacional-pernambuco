@@ -11,10 +11,6 @@ import time
 import altair as alt
 import base64
 
-
-if 'tempo_inicio' not in st.session_state:
-    st.session_state['tempo_inicio'] = time.time()
-
 # -------------------------------
 # Configuração Inicial da Página
 # -------------------------------
@@ -24,6 +20,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# -------------------------------
+# 2) Gestão de Cache e Estado
+# -------------------------------
+# Limpa o cache APENAS na primeira execução
+if 'cache_limpo' not in st.session_state:
+    st.session_state.clear()  # Limpa todo o cache
+    st.session_state['cache_limpo'] = True  # Marca como limpo
+
+# Inicializa o tempo de processamento
+if 'tempo_inicio' not in st.session_state:
+    st.session_state['tempo_inicio'] = time.time()
 
 # Importa tudo do config_containers
 from layout_primeiros_indicadores import (
@@ -36,73 +44,52 @@ from layout_primeiros_indicadores import (
 # -----------------------------------------
 # 1) Injetar o CSS de estilo dos containers
 # -----------------------------------------
-st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
+@st.cache_data
+def get_css():
+    return obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER)
+
+st.markdown(get_css(), unsafe_allow_html=True)
 
 css_unificado = """
-/* =================== RESET DO TÍTULO =================== */
-/* Container principal do app */
+/* =================== AJUSTES GERAIS =================== */
 .stApp {
-    margin-top: -2rem !important;
-    padding-top: 0 !important;
+    padding-top: 1rem !important;  /* Espaçamento saudável no topo */
 }
 
-/* Container do título */
-.stMarkdown:has(h1:first-of-type) {
-    margin: -3rem 0 -4rem !important;
-    padding: 0 !important;
-}
-
-/* Texto do título */
-.stMarkdown h1:first-of-type {
-    padding: 0.25rem 0 !important;
-    margin: 0 0 0.5rem !important;
-}
-
-/* Espaço acima do primeiro elemento */
-.stApp > div:first-child {
-    padding-top: 0 !important;
-    margin-top: -1rem !important;
-}
-
-/* CSS Unificado e Otimizado para o Dashboard */
-
-/* Estilo da Barra Lateral - Define o fundo da barra lateral */
+/* =================== BARRA LATERAL =================== */
 [data-testid="stSidebar"]::before {
-   content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
-   position: absolute; /* Posicionamento absoluto para cobrir toda a área */
-   
-   /* Posicionamento do elemento - controla onde o fundo começa */
-   top: 50px;      /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
-   left: 0px;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
-   
-   /* Dimensões do elemento - controla o tamanho do fundo */
-   width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) - pode variar de 0% a 100% ou valores fixos como px */
-   height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) - pode variar de 0% a 100% ou valores fixos como px */
-   
-   background-color: #364b60; /* Cor de fundo azul escuro - pode ser qualquer código de cor HEX, RGB ou nome de cor */
-   z-index: -1; /* Coloca o fundo atrás do conteúdo (valores negativos = atrás, positivos = na frente) */
-   border-radius: 1px; /* Arredondamento dos cantos - pode variar de 0px (quadrado) até valores altos para mais arredondamento */
-   margin: 0; /* Margem externa - pode variar de 0 a valores positivos em px/rem */
-   padding: 0; /* Preenchimento interno - pode variar de 0 a valores positivos em px/rem */
+    content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
+    position: absolute; /* Posicionamento absoluto para cobrir toda a área */
+
+    /* Posicionamento do elemento - controla onde o fundo começa */
+    top: 0 !important; /* Distância do topo (0 = alinhado ao topo, valores maiores movem para baixo) - pode variar de 0 a qualquer valor positivo em px/rem */
+    left: 0px;     /* Distância da esquerda (0 = alinhado à esquerda, valores maiores movem para direita) - pode variar de 0 a qualquer valor positivo em px/rem */
+
+    /* Dimensões do elemento - controla o tamanho do fundo */
+    width: 100%; /* Largura do elemento (100% = ocupa toda largura disponível) */
+    height: 100%; /* Altura do elemento (100% = ocupa toda altura disponível) */
+
+    background-color: #364b60; /* Cor de fundo azul escuro */
+    z-index: 0 !important; /* Camada correta (valores negativos = atrás, positivos = na frente) */
+    border-radius: 1px; /* Arredondamento dos cantos */
+    margin: 0; /* Margem externa */
+    padding: 0; /* Preenchimento interno */
 }
 
-/* Garante que o conteúdo da barra lateral fique acima do fundo */
 [data-testid="stSidebar"] > div {
-   position: relative;
-   z-index: 1; /* Mantém o conteúdo acima do fundo */
-   margin: 0 !important;
-   padding: 0 !important;
+    position: relative;
+    z-index: 1; /* Mantém o conteúdo acima do fundo */
+    # padding: 2rem 1rem !important; /* Espaçamento interno adequado */
 }
 
 /* Define a cor do texto na barra lateral como branca */
-/* Aplica-se a títulos, labels, parágrafos e elementos de rádio */
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] .stRadio span:not([role="radio"]) {
-   color: white !important; /* Força a cor do texto como branca - altere para mudar a cor do texto */
+   color: white !important; /* Força a cor do texto como branca */
 }
 
 /* Mantém o texto das opções em preto */
@@ -133,6 +120,38 @@ css_unificado = """
 /* Estilo dos pills na barra lateral (botões) */
 [data-testid="stSidebar"] div[data-testid="stPills"] {
     margin-top: 8px;
+}
+
+/* =================== TÍTULO PRINCIPAL =================== */
+.stMarkdown h1:first-of-type {
+    margin: 0 0 1.5rem 2rem !important; /* Alinhamento e espaçamento correto */
+    color: #364b60;
+    font-size: 2.2rem !important;
+    padding: 0.25rem 0 !important;
+}
+
+/* =================== CONTEÚDO PRINCIPAL =================== */
+.main-content {
+    padding-left: 2rem;
+    margin-top: -0.5rem !important;  /* Ajuste fino de alinhamento */
+}
+
+/* Espaço acima do primeiro elemento */
+.stApp > div:first-child {
+    padding-top: 0 !important;
+    margin-top: -1rem !important;
+}
+
+/* =================== TABELAS =================== */
+.custom-table {
+    margin: 1.5rem 0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* =================== GRÁFICOS =================== */
+.vega-embed {
+    margin-top: 1rem !important;
+    border-radius: 8px !important;
 }
 
 /* Botões não selecionados (kind="pills") */
@@ -166,7 +185,7 @@ button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p {
 /* Estilo para a área principal do dashboard */
 .main-header {
     background-color: #f9f9f9;
-    padding: 1rem;
+    padding: 0rem;
     border-radius: 5px;
     margin-bottom: 1rem;
     border-left: 5px solid #364b60;
@@ -199,7 +218,7 @@ h2 {
 .metric-container {
     background-color: white;
     border-radius: 5px;
-    padding: 1rem;
+    padding: 0rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
     transition: all 0.3s ease;
@@ -222,38 +241,15 @@ h2 {
     margin-top: 0.5rem;
 }
 
-/* Responsividade para telas menores */
-@media screen and (max-width: 768px) {
-    .metric-value {
-        font-size: 1.5rem;
-    }
-
-    .metric-label {
-        font-size: 0.8rem;
-    }
-
-    [data-testid="stSidebar"] {
-        width: 100% !important;
-        margin: 0 !important;
-    }
-}
-
 /* Estilo KPIs */
 .kpi-container {
     background-color: #f9f9f9;
     border-radius: 5px;
-    padding: 15px;
+    # padding: 15px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     margin-bottom: 20px;
 }
-/* Container Custom (Dados Absolutos e Evolução) */
-.container-custom {
-    background-color: transparent !important; /* Remove o fundo */
-    border: none !important; /* Remove bordas */
-    box-shadow: none !important; /* Remove sombras */
-    padding: 0 !important;
-    margin: 0 !important;
-}
+
 .kpi-title {
     font-size: 0.9rem;
     color: #666;
@@ -266,7 +262,7 @@ h2 {
 }
 .kpi-badge {
     background-color: #e6f2ff;
-    padding: 2px 8px;
+    # padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.8rem;
     color: #364b60;
@@ -276,7 +272,7 @@ h2 {
 .table-container {
     background-color: white;
     border-radius: 10px;
-    padding: 15px;
+    # padding: 15px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .table-header {
@@ -293,7 +289,7 @@ h2 {
     color: #4c8bf5;
     font-size: 14px;
     margin-top: 10px;
-    padding: 8px;
+    # padding: 8px;
     background-color: #f0f7ff;
     border-radius: 5px;
     border-left: 3px solid #4c8bf5;
@@ -302,7 +298,7 @@ h2 {
     color: #dc3545;
     font-size: 14px;
     margin-top: 10px;
-    padding: 8px;
+    # padding: 8px;
     background-color: #fff5f5;
     border-radius: 5px;
     border-left: 3px solid #dc3545;
@@ -322,9 +318,32 @@ h2 {
     display: flex;
     gap: 2px;
     align-items: center;
+} 
+
+/* =================== RESPONSIVIDADE =================== */
+@media screen and (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+    }
+
+    .stMarkdown h1:first-of-type {
+        margin-left: 1rem !important;
+        font-size: 1.8rem !important;
+    }
+
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0rem !important;
+    }
 }
 """
 
+st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
 st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
 st.title(TITULO_DASHBOARD)
 
@@ -853,6 +872,7 @@ try:
         except Exception as e:
             st.error(f"Erro ao preparar CSV para download: {str(e)}")
 
+
         try:
             excel_data = gerar_planilha_excel(tabela_dados)
             with col2:
@@ -878,18 +898,18 @@ except Exception as e:
 # 2) Dados de exemplo
 # -----------------------------
 dados_absolutos = {
-    "Rede": ["Estaduais", "Municipais", "Privadas"],
-    "Escolas": [408, 2228, 350],
-    "Matrículas": [274436, 607055, 100000],
-    "Professores": [50816, 117972, 25000]
+    "Rede": ["Federal", "Estadual", "Municipal", "Privada"],
+    "Escolas": [26, 1053, 4759, 2157],
+    "Matrículas": [16377, 539212, 1082028, 512022],
+    "Professores": [1609, 21845, 46454, 26575]
 }
 df_absolutos = pd.DataFrame(dados_absolutos)
 
 df_evolucao = pd.DataFrame({
-    "Ano": list(range(2015, 2026)),
-    "Escolas": [400 + (i * 5) for i in range(11)],
-    "Matrículas": [800000 + (i * 8000) for i in range(11)],
-    "Professores": [15000 + (i * 600) for i in range(11)],
+    "Ano": list(range(2015, 2024)),  # Alterado para 2015-2023
+    "Escolas": [9208, 9210, 8943, 8660, 8502, 8349, 8149, 8058, 7995],
+    "Matrículas": [2295215, 2275551, 2263728, 2251952, 2232556, 2206605, 2139772, 2159399, 2149639],
+    "Professores": [97331, 96052, 94480, 94185, 93991, 92809, 91676, 95105, 96483],
 })
 
 # Transformamos em formato 'melt' para plotar 3 linhas separadas no Altair
@@ -903,23 +923,18 @@ coluna_esquerda, coluna_direita = st.columns(2)
 # 4) CONTAINER ESQUERDO: Tabela de dados absolutos
 # -----------------------------------------------------
 with coluna_esquerda:
-    # Abre um container HTML
-    st.markdown('<div class="container-custom">', unsafe_allow_html=True)
-    # Título do container
-    st.markdown('<div class="container-title">Dados Absolutos</div>', unsafe_allow_html=True)
-
     # Definir o caminho base para os ícones no GitHub
     github_raw_url = "https://raw.githubusercontent.com/Asfarc/dashboard-educacional-pernambuco/main/icones"
-
-    # Montagem de tabela via HTML
+    # Construir tabela_html DENTRO do bloco
     tabela_html = f"""
     <table class="custom-table container-text">
         <colgroup>
-            <col /><col /><col /><col /><col />
+            <col><col><col><col><col><col>
         </colgroup>
         <thead>
             <tr>
                 <th></th>
+                <th><strong>Federal</strong></th>
                 <th><strong>Estaduais</strong></th>
                 <th><strong>Municipais</strong></th>
                 <th><strong>Privadas</strong></th>
@@ -929,42 +944,48 @@ with coluna_esquerda:
         <tbody>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Escolas.svg" />
+                    <img class="icone" src="{github_raw_url}/Escolas.svg">
                     Escolas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][0])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][1])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][2])}</td>
-                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'].sum())}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Escolas'][3])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(7995)}</td>
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Matrículas.svg" />
+                    <img class="icone" src="{github_raw_url}/Matrículas.svg">
                     Matrículas
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][0])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][1])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][2])}</td>
-                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'].sum())}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Matrículas'][3])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(2149639)}</td>
             </tr>
             <tr>
                 <td><strong>
-                    <img class="icone" src="{github_raw_url}/Professores.svg" />
+                    <img class="icone" src="{github_raw_url}/Professores.svg">
                     Professores
                 </strong></td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][0])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][1])}</td>
                 <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][2])}</td>
-                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'].sum())}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(df_absolutos['Professores'][3])}</td>
+                <td>{aplicar_padrao_numerico_brasileiro(96483)}</td>
             </tr>
         </tbody>
     </table>
     """
 
-    st.markdown(tabela_html, unsafe_allow_html=True)
-
-    # Fecha o container
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Renderizar TUDO em um único markdown
+    st.markdown(f'''
+    <div class="container-custom">
+        <div class="container-title">Dados da Educação básica de Pernambuco em 2023 - Inep</div>
+        {tabela_html}
+    </div>
+    ''', unsafe_allow_html=True)
 
 # -----------------------------------------------------
 # 5) CONTAINER DIREITO: Gráfico de linhas
@@ -973,15 +994,10 @@ with coluna_direita:
     st.markdown('<div class="container-custom">', unsafe_allow_html=True)
     st.markdown('<div class="container-title">Evolução dos números</div>', unsafe_allow_html=True)
 
-    # Utilizamos nossa função construir_grafico_linha_evolucao
-    grafico = construir_grafico_linha_evolucao(
-        df_transformado=df_transformado,
-        largura=450,         # Ajuste se preferir
-        altura=300,         # Ajuste se preferir
-        espessura_linha=4,  # Espessura da linha
-        tamanho_ponto=100     # Tamanho das bolinhas
-    )
-    st.altair_chart(grafico, use_container_width=True)
+    # Chama SEM parâmetros (usa apenas configurações do módulo)
+    grafico = construir_grafico_linha_evolucao(df_transformado)
+
+    st.altair_chart(grafico, use_container_width=False)  # Force o container width
 
     st.markdown('</div>', unsafe_allow_html=True)
 
