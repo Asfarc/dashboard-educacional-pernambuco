@@ -1047,7 +1047,7 @@ else:
         with filter_cols[i]:
             col_filters[col_name] = st.text_input(
                 label="",  # label escondido
-                key=f"filter_{col_name}",
+                key=f"filter_{i}_{col_name}",
                 placeholder=f"Filtrar {label}…",  # placeholder já formatado
                 label_visibility="collapsed"
             )
