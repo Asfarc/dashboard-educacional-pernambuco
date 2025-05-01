@@ -62,7 +62,7 @@ div[data-testid="column"] {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 85px; /* Altura mínima para 2 linhas de texto + input */
+    min-height: 90px; /* Altura mínima para 2 linhas de texto + input */
 }
 
 /* Texto do cabeçalho das colunas */
