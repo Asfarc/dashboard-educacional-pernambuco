@@ -623,102 +623,185 @@ if df.empty:
 
 dicionario_das_etapas_de_ensino = padronizar_dicionario_de_etapas(df)
 
-# Filtro do Ano
+# ------------------------------------------------------------------
+# Variáveis utilitárias necessárias em todo o script
+# ------------------------------------------------------------------
+lista_etapas_ensino = list(dicionario_das_etapas_de_ensino.keys())
+
+# como o filtro de "Série" foi retirado do novo painel,
+# mantemos a variável com o valor-padrão que o restante do
+# código já espera (“Todas”)
+serie_selecionada = "Todas"
+lista_de_series_das_etapas_de_ensino = []      # opcional: mantida vazia
+# ------------------------------------------------------------------
+
+
+# =========================================================
+# NOVO PAINEL SUPERIOR (FILTROS ANO / ETAPA / REDE)
+# — substitui todo o trecho da antiga “CONFIGURAÇÃO DA BARRA LATERAL (FILTROS)”
+# =========================================================
+#
+# ▸ O painel fica logo abaixo do título (ou logo depois de escolher “df”).
+# ▸ Mantém as mesmas variáveis usadas depois no script, de forma que
+#   o restante do código continua funcionando sem ajustes.
+# ▸ Cada filtro funciona como “bloco de seleção” com a opção “Selecionar tudo”.
+# ▸ O rádio “Número de Matrículas por:” e as configurações avançadas da
+#   tabela permanecem na barra lateral; só estes três filtros foram movidos.
+# ---------------------------------------------------------
+
+# ~~~ estilo simples do painel ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+st.markdown(
+    """
+    <style>
+        .panel-filtros {
+            background:#eef2f7;
+            border:1px solid #dce6f3;
+            border-radius:6px;
+            padding:0.7rem 1rem 1rem;
+            margin-bottom:1.2rem;
+        }
+        .filter-title {
+            font-weight:600;
+            color:#364b60;
+            font-size:0.92rem;
+            margin-bottom:0.25rem;
+        }
+        .stSelectbox > div, .stMultiSelect > div { min-height:38px; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ~~~ container superior dos filtros ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+with st.container():
+    st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
+
+    # ————————————————————————————————————————————————————————————————
+    # 3 colunas: Ano(s) | Etapa/Subetapa | Rede(s)
+    # ————————————————————————————————————————————————————————————————
+    col_ano, col_etapa, col_rede = st.columns([1.3, 2.2, 1.8], gap="small")
+
+    # ---------- BLOCO 1 — Ano(s) ------------------------------------------
+    with col_ano:
+        st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
+
+        # lista de anos disponíveis (decrescente, como antes)
+        anos_disponiveis = (
+            sorted(df["ANO"].unique(), reverse=True) if "ANO" in df.columns else []
+        )
+
+        # “Selecionar tudo” ⇢ controla default do multiselect
+        select_all_years = st.checkbox(
+            "Selecionar tudo", key="anos_select_all",
+            value=len(st.session_state.get("anos_multiselect", [])) == len(anos_disponiveis)
+        )
+
+        default_anos = (
+            anos_disponiveis
+            if select_all_years or not anos_disponiveis
+            else st.session_state.get("anos_multiselect", [anos_disponiveis[0]])
+        )
+
+        anos_selecionados = st.multiselect(
+            label="",
+            options=anos_disponiveis,
+            default=default_anos,
+            key="anos_multiselect"
+        )
+
+        # garante consistência se usuário desmarcar algum ano após “Selecionar tudo”
+        if select_all_years and len(anos_selecionados) != len(anos_disponiveis):
+            st.session_state["anos_select_all"] = False
+
+    # ---------- BLOCO 2 — Etapa / Subetapa ---------------------------------
+    with col_etapa:
+        st.markdown('<div class="filter-title">Etapa / Subetapa</div>', unsafe_allow_html=True)
+
+        etapa_ensino_selecionada = st.selectbox(
+            "Etapa de Ensino",
+            lista_etapas_ensino,
+            index=lista_etapas_ensino.index(
+                st.session_state.get("etapa_ensino", lista_etapas_ensino[0])
+            ),
+            key="etapa_ensino"
+        )
+
+        # calcula subetapas válidas ↴
+        if (
+            "subetapas" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]
+            and dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"]
+        ):
+            subetapas_disponiveis = ["Todas"] + list(
+                dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"].keys()
+            )
+        else:
+            subetapas_disponiveis = ["Todas"]
+
+        subetapa_selecionada = st.selectbox(
+            "Subetapa",
+            subetapas_disponiveis,
+            index=subetapas_disponiveis.index(
+                st.session_state.get("subetapa", "Todas")
+            ),
+            key="subetapa"
+        )
+
+    # ---------- BLOCO 3 — Rede(s) -----------------------------------------
+    with col_rede:
+        st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
+
+        dependencias_disponiveis = (
+            sorted(df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
+            if "DEPENDENCIA ADMINISTRATIVA" in df.columns
+            else []
+        )
+
+        select_all_rede = st.checkbox(
+            "Selecionar tudo", key="rede_select_all",
+            value=len(st.session_state.get("dep_selection", dependencias_disponiveis)) == len(dependencias_disponiveis)
+        )
+
+        default_rede = (
+            dependencias_disponiveis
+            if select_all_rede
+            else st.session_state.get("dep_selection", dependencias_disponiveis)
+        )
+
+        dependencia_selecionada = st.multiselect(
+            label="",
+            options=dependencias_disponiveis,
+            default=default_rede,
+            key="dep_selection"
+        )
+
+        if select_all_rede and len(dependencia_selecionada) != len(dependencias_disponiveis):
+            st.session_state["rede_select_all"] = False
+
+    st.markdown('</div>', unsafe_allow_html=True)   # ⇠ fecha “panel-filtros”
+
+# ---------------------------------------------------------
+# APLICAÇÃO DOS FILTROS AOS DADOS
+# (substitui o trecho antigo logo após os filtros da sidebar)
+# ---------------------------------------------------------
+#
+# → filtra por Ano(s)
 if "ANO" in df.columns:
-    anos_disponiveis = sorted(df["ANO"].unique(), reverse=True)
-
-    col1, col2 = st.sidebar.columns(2)
-    if col1.button("Último Ano", key="btn_ultimo_ano"):
-        st.session_state["anos_multiselect"] = [anos_disponiveis[0]]
-    if col2.button("Todos Anos", key="btn_todos_anos"):
-        st.session_state["anos_multiselect"] = anos_disponiveis
-
-    if "anos_multiselect" not in st.session_state:
-        st.session_state["anos_multiselect"] = [anos_disponiveis[0]]
-
-    anos_selecionados = st.sidebar.multiselect(
-        "Ano do Censo:",
-        options=anos_disponiveis,
-        default=st.session_state["anos_multiselect"],
-        key="anos_multiselect_widget"
-    )
-    st.session_state["anos_multiselect"] = anos_selecionados
-
-    if not anos_selecionados:
-        st.warning("Por favor, selecione pelo menos um ano.")
-        st.stop()
-
-    df_filtrado = df[df["ANO"].isin(anos_selecionados)]
+    df_filtrado = df[df["ANO"].isin(st.session_state["anos_multiselect"])]
 else:
     st.error("A coluna 'ANO' não foi encontrada nos dados carregados.")
     st.stop()
 
-# Filtro de Etapa, Subetapa e Série
-lista_etapas_ensino = list(dicionario_das_etapas_de_ensino.keys())
-etapa_ensino_selecionada = st.sidebar.selectbox(
-    "Etapa de Ensino:",
-    lista_etapas_ensino
-)
-
-if etapa_ensino_selecionada not in dicionario_das_etapas_de_ensino:
-    st.error(f"A etapa '{etapa_ensino_selecionada}' não foi encontrada no mapeamento de colunas.")
-    st.stop()
-
-if ("subetapas" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada] and
-    dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"]):
-    subetapas_disponiveis = list(dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["subetapas"].keys())
-    subetapa_selecionada = st.sidebar.selectbox(
-        "Subetapa:",
-        ["Todas"] + subetapas_disponiveis
-    )
+# → filtra por Rede(s)  (pode resultar em DataFrame vazio, mas sem warnings)
+if st.session_state["dep_selection"]:
+    df_filtrado = df_filtrado[
+        df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(st.session_state["dep_selection"])
+    ]
 else:
-    subetapa_selecionada = "Todas"
+    df_filtrado = df_filtrado[0:0]  # nada selecionado → DataFrame vazio
 
-lista_de_series_das_etapas_de_ensino = []
-if (
-    subetapa_selecionada != "Todas"
-    and "series" in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]
-    and subetapa_selecionada in dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"]
-):
-    lista_de_series_das_etapas_de_ensino = list(
-        dicionario_das_etapas_de_ensino[etapa_ensino_selecionada]["series"][subetapa_selecionada].keys()
-    )
-    serie_selecionada = st.sidebar.selectbox(
-        "Série:",
-        ["Todas"] + lista_de_series_das_etapas_de_ensino
-    )
-else:
-    serie_selecionada = "Todas"
+# as variáveis ‘etapa_ensino_selecionada’ e ‘subetapa_selecionada’
+# já estão definidas acima e continuam válidas para o restante do script
 
-# Filtro de Dependência Administrativa
-if "DEPENDENCIA ADMINISTRATIVA" in df.columns:
-    dependencias_disponiveis = sorted(df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
-
-    if "dep_selection" not in st.session_state:
-        st.session_state["dep_selection"] = dependencias_disponiveis
-
-    col_sel_all, col_clear = st.sidebar.columns(2)
-    if col_sel_all.button("Selecionar Todas", key="btn_todas_dep"):
-        st.session_state["dep_selection"] = dependencias_disponiveis
-    if col_clear.button("Limpar Seleção", key="btn_limpar_dep"):
-        st.session_state["dep_selection"] = []
-
-    dependencia_selecionada = st.sidebar.multiselect(
-        "Rede de Ensino",
-        options=dependencias_disponiveis,
-        default=st.session_state["dep_selection"]
-    )
-
-    st.session_state["dep_selection"] = dependencia_selecionada
-
-    if dependencia_selecionada:
-        st.sidebar.success(f"{len(dependencia_selecionada)} dependência(s) selecionada(s)")
-        df_filtrado = df_filtrado[df_filtrado["DEPENDENCIA ADMINISTRATIVA"].isin(dependencia_selecionada)]
-    else:
-        st.sidebar.warning("Nenhuma dependência selecionada. Selecione pelo menos uma.")
-        df_filtrado = df_filtrado[0:0]
-else:
-    st.warning("A coluna 'DEPENDENCIA ADMINISTRATIVA' não foi encontrada nos dados carregados.")
 
 # Identifica a coluna de dados
 coluna_matriculas_por_etapa = procurar_coluna_matriculas_por_etapa(
@@ -1169,7 +1252,6 @@ else:
                 st.rerun()
 
 # ----- Fim da seção de Tabela de Dados Detalhados ---------------------------
-
 
 # -------------------------------
 # Rodapé do Dashboard
