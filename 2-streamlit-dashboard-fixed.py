@@ -540,6 +540,13 @@ def beautify(col: str) -> str:
     col = col.replace("\n", " ").strip()          # tira \n se existir
     return " ".join(p.capitalize() for p in col.lower().split())
 
+def format_number_br(num):
+    """Converte 6883 -> '6.883' (separador de milhar brasileiro)."""
+    try:
+        return f"{int(num):,}".replace(",", ".")
+    except Exception:
+        return str(num)
+
 # -----------------------------------------------------------------------------
 # Função para Paginação (chunk) - inspirada no snippet que você viu na internet
 # -----------------------------------------------------------------------------
@@ -1016,43 +1023,42 @@ st.markdown(f"## {TITULO_DADOS_DETALHADOS}")
 if 'tabela_exibicao' not in locals() or tabela_exibicao.empty:
     st.warning("Não há dados para exibir com os filtros selecionados.")
 else:
-    # Cabeçalho da seção com o título e o nível de agregação
+    # Cabeçalho da seção
     st.markdown(
         f'<div class="table-header">Dados Detalhados - {tipo_nivel_agregacao_selecionado}</div>',
         unsafe_allow_html=True
     )
 
-    # ----- TABELA DETALHADA (todos os níveis) -----------------------------------
-    df_para_tabela = tabela_exibicao.copy()  # mesma fonte p/ Estado, Município, Escola
+    # ---------- DATAFRAME FONTE (todos os níveis) ----------------------------
+    df_para_tabela = tabela_exibicao.copy()
 
-    # -------------- FILTROS (duas fileiras alinhadas) ---------------------------
-    num_cols = len(df_para_tabela.columns)
-    pesos = [1] * num_cols  # mesma largura nas duas linhas
-    header_cols = st.columns(pesos, gap="small")  # linha 1 – títulos
-    filter_cols = st.columns(pesos, gap="small")  # linha 2 – caixas de filtro
+    # ---------- LINHA 1 = títulos | LINHA 2 = filtros ------------------------
+    num_cols   = len(df_para_tabela.columns)
+    pesos      = [1] * num_cols                       # mesmas larguras
+    header_cols = st.columns(pesos, gap="small")
+    filter_cols = st.columns(pesos, gap="small")
 
-    col_filters = {}
-    ALTURA_TITULO = 46  # px – ajuste se quiser
+    col_filters   = {}
+    ALTURA_TITULO = 46  # px
 
     for i, col_name in enumerate(df_para_tabela.columns):
-        label = beautify(col_name)
+        label = beautify(col_name)                    # “Ano”, “Codigo Do Municipio”…
         with header_cols[i]:
             st.markdown(
-                f"<div style='height:{ALTURA_TITULO}px;"
-                f"font-weight:600;line-height:1.1;overflow-wrap:break-word;"
-                f"overflow:hidden'>{label}</div>",
+                f"<div style='height:{ALTURA_TITULO}px;font-weight:600;"
+                f"line-height:1.1;overflow-wrap:break-word;overflow:hidden'>"
+                f"{label}</div>",
                 unsafe_allow_html=True
             )
-
         with filter_cols[i]:
             col_filters[col_name] = st.text_input(
-                label="",  # label escondido
-                key=f"filter_{i}_{col_name}",
-                placeholder=f"Filtrar {label}…",  # placeholder já formatado
+                label="",
+                key=f"filter_{i}_{col_name}",         # chave única
+                placeholder=f"Filtrar {label}…",
                 label_visibility="collapsed"
             )
 
-    # -------------- APLICAÇÃO DOS FILTROS ---------------------------------------
+    # ---------- APLICA OS FILTROS -------------------------------------------
     df_texto_filtrado = df_para_tabela.copy()
     for col_name, filtro in col_filters.items():
         if filtro:
@@ -1073,19 +1079,18 @@ else:
             except Exception as e:
                 st.warning(f"Erro ao filtrar {col_name}: {e}")
 
-    # -------------- PAGINAÇÃO ----------------------------------------------------
-    PAGE_DEF = st.session_state.get("page_size", 50)
-    chunks = [df_texto_filtrado[i:i + PAGE_DEF] for i in range(0, len(df_texto_filtrado), PAGE_DEF)] or [
-        df_texto_filtrado]
-    total_pg = len(chunks)
+    # ---------- PAGINAÇÃO ----------------------------------------------------
+    PAGE_DEF  = st.session_state.get("page_size", 50)
+    chunks    = [df_texto_filtrado[i:i + PAGE_DEF] for i in range(0, len(df_texto_filtrado), PAGE_DEF)] or [df_texto_filtrado]
+    total_pg  = len(chunks)
 
-    pg_atual = st.session_state.get("current_page", 1)
-    pg_atual = max(1, min(pg_atual, total_pg))
+    pg_atual  = st.session_state.get("current_page", 1)
+    pg_atual  = max(1, min(pg_atual, total_pg))
     st.session_state["current_page"] = pg_atual
 
     df_pagina = chunks[pg_atual - 1].reset_index(drop=True)
 
-    # -------------- EXIBE A TABELA ----------------------------------------------
+    # ---------- EXIBE A TABELA ----------------------------------------------
     df_display = df_pagina.copy()
     df_display.columns = [beautify(c) for c in df_display.columns]
 
@@ -1096,11 +1101,74 @@ else:
         hide_index=True
     )
 
-    # -------------- CONTROLES DE PAGINAÇÃO - igual aos que você já tinha --------
-    # (copie aqui seu bloco de “Anterior / Próximo / Itens por página”… sem mudanças)
-    # ---------------------------------------------------------------------------
+    # ---------- BOTÕES / CONTROLES DE PAGINAÇÃO -----------------------------
+    PROP_LABEL_PAGINA = 0.33
+    PROP_LABEL_ITENS  = 0.55
+    PADDING_TOP       = 5
 
-    # -------------- RESUMO POR DEPENDÊNCIA (opcional) ---------------------------
+    layout_config = {
+        "info": 3.0, "anterior": 1.2, "espaco1": 0.3, "proximo": 1.2,
+        "espaco2": 1.0, "pagina": 1.2, "espaco3": 0.3, "itens": 1.8,
+    }
+    def calcular_larguras(cfg, largura_total=10.0):
+        fator = largura_total / sum(cfg.values())
+        return [v * fator for v in cfg.values()]
+
+    (col_info, col_anterior, col_espaco1, col_proximo,
+     col_espaco2, col_pagina, col_espaco3, col_itens) = st.columns(
+        calcular_larguras(layout_config)
+    )
+
+    with col_info:
+        total_registros_br = format_number_br(len(df_texto_filtrado))
+        st.markdown(
+            f"**Total: {total_registros_br} registros | "
+            f"Página {st.session_state['current_page']} de {format_number_br(total_pg)}**"
+        )
+
+    with col_anterior:
+        if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1,
+                     use_container_width=True):
+            st.session_state["current_page"] -= 1
+            st.rerun()
+
+    with col_proximo:
+        if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pg,
+                     use_container_width=True):
+            st.session_state["current_page"] += 1
+            st.rerun()
+
+    with col_pagina:
+        label_col, input_col = st.columns([PROP_LABEL_PAGINA, 1 - PROP_LABEL_PAGINA])
+        with label_col:
+            st.markdown(f"<div style='padding-top:{PADDING_TOP}px;'>Página:</div>", unsafe_allow_html=True)
+        with input_col:
+            nova_pagina = st.number_input(
+                "", min_value=1, max_value=total_pg,
+                value=st.session_state["current_page"], step=1,
+                label_visibility="collapsed"
+            )
+            if nova_pagina != st.session_state["current_page"]:
+                st.session_state["current_page"] = nova_pagina
+                st.rerun()
+
+    with col_itens:
+        label_col, select_col = st.columns([PROP_LABEL_ITENS, 1 - PROP_LABEL_ITENS])
+        with label_col:
+            st.markdown(f"<div style='padding-top:{PADDING_TOP}px;'>Itens por página:</div>",
+                        unsafe_allow_html=True)
+        with select_col:
+            novo_page_size = st.selectbox(
+                "", options=[10, 25, 50, 100],
+                index=[10, 25, 50, 100].index(PAGE_DEF) if PAGE_DEF in [10, 25, 50, 100] else 2,
+                label_visibility="collapsed"
+            )
+            if novo_page_size != st.session_state.get("page_size", PAGE_DEF):
+                st.session_state["page_size"] = novo_page_size
+                st.session_state["current_page"] = 1
+                st.rerun()
+
+    # ---------- RESUMO POR DEPENDÊNCIA (apenas p/ Estado) --------------------
     if tipo_nivel_agregacao_selecionado == "Estado":
         try:
             resumo = (
@@ -1109,229 +1177,16 @@ else:
                 .sum()
                 .sort_values(["DEPENDENCIA ADMINISTRATIVA", "ANO"])
             )
-
-            # renomeia só para mostrar
             resumo_display = resumo.copy()
             resumo_display.columns = [beautify(c) for c in resumo_display.columns]
 
             st.markdown("### Resumo por Dependência Administrativa")
-            st.dataframe(
-                resumo_display,
-                use_container_width=True,
-                hide_index=True
-            )
-
+            st.dataframe(resumo_display, use_container_width=True, hide_index=True)
         except Exception as e:
             st.warning(f"Não foi possível gerar o resumo: {e}")
 
-    else:
-        # Função para dividir o DataFrame em pedaços (chunks)
-        def split_frame(df, size):
-            # Verifica se o DataFrame está vazio ou tem menos linhas que o tamanho da página
-            if df.empty or len(df) <= size:
-                return [df] # Retorna uma lista contendo apenas o DataFrame original
-            # Divide o DataFrame em chunks do tamanho especificado
-            return [df[i:i + size] for i in range(0, len(df), size)]
+# ----- Fim da seção de Tabela de Dados Detalhados ---------------------------
 
-        # Função para formatar números com separador de milhar (padrão brasileiro)
-        def format_number_br(num):
-            """Converte 6883 -> '6.883'."""
-            return f"{num:,}".replace(",", ".")
-
-
-        # --- Aplicação de filtros manuais ---
-        df_sem_filtros_texto = tabela_exibicao.copy()
-        num_cols = len(df_sem_filtros_texto.columns)
-        pesos = [1] * num_cols  # <- mesmo vetor nas duas linhas
-
-        header_cols = st.columns(pesos, gap="small")  # fileira 1
-        filter_cols = st.columns(pesos, gap="small")  # fileira 2
-
-        col_filters = {}
-        ALTURA_TITULO = 46  # px; ajuste se precisar
-
-        for i, col_name in enumerate(df_sem_filtros_texto.columns):
-            # -------- Cabeçalho --------
-            with header_cols[i]:
-                st.markdown(
-                    f"""
-                    <div style="
-                        height:{ALTURA_TITULO}px;
-                        font-weight:600;
-                        line-height:1.1;
-                        overflow-wrap:break-word;
-                        overflow:hidden;">
-                        {col_name}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            # -------- Campo de filtro --------
-            with filter_cols[i]:
-                col_filters[col_name] = st.text_input(
-                    label="",
-                    key=f"filter_{col_name}",
-                    placeholder=f"Filtrar {col_name}…",
-                    label_visibility="collapsed",
-                )
-
-        df_texto_filtrado = df_sem_filtros_texto.copy()
-        for col_name, filter_text in col_filters.items():
-            if filter_text:
-                try:
-                    filter_text_escaped = re.escape(filter_text)
-                    # Se a coluna for numérica ou começar com "Número de", tenta tratar como número
-                    if col_name.startswith("Número de") or pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name]):
-                        filter_text_ponto = filter_text.replace(",", ".")
-                        try:
-                            if filter_text_ponto.replace(".", "", 1).isdigit() and filter_text_ponto.count(".") <= 1:
-                                num_value = float(filter_text_ponto)
-                                df_texto_filtrado = df_texto_filtrado[df_texto_filtrado[col_name] == num_value]
-                            else:
-                                df_texto_filtrado = df_texto_filtrado[
-                                    df_texto_filtrado[col_name].astype(str).str.contains(
-                                        filter_text_escaped, case=False, regex=True
-                                    )
-                                ]
-                        except ValueError:
-                            df_texto_filtrado = df_texto_filtrado[
-                                df_texto_filtrado[col_name].astype(str).str.contains(
-                                    filter_text_escaped, case=False, regex=True
-                                )
-                            ]
-                    else:
-                        df_texto_filtrado = df_texto_filtrado[
-                            df_texto_filtrado[col_name].astype(str).str.contains(
-                                filter_text_escaped, case=False, regex=True
-                            )
-                        ]
-                except Exception as e:
-                    st.warning(f"Erro ao aplicar filtro na coluna {col_name}: {e}")
-
-        # --- Paginação manual ---
-        try:
-            if "page_size" in st.session_state and st.session_state["page_size"] != 50:
-                st.session_state["page_size"] = 50
-            if "page_size" not in st.session_state:
-                st.session_state["page_size"] = 50
-
-            # Verifica se há dados para paginar
-            if df_texto_filtrado.empty:
-                st.warning("Não há dados para exibir após filtragem.")
-            else:
-                # Define um tamanho de página adequado para o nível de agregação
-                if tipo_nivel_agregacao_selecionado == "Estado" and len(df_texto_filtrado) < st.session_state[
-                    "page_size"]:
-                    tamanho_pagina_ajustado = len(df_texto_filtrado)
-                else:
-                    tamanho_pagina_ajustado = st.session_state["page_size"]
-
-                # Divide o DataFrame em páginas usando o tamanho ajustado
-                paginated_frames = split_frame(df_texto_filtrado, tamanho_pagina_ajustado)
-                total_pages = max(1, len(paginated_frames))
-
-                if "current_page" not in st.session_state:
-                    st.session_state["current_page"] = 1
-                if st.session_state["current_page"] > total_pages:
-                    st.session_state["current_page"] = 1
-
-                # Exibe a página atual com verificação de índice segura,
-                # redefinindo o índice para evitar problemas de renderização.
-                current_page_index = min(st.session_state["current_page"] - 1, len(paginated_frames) - 1)
-                df_pagina_atual = paginated_frames[current_page_index].reset_index(drop=True)
-                st.dataframe(df_pagina_atual.iloc[:, :], height=altura_tabela, use_container_width=True, hide_index=True)
-
-            # --- Controles de paginação ---
-            # Caso as constantes de proporção e padding não estejam definidas, as define:
-            PROP_LABEL_PAGINA = 0.33  # Proporção do label "Página:"
-            PROP_LABEL_ITENS = 0.55  # Proporção do label "Itens por página:"
-            PADDING_TOP = 5  # Padding superior em pixels
-
-
-            # Função para calcular as larguras das colunas de forma proporcional
-            def calcular_larguras(layout_config, largura_total=10.0):
-                total_pesos = sum(layout_config.values())
-                fator_ajuste = largura_total / total_pesos
-                return [peso * fator_ajuste for peso in layout_config.values()]
-
-
-            # Define os pesos de cada coluna do controle de paginação
-            layout_config = {
-                "info": 3.0,  # Coluna de informações (ex.: Total de registros)
-                "anterior": 1.2,  # Botão "Anterior"
-                "espaco1": 0.3,  # Espaço entre "Anterior" e "Próximo"
-                "proximo": 1.2,  # Botão "Próximo"
-                "espaco2": 1.0,  # Espaço entre "Próximo" e campo de Página
-                "pagina": 1.2,  # Campo da página atual
-                "espaco3": 0.3,  # Espaço entre o campo de Página e "Itens por página"
-                "itens": 1.8  # Campo "Itens por página"
-            }
-            larguras = calcular_larguras(layout_config, largura_total=10.0)
-            (col_info, col_anterior, col_espaco1, col_proximo,
-             col_espaco2, col_pagina, col_espaco3, col_itens) = st.columns(larguras)
-
-            with col_info:
-                total_registros_br = format_number_br(len(df_texto_filtrado))
-                st.markdown(
-                    f"**Total: {total_registros_br} registros | Página {st.session_state['current_page']} de {format_number_br(total_pages)}**"
-                )
-
-            with col_anterior:
-                if st.button("◀ Anterior", disabled=st.session_state["current_page"] <= 1, use_container_width=True):
-                    st.session_state["current_page"] -= 1
-                    st.rerun()
-
-            with col_espaco1:
-                st.empty()
-
-            with col_proximo:
-                if st.button("Próximo ▶", disabled=st.session_state["current_page"] >= total_pages,
-                             use_container_width=True):
-                    st.session_state["current_page"] += 1
-                    st.rerun()
-
-            with col_espaco2:
-                st.empty()
-
-            with col_pagina:
-                container = st.container()
-                label_col, input_col = container.columns([PROP_LABEL_PAGINA, 1 - PROP_LABEL_PAGINA])
-                with label_col:
-                    st.markdown(f"<div style='padding-top: {PADDING_TOP}px;'>Página:</div>", unsafe_allow_html=True)
-                with input_col:
-                    nova_pagina = st.number_input(
-                        "", min_value=1, max_value=total_pages,
-                        value=st.session_state["current_page"],
-                        step=1, label_visibility="collapsed"
-                    )
-                    if nova_pagina != st.session_state["current_page"]:
-                        st.session_state["current_page"] = nova_pagina
-                        st.rerun()
-
-            with col_espaco3:
-                st.empty()
-
-            with col_itens:
-                container = st.container()
-                label_col, select_col = container.columns([PROP_LABEL_ITENS, 1 - PROP_LABEL_ITENS])
-                with label_col:
-                    st.markdown(f"<div style='padding-top: {PADDING_TOP}px;'>Itens por página:</div>",
-                                unsafe_allow_html=True)
-                with select_col:
-                    novo_page_size = st.selectbox(
-                        "", options=[10, 25, 50, 100],
-                        index=2,
-                        label_visibility="collapsed"
-                    )
-                    if novo_page_size != st.session_state["page_size"]:
-                        st.session_state["page_size"] = novo_page_size
-                        st.session_state["current_page"] = 1
-                        st.rerun()
-
-        except Exception as e:
-            st.error(f"Erro ao exibir a tabela paginada: {e}")
-
-# Fim da seção de Tabela de Dados Detalhados
 
 # -------------------------------
 # Rodapé do Dashboard
