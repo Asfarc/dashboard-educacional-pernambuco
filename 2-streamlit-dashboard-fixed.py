@@ -56,6 +56,33 @@ css_unificado = """
     padding-top: 1rem !important;  /* Espaçamento saudável no topo */
 }
 
+/* =================== FILTROS DE TABELA =================== */
+/* Container principal dos filtros */
+div[data-testid="column"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 85px; /* Altura mínima para 2 linhas de texto + input */
+}
+
+/* Texto do cabeçalho das colunas */
+div[data-testid="column"] > .stMarkdown {
+    margin-bottom: 8px !important;
+    min-height: 40px; /* Altura fixa para caber 2 linhas */
+    display: flex;
+    align-items: flex-end;
+}
+
+/* Inputs de filtro */
+div[data-testid="column"] .stTextInput {
+    margin-top: auto; /* Empurra o input para baixo */
+}
+
+div[data-testid="column"] input {
+    padding: 8px !important;
+    height: 38px !important;
+}
+
 /* =================== BARRA LATERAL =================== */
 [data-testid="stSidebar"]::before {
     content: ""; /* Elemento de conteúdo vazio para o pseudo-elemento */
