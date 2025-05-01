@@ -583,8 +583,8 @@ with st.container():
 st.sidebar.title("Filtros")
 
 tipo_nivel_agregacao_selecionado = st.sidebar.radio(
-    "Nível de Agregação:",
-    ["Escola", "Município", "Estado"]
+    "Número de Matrículas por:",
+    ["Escola", "Município", "Estado PE"]
 )
 
 # Resetar página atual ao mudar de nível de agregação
