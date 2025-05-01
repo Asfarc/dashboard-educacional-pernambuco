@@ -1076,31 +1076,38 @@ else:
 
         # --- Aplicação de filtros manuais ---
         df_sem_filtros_texto = tabela_exibicao.copy()
+        num_cols = len(df_sem_filtros_texto.columns)
+        pesos = [1] * num_cols  # <- mesmo vetor nas duas linhas
 
-        # LINHA 1 – só os títulos
-        header_cols = st.columns(len(df_sem_filtros_texto.columns))
-        # LINHA 2 – só os campos de filtro
-        filter_cols = st.columns(len(df_sem_filtros_texto.columns))
+        header_cols = st.columns(pesos, gap="small")  # fileira 1
+        filter_cols = st.columns(pesos, gap="small")  # fileira 2
 
         col_filters = {}
-        ALTURA_TITULO = 60  # px; ajuste se precisar
+        ALTURA_TITULO = 46  # px; ajuste se precisar
 
         for i, col_name in enumerate(df_sem_filtros_texto.columns):
-            # -------- TÍTULO (linha 1) --------
+            # -------- Cabeçalho --------
             with header_cols[i]:
                 st.markdown(
-                    f"<div style='height:{ALTURA_TITULO}px;"
-                    f"font-weight:600;line-height:1.1;overflow:hidden'>{col_name}</div>",
-                    unsafe_allow_html=True
+                    f"""
+                    <div style="
+                        height:{ALTURA_TITULO}px;
+                        font-weight:600;
+                        line-height:1.1;
+                        overflow-wrap:break-word;
+                        overflow:hidden;">
+                        {col_name}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
-
-            # -------- CAMPO DE FILTRO (linha 2) --------
+            # -------- Campo de filtro --------
             with filter_cols[i]:
                 col_filters[col_name] = st.text_input(
                     label="",
                     key=f"filter_{col_name}",
                     placeholder=f"Filtrar {col_name}…",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
                 )
 
         df_texto_filtrado = df_sem_filtros_texto.copy()
