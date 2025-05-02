@@ -1,4 +1,3 @@
-css_unificado = """
 /* =================== AJUSTES GERAIS =================== */
 .stApp {
     padding-top: 1rem !important;  /* Espaçamento saudável no topo */
@@ -289,8 +288,3 @@ h2 {
         padding: 0rem !important;
     }
 }
-"""
-
-st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER), unsafe_allow_html=True)
-st.markdown(f"<style>{css_unificado}</style>", unsafe_allow_html=True)
-st.title(TITULO_DASHBOARD)
