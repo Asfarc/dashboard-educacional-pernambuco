@@ -163,17 +163,35 @@ if col_real in df_filt.columns:
 
 # ─── 10. EXPANDER CONFIG. AVANÇADAS ---------------------------------
 with st.sidebar.expander("Configurações avançadas da tabela", False):
-    altura_tabela = st.slider("Altura da tabela (px)", 200,1000,600,50)
+    altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
 
-# ─── 11. TABELA DETALHADA + FILTROS MANUAIS -------------------------
-df_para_tabela = df_filt.copy()  # todas as colunas
+# >>>>>>>   RECUPERA AS COLUNAS QUE VAMOS MOSTRAR   <<<<<<<<<
+base_cols = ["ANO"]
+if nivel == "Escola":
+    base_cols += ["CODIGO DA ESCOLA","NOME DA ESCOLA",
+                  "CODIGO DO MUNICIPIO","NOME DO MUNICIPIO",
+                  "DEPENDENCIA ADMINISTRATIVA"]
+elif nivel == "Município":
+    base_cols += ["CODIGO DO MUNICIPIO","NOME DO MUNICIPIO",
+                  "DEPENDENCIA ADMINISTRATIVA"]
+else:  # Estado
+    base_cols += ["DEPENDENCIA ADMINISTRATIVA","CODIGO DA UF","NOME DA UF"]
+
+colunas_visiveis = [c for c in base_cols if c in df_filt.columns]
+if col_real and col_real not in colunas_visiveis:
+    colunas_visiveis.append(col_real)
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# só as colunas previamente escolhidas ----------------
+df_para_tabela = df_filt[colunas_visiveis].copy()
 
 if df_para_tabela.empty:
     st.warning("Não há dados para exibir."); st.stop()
 
 num_cols   = len(df_para_tabela.columns)
-header_cols = st.columns([1]*num_cols, gap="small")
-filter_cols = st.columns([1]*num_cols, gap="small")
+pesos      = [1] * num_cols
+header_cols = st.columns(pesos, gap="small")
+filter_cols = st.columns(pesos, gap="small")
 
 col_filters = {}
 ALTURA_TITULO = 46
