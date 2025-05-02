@@ -12,12 +12,17 @@ from layout_primeiros_indicadores import (
 # ---------- Config inicial -----------------------------------------
 st.set_page_config(page_title="Dashboard PNE", page_icon="📊", layout="wide")
 
-# ------------------------------------------------ CSS
-css_blocos  = obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER)
-css_blocos += Path("static/style.css").read_text(encoding="utf-8")       # só texto puro!
+# ---------- CSS  --------------------------------------------------
+# 1) CSS que já vem COM <style>...</style>
+st.markdown(
+    obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER),
+    unsafe_allow_html=True
+)
 
-st.markdown(f"<style>{css_blocos}</style>", unsafe_allow_html=True)
-# ------------------------------------------------ FIM CSS
+# 2) Seu arquivo static/style.css  (APENAS CSS cru, sem aspas, sem python)
+css_file = Path("static/style.css").read_text(encoding="utf-8")
+st.markdown(f"<style>{css_file}</style>", unsafe_allow_html=True)
+# ---------- FIM CSS -----------------------------------------------
 
 st.title("MEU DASHBOARD")   # ou TITULO_DASHBOARD
 
