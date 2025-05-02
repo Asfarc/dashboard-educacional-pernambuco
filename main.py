@@ -46,6 +46,12 @@ with col3:
 # ---------- Dados ---------------------------------------------------
 escolas_df, estado_df, municipio_df = load_parquets()
 
+# (1) Opções para os filtros, extraídas dos próprios dados
+opcoes_anos   = sorted(escolas_df["ANO"].unique(), reverse=True)
+etapas        = sorted([c for c in escolas_df.columns
+                        if c.startswith("Número de Matrículas")])
+opcoes_redes  = sorted(escolas_df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
+
 # ---------- Sidebar nível de agregação ------------------------------
 tipo_nivel = st.sidebar.radio("Número de Matrículas por:", ["Escola", "Município", "Estado PE"])
 
