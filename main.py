@@ -36,16 +36,6 @@ with st.container():
     st.markdown("""<div class="top-bar">🏫 Dashboard Educacional – Pernambuco</div>""",
                 unsafe_allow_html=True)
 
-# ─── 6. (opcional) PRIMEIRO bloco de widgets (pode remover) ───────
-# Se quiser manter os 3 widgets iniciais, eles já vão ter as listas certas:
-col1, col2, col3 = st.columns([3, 2, 2])
-with col1:
-    anos = st.multiselect("Ano(s)", opcoes_anos, default=opcoes_anos[-10:])
-with col2:
-    etapa = st.selectbox("Etapa / Subetapa", etapas)
-with col3:
-    redes = st.multiselect("Rede(s)", opcoes_redes, default=["Estadual","Municipal"])
-
 
 # (1) Opções para os filtros, extraídas dos próprios dados
 opcoes_anos   = sorted(escolas_df["ANO"].unique(), reverse=True)
