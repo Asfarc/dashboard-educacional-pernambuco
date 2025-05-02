@@ -1,4 +1,15 @@
-/* =================== AJUSTES GERAIS =================== */
+/* ===== top-bar ===== */
+.top-bar {
+    background-color: #364b60;
+    padding: 0.8rem 1.2rem;
+    border-radius: 4px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
 .stApp {
     padding-top: 1rem !important;  /* Espaçamento saudável no topo */
 }
@@ -26,7 +37,7 @@
 [data-testid="stSidebar"] > div {
     position: relative;
     z-index: 1; /* Mantém o conteúdo acima do fundo */
-    # padding: 2rem 1rem !important; /* Espaçamento interno adequado */
+    padding: 2rem 1rem !important; /* Espaçamento interno adequado */
 }
 
 /* Define a cor do texto na barra lateral como branca */
@@ -192,7 +203,7 @@ h2 {
 .kpi-container {
     background-color: #f9f9f9;
     border-radius: 5px;
-    # padding: 15px;
+    padding: 15px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     margin-bottom: 20px;
 }
@@ -209,7 +220,7 @@ h2 {
 }
 .kpi-badge {
     background-color: #e6f2ff;
-    # padding: 2px 8px;
+    padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.8rem;
     color: #364b60;
@@ -219,7 +230,7 @@ h2 {
 .table-container {
     background-color: white;
     border-radius: 10px;
-    # padding: 15px;
+    padding: 15px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .table-header {
@@ -236,7 +247,7 @@ h2 {
     color: #4c8bf5;
     font-size: 14px;
     margin-top: 10px;
-    # padding: 8px;
+    padding: 8px;
     background-color: #f0f7ff;
     border-radius: 5px;
     border-left: 3px solid #4c8bf5;
@@ -245,7 +256,7 @@ h2 {
     color: #dc3545;
     font-size: 14px;
     margin-top: 10px;
-    # padding: 8px;
+    padding: 8px;
     background-color: #fff5f5;
     border-radius: 5px;
     border-left: 3px solid #dc3545;

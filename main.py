@@ -1,3 +1,4 @@
+# ─── 1. IMPORTS ─────────────────────────────────────────
 import streamlit as st, pandas as pd, re, time
 from pathlib import Path
 from utils import beautify, format_number_br
@@ -6,25 +7,41 @@ from constantes import *  # rótulos e textos externos
 from layout_primeiros_indicadores import (
     obter_estilo_css_container,
     PARAMETROS_ESTILO_CONTAINER,
-    construir_grafico_linha_evolucao,
 )
 
-# ---------- Config inicial -----------------------------------------
+# ─── 2. CONFIG. DA PÁGINA ───────────────────────────────
 st.set_page_config(page_title="Dashboard PNE", page_icon="📊", layout="wide")
 
-# ---------- CSS  --------------------------------------------------
-# 1) CSS que já vem COM <style>...</style>
+# ─── 3. INJETAR TODO O CSS ANTES DE QUALQUER COISA VISUAL
+# 3-A) bloco que JÁ vem com <style>...</style>
 st.markdown(
     obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER),
     unsafe_allow_html=True
 )
 
-# 2) Seu arquivo static/style.css  (APENAS CSS cru, sem aspas, sem python)
+# 3-B) seu arquivo static/style.css (apenas CSS puro, sem aspas!)
 css_file = Path("static/style.css").read_text(encoding="utf-8")
 st.markdown(f"<style>{css_file}</style>", unsafe_allow_html=True)
-# ---------- FIM CSS -----------------------------------------------
 
-st.title("MEU DASHBOARD")   # ou TITULO_DASHBOARD
+# ─── 4. TOPO DO DASHBOARD (TOP-BAR) ─────────────────────
+with st.container():
+    st.markdown(
+        """
+        <div class="top-bar">
+            🏫 Dashboard Educacional – Pernambuco
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ─── 5. WIDGETS / CONTEÚDO PRINCIPAL ────────────────────
+col1, col2, col3 = st.columns([3, 2, 2])
+with col1:
+    anos = st.multiselect("Ano(s)", opcoes_anos, default=opcoes_anos[-10:])
+with col2:
+    etapa = st.selectbox("Etapa / Subetapa", etapas)
+with col3:
+    redes = st.multiselect("Rede(s)", opcoes_redes, default=["Estadual","Municipal"])
 
 # ---------- Dados ---------------------------------------------------
 escolas_df, estado_df, municipio_df = load_parquets()
