@@ -1,21 +1,15 @@
 # =============================  main.py  =============================
-# Dashboard PNE – versão “filtros antigos” (sidebar + painel superior)
+# Dashboard PNE – filtros antigos (painel superior + filtros manuais)
 # --------------------------------------------------------------------
-# • Mantém o CSS externo em static/style.css  ➜  NÃO existe css_unificado
-# • Reutiliza todas as funções auxiliares originais
-# • Carrega arquivos .parquet (escolas, município, estado)
-# • Painel de filtros: Ano(s) | Etapa / Subetapa | Rede(s)
-# • Tabela paginada com filtros por coluna + botões download
+#  ► CSS externo apenas em static/style.css (nada de css_unificado)
+#  ► Painel: Ano(s) | Etapa/Subetapa | Rede(s)
+#  ► Tabela detalhada com filtros por coluna e paginação
 # --------------------------------------------------------------------
 
 # ─── 1. IMPORTS ──────────────────────────────────────────────────────
 import streamlit as st, pandas as pd, io, json, os, re, time
 from pathlib import Path
-
-# constantes.py deve ter: TITULO_DASHBOARD, TITULO_DADOS_DETALHADOS,
-# ERRO_* e INFO_* usados abaixo
-from constantes import *
-
+from constantes import *                       # TITULO_*, ERRO_*, INFO_* …
 from layout_primeiros_indicadores import (
     obter_estilo_css_container,
     PARAMETROS_ESTILO_CONTAINER,
@@ -30,14 +24,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── 3. INJETAR CSS (EXTERNO) ────────────────────────────────────────
+# ─── 3. INJETAR CSS ─────────────────────────────────────────────────
 st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER),
             unsafe_allow_html=True)
-
 css_file = Path("static/style.css").read_text(encoding="utf-8")
 st.markdown(f"<style>{css_file}</style>", unsafe_allow_html=True)
 
-# ─── 4. FUNÇÕES UTILITÁRIAS (beautify, formato BR, etc.) ─────────────
+# ─── 4. UTILITÁRIOS --------------------------------------------------
 def beautify(col: str) -> str:
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
 
@@ -56,28 +49,25 @@ def format_number_br(num):
     try: return f"{int(num):,}".replace(",", ".")
     except Exception: return str(num)
 
-# ─── 5. CARREGAR ARQUIVOS PARQUET ────────────────────────────────────
+# ─── 5. CARREGA .PARQUET --------------------------------------------
 @st.cache_data(ttl=3600, show_spinner="Carregando dados…")
 def importar_arquivos_parquet():
     paths = ["escolas.parquet", "estado.parquet", "municipio.parquet"]
     if not all(Path(p).exists() for p in paths):
         st.error(ERRO_ARQUIVOS_NAO_ENCONTRADOS); st.stop()
-
     escolas, estado, municipio = [pd.read_parquet(p) for p in paths]
 
-    # conversões básicas
     for _df in (escolas, estado, municipio):
         for c in _df.columns:
             if c.startswith("Número de"):
                 _df[c] = pd.to_numeric(_df[c], errors="coerce")
             elif c in ["ANO", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA", "CODIGO DA UF"]:
                 _df[c] = _df[c].astype(str)
-
     return escolas, estado, municipio
 
 escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
 
-# ─── 6. DICIONÁRIO DE ETAPAS ────────────────────────────────────────
+# ─── 6. DICIONÁRIO DE ETAPAS ----------------------------------------
 @st.cache_data
 def ler_dicionario_etapas():
     f = Path("dicionario_das_etapas_de_ensino.json")
@@ -88,41 +78,35 @@ def ler_dicionario_etapas():
 def padronizar_dict_etapas(df):
     base = ler_dicionario_etapas()
     norm = {c.replace('\n','').lower(): c for c in df.columns}
-
-    def real(nome):
-        return norm.get(nome.replace('\n','').lower(), nome)
-
-    out = {}
-    for etapa, cfg in base.items():
-        out[etapa] = {
-            "coluna_principal": real(cfg.get("coluna_principal", "")),
-            "subetapas": {k: real(v) for k,v in cfg.get("subetapas", {}).items()},
-            "series": {k: {s: real(c) for s,c in sd.items()} for k,sd in cfg.get("series", {}).items()}
+    def real(x): return norm.get(x.replace('\n','').lower(), x)
+    out={}
+    for etapa,cfg in base.items():
+        out[etapa]={
+            "coluna_principal": real(cfg.get("coluna_principal","")),
+            "subetapas":{k:real(v) for k,v in cfg.get("subetapas",{}).items()},
+            "series":{k:{s:real(c) for s,c in sd.items()} for k,sd in cfg.get("series",{}).items()}
         }
     return out
 
 def procurar_coluna_matriculas(etapa, sub, serie, mapa):
-    if sub == "Todas": return mapa[etapa]["coluna_principal"]
-    if serie == "Todas": return mapa[etapa]["subetapas"].get(sub)
-    return mapa[etapa]["series"].get(sub, {}).get(serie)
+    if sub=="Todas": return mapa[etapa]["coluna_principal"]
+    if serie=="Todas": return mapa[etapa]["subetapas"].get(sub)
+    return mapa[etapa]["series"].get(sub,{}).get(serie)
 
 def confirmar_coluna(df, col):
-    if col in df.columns: return True, col
-    alt = {c.replace('\n','').lower(): c for c in df.columns}
-    key = col.replace('\n','').lower()
-    return (key in alt), alt.get(key, col)
+    if col in df.columns: return True,col
+    alt={c.replace('\n','').lower():c for c in df.columns}
+    key=col.replace('\n','').lower()
+    return (key in alt), alt.get(key,col)
 
-# ─── 7. SIDEBAR – nível de agregação ─────────────────────────────────
+# ─── 7. SIDEBAR – nível de agregação --------------------------------
 st.sidebar.title("Filtros")
-
 nivel = st.sidebar.radio("Número de Matrículas por:",
-                         ["Escola", "Município", "Estado PE"])
+                         ["Escola","Município","Estado PE"])
+df = {"Escola":escolas_df,"Município":municipio_df,"Estado PE":estado_df}[nivel]
+if df.empty: st.error("DataFrame vazio"); st.stop()
 
-df = {"Escola": escolas_df, "Município": municipio_df, "Estado PE": estado_df}[nivel]
-if df.empty:
-    st.error("DataFrame vazio."); st.stop()
-
-# ─── 8. PAINEL SUPERIOR (Ano / Etapa / Rede) ─────────────────────────
+# ─── 8. PAINEL ANOS / ETAPA / REDE ----------------------------------
 st.markdown("""
 <style>
 .panel-filtros{background:#eef2f7;border:1px solid #dce6f3;border-radius:6px;
@@ -135,121 +119,148 @@ with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
     c_ano,c_etapa,c_rede = st.columns([1.3,2.2,1.8], gap="small")
 
-    # --- ANO(S) ---
+    # ----- Ano(s)
     with c_ano:
         st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df["ANO"].unique(), reverse=True)
-        select_all_anos = st.checkbox("Selecionar tudo",
-                                      value=True, key="anos_all")
-        anos_sel = st.multiselect("", anos_disp,
-                                  default=(anos_disp if select_all_anos else anos_disp[:1]),
-                                  key="anos_multiselect")
-        if select_all_anos and len(anos_sel)!=len(anos_disp):
+        all_anos  = st.checkbox("Selecionar tudo", value=True, key="anos_all")
+        anos_sel  = st.multiselect("", anos_disp,
+                                   default=(anos_disp if all_anos else anos_disp[:1]),
+                                   key="anos_multiselect")
+        if all_anos and len(anos_sel)!=len(anos_disp):
             st.session_state["anos_all"]=False
 
-    # --- ETAPA / SUBETAPA ---
-    mapa = padronizar_dict_etapas(df)
-    lista_etapas = list(mapa.keys())
+    # ----- Etapa / Subetapa
+    mapa = padronizar_dict_etapas(df); lista_etapas=list(mapa.keys())
     with c_etapa:
         st.markdown('<div class="filter-title">Etapa / Subetapa</div>', unsafe_allow_html=True)
         etapa_sel = st.selectbox("", lista_etapas, key="etapa_ensino")
-        sub_opts = ["Todas"]+list(mapa[etapa_sel]["subetapas"].keys())
-        sub_sel  = st.selectbox("", sub_opts, key="subetapa")
+        sub_opts  = ["Todas"]+list(mapa[etapa_sel]["subetapas"].keys())
+        sub_sel   = st.selectbox("", sub_opts, key="subetapa")
 
-    # --- REDE(S) ---
+    # ----- Rede(s)
     with c_rede:
         st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
         redes_disp = sorted(df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
-        select_all_rede = st.checkbox("Selecionar tudo", value=True, key="rede_all")
-        rede_sel = st.multiselect("", redes_disp,
-                                  default=(redes_disp if select_all_rede else []),
-                                  key="dep_selection")
-        if select_all_rede and len(rede_sel)!=len(redes_disp):
+        all_rede   = st.checkbox("Selecionar tudo", value=True, key="rede_all")
+        rede_sel   = st.multiselect("", redes_disp,
+                                    default=(redes_disp if all_rede else []),
+                                    key="dep_selection")
+        if all_rede and len(rede_sel)!=len(redes_disp):
             st.session_state["rede_all"]=False
-
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ─── 9. APLICA FILTROS AOS DADOS ─────────────────────────────────────
-if "ANO" not in df.columns:
-    st.error("Coluna 'ANO' ausente."); st.stop()
-
+# ─── 9. APLICA FILTROS AO DATAFRAME ---------------------------------
 df_filt = df[df["ANO"].isin(st.session_state["anos_multiselect"])]
-if "DEPENDENCIA ADMINISTRATIVA" in df_filt.columns:
-    if st.session_state["dep_selection"]:
-        df_filt = df_filt[df_filt["DEPENDENCIA ADMINISTRATIVA"]
-                          .isin(st.session_state["dep_selection"])]
-    else:
-        df_filt = df_filt[0:0]
+if "DEPENDENCIA ADMINISTRATIVA" in df_filt.columns and st.session_state["dep_selection"]:
+    df_filt = df_filt[df_filt["DEPENDENCIA ADMINISTRATIVA"]
+                      .isin(st.session_state["dep_selection"])]
 
 col_mat = procurar_coluna_matriculas(etapa_sel, sub_sel, "Todas", mapa)
-existe, col_real = confirmar_coluna(df_filt, col_mat)
-if existe:
+_, col_real = confirmar_coluna(df_filt, col_mat)
+if col_real in df_filt.columns:
     df_filt = df_filt[pd.to_numeric(df_filt[col_real], errors="coerce") > 0]
-else:
-    st.warning("Coluna de matrículas não encontrada.")
 
-# ─── 10. CONFIGURAÇÕES DA TABELA (Expander) ──────────────────────────
+# ─── 10. EXPANDER CONFIG. AVANÇADAS ---------------------------------
 with st.sidebar.expander("Configurações avançadas da tabela", False):
-    altura = st.slider("Altura da tabela (px)", 200, 1000, 600, 50,
-                       key="altura_tabela")
+    altura_tabela = st.slider("Altura da tabela (px)", 200,1000,600,50)
 
-# colunas base
-base_cols = ["ANO"]
-if nivel=="Escola":
-    base_cols += ["CODIGO DA ESCOLA","NOME DA ESCOLA",
-                  "CODIGO DO MUNICIPIO","NOME DO MUNICIPIO",
-                  "DEPENDENCIA ADMINISTRATIVA"]
-elif nivel=="Município":
-    base_cols += ["CODIGO DO MUNICIPIO","NOME DO MUNICIPIO",
-                  "DEPENDENCIA ADMINISTRATIVA"]
-else:
-    base_cols += ["DEPENDENCIA ADMINISTRATIVA","CODIGO DA UF","NOME DA UF"]
+# ─── 11. TABELA DETALHADA + FILTROS MANUAIS -------------------------
+df_para_tabela = df_filt.copy()  # todas as colunas
 
-colunas_visiveis = [c for c in base_cols if c in df_filt.columns]
-if col_real and col_real not in colunas_visiveis:
-    colunas_visiveis.append(col_real)
+if df_para_tabela.empty:
+    st.warning("Não há dados para exibir."); st.stop()
 
-# ─── 11. EXIBE TABELA (paginada simples) ─────────────────────────────
-PAGE = st.session_state.get("pg",1)
-PAGE_SZ = st.session_state.get("pg_sz",50)
-tot_pg = max(1, -(-len(df_filt)//PAGE_SZ))
-PAGE = max(1, min(PAGE, tot_pg))
-st.session_state["pg"]=PAGE
+num_cols   = len(df_para_tabela.columns)
+header_cols = st.columns([1]*num_cols, gap="small")
+filter_cols = st.columns([1]*num_cols, gap="small")
 
-pag_df = df_filt.iloc[(PAGE-1)*PAGE_SZ : PAGE*PAGE_SZ][colunas_visiveis].copy()
-for c in pag_df.columns:
+col_filters = {}
+ALTURA_TITULO = 46
+
+for i,col_name in enumerate(df_para_tabela.columns):
+    with header_cols[i]:
+        st.markdown(
+            f"<div style='height:{ALTURA_TITULO}px;font-weight:600;"
+            f"overflow-wrap:break-word;overflow:hidden'>{beautify(col_name)}</div>",
+            unsafe_allow_html=True
+        )
+    with filter_cols[i]:
+        col_filters[col_name] = st.text_input("", key=f"filter_{i}_{col_name}",
+                                              placeholder=f"Filtrar {beautify(col_name)}…",
+                                              label_visibility="collapsed")
+
+df_texto_filtrado = df_para_tabela.copy()
+for col_name, filtro in col_filters.items():
+    if filtro:
+        expr = re.escape(filtro)
+        try:
+            if col_name.startswith("Número de") or pd.api.types.is_numeric_dtype(df_texto_filtrado[col_name]):
+                ponto = filtro.replace(",",".")
+                if ponto.replace(".","",1).isdigit() and ponto.count(".")<=1:
+                    df_texto_filtrado = df_texto_filtrado[df_texto_filtrado[col_name]==float(ponto)]
+                else:
+                    df_texto_filtrado = df_texto_filtrado[
+                        df_texto_filtrado[col_name].astype(str).str.contains(expr, case=False, regex=True)]
+            else:
+                df_texto_filtrado = df_texto_filtrado[
+                    df_texto_filtrado[col_name].astype(str).str.contains(expr, case=False, regex=True)]
+        except Exception as e:
+            st.warning(f"Erro ao filtrar {col_name}: {e}")
+
+# Paginação manual
+PAGE_SIZE = st.session_state.get("page_size", 50)
+chunks = [df_texto_filtrado[i:i+PAGE_SIZE]
+          for i in range(0,len(df_texto_filtrado), PAGE_SIZE)] or [df_texto_filtrado]
+total_pg = len(chunks)
+pg_atual = st.session_state.get("current_page",1)
+pg_atual = max(1,min(pg_atual,total_pg))
+st.session_state["current_page"]=pg_atual
+df_pagina = chunks[pg_atual-1].reset_index(drop=True)
+
+# Exibe
+for c in df_pagina.columns:
     if c.startswith("Número de"):
-        pag_df[c] = pag_df[c].apply(aplicar_padrao_numerico_brasileiro)
+        df_pagina[c] = df_pagina[c].apply(aplicar_padrao_numerico_brasileiro)
 
-st.dataframe(pag_df.reset_index(drop=True), height=altura,
-             use_container_width=True, hide_index=True)
+st.dataframe(df_pagina, height=altura_tabela, use_container_width=True, hide_index=True)
 
-a1,a2,a3=st.columns(3)
-with a1:
-    if st.button("◀", disabled=PAGE==1):
-        st.session_state.pg = PAGE-1; st.rerun()
-with a2:
-    st.markdown(f"**Página {PAGE}/{tot_pg}**")
-with a3:
-    if st.button("▶", disabled=PAGE==tot_pg):
-        st.session_state.pg = PAGE+1; st.rerun()
+# ─ botões de paginação
+b1,b2,b3,b4 = st.columns([1,1,1,2])
+with b1:
+    if st.button("◀ Anterior", disabled=pg_atual==1):
+        st.session_state["current_page"] = pg_atual-1; st.rerun()
+with b2:
+    if st.button("Próximo ▶", disabled=pg_atual==total_pg):
+        st.session_state["current_page"] = pg_atual+1; st.rerun()
+with b3:
+    novo_psz = st.selectbox("Itens", [10,25,50,100],
+                            index=[10,25,50,100].index(PAGE_SIZE),
+                            label_visibility="collapsed")
+    if novo_psz != PAGE_SIZE:
+        st.session_state["page_size"] = novo_psz
+        st.session_state["current_page"] = 1
+        st.rerun()
+with b4:
+    st.markdown(f"**Página {pg_atual}/{total_pg} "
+                f"• Total {format_number_br(len(df_texto_filtrado))} registros**")
 
-# ─── 12. DOWNLOADS (sidebar) ─────────────────────────────────────────
-csv_bytes = pag_df.to_csv(index=False).encode("utf-8")
+# ─── 12. DOWNLOADS (sidebar) ----------------------------------------
+csv_bytes = df_texto_filtrado.to_csv(index=False).encode("utf-8")
 xlsx_buf = io.BytesIO()
 with pd.ExcelWriter(xlsx_buf, engine="xlsxwriter") as w:
-    pag_df.to_excel(w, index=False, sheet_name="Dados")
-st.sidebar.download_button("CSV", csv_bytes, "dados.csv", "text/csv")
+    df_texto_filtrado.to_excel(w, index=False, sheet_name="Dados")
+st.sidebar.download_button("CSV", csv_bytes,"dados.csv","text/csv")
 st.sidebar.download_button("Excel", xlsx_buf.getvalue(),
                            "dados.xlsx",
                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# ─── 13. KPI + GRÁFICO DEMO (mesmo bloco antigo) ────────────────────
-# (omiti para reduzir tamanho — copie seu bloco de KPI/grafico aqui)
+# ─── 13. KPI + GRÁFICO (adicione se quiser) -------------------------
 
-# ─── 14. RODAPÉ ──────────────────────────────────────────────────────
+# ─── 14. RODAPÉ ------------------------------------------------------
 st.markdown("---")
 st.caption("© Dashboard Educacional – atualização: Mar 2025")
-st.caption(f"Tempo de processamento: {time.time()-st.session_state.get('tempo_inicio',time.time()):.2f}s")
-st.session_state['tempo_inicio']=time.time()
+st.caption(f"Tempo de processamento: "
+           f"{time.time()-st.session_state.get('tempo_inicio',time.time()):.2f}s")
+st.session_state['tempo_inicio'] = time.time()
 # ====================================================================
