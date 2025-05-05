@@ -50,7 +50,7 @@ def format_number_br(num):
     except Exception: return str(num)
 
 # ─── 5. CARREGA .PARQUET --------------------------------------------
-@st.cache_data(ttl=3600, show_spinner="Carregando dados…")
+@st.cache_resource(show_spinner="Carregando .parquet…")
 def importar_arquivos_parquet():
     paths = ["escolas.parquet", "estado.parquet", "municipio.parquet"]
     if not all(Path(p).exists() for p in paths):

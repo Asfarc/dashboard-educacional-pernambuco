@@ -21,7 +21,7 @@ PARAMETROS_ESTILO_CONTAINER = {
     "tamanho_fonte_titulo": "1.1rem",
     "tamanho_fonte_conteudo": "1rem",
     "cor_fonte_conteudo": "#364b60",
-    "largura_colunas": [30, 14, 14, 14, 14, 14]  # Novo: porcentagens das colunas
+    "largura_colunas": [14, 14, 14, 14, 14, 14]  # Novo: porcentagens das colunas
 }
 
 CONFIG_GRAFICO = {
