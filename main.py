@@ -7,10 +7,54 @@
 
 # ─── 1. IMPORTS ──────────────────────────────────────────────────────
 import streamlit as st, pandas as pd, io, re, time
-from layout_primeiros_indicadores import (
-    obter_estilo_css_container,
-    PARAMETROS_ESTILO_CONTAINER,
-)
+import altair as alt                 #  ← trazido do layout_primeiros_indicadores
+
+# --------- PARÂMETROS E FUNÇÕES (vinham de layout_primeiros_indicadores)
+# 1. Configura locale pt‑BR no Altair (caso você venha a usar gráficos)
+alt.renderers.set_embed_options({
+    'formatLocale': {
+        'decimal': ',',
+        'thousands': '.',
+        'grouping': [3],
+        'currency': ['R$', '']
+    }
+})
+
+# 2. Parâmetros de estilo do container
+PARAMETROS_ESTILO_CONTAINER = {
+    "raio_borda": 8,
+    "cor_borda": "#dee2e6",
+    "cor_titulo": "#364b60",
+    "tamanho_fonte_titulo": "1.1rem",
+    "tamanho_fonte_conteudo": "1rem",
+    "cor_fonte_conteudo": "#364b60",
+}
+
+# 3. Função que gera CSS adicional (usada logo após o set_page_config)
+def obter_estilo_css_container(params=None) -> str:
+    if params is None:
+        params = PARAMETROS_ESTILO_CONTAINER
+    return f"""
+    <style>
+    .container-custom {{
+        padding:0!important;margin-bottom:0!important;background:transparent!important;
+    }}
+    .container-title {{
+        font-size:{params["tamanho_fonte_titulo"]}!important;color:{params["cor_titulo"]}!important;
+    }}
+    .container-text {{
+        font-size:{params["tamanho_fonte_conteudo"]}!important;color:{params["cor_fonte_conteudo"]}!important;
+    }}
+    </style>
+    """
+
+# 4. (opcional) Função de gráfico — deixe comentada se não usar agora
+"""
+def construir_grafico_linha_evolucao(df_transformado, **kwargs):
+    # …  (código completo igual ao original) …
+    return grafico
+"""
+# --------------------------------------------------------------------
 
 # ─── 2. CONFIGURAÇÃO DA PÁGINA ───────────────────────────────────────
 st.set_page_config(
@@ -20,7 +64,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── 3. CSS (container + estilo geral) ───────────────────────────────
+# 3 ─── CSS GERAL (container + painel + sidebar) ─────────────────────
 CSS_IN_LINE = """
 /* ===== PAINEL DE FILTROS NO MAIN ===== */
 .panel-filtros{
@@ -47,11 +91,9 @@ CSS_IN_LINE = """
 [data-testid="stSidebar"] .stRadio span:not([role="radio"]){
     color:#fff!important;
 }
-/* texto interno de selects em preto */
 [data-testid="stSidebar"] option,
 [data-testid="stSidebar"] select,
 [data-testid="stSidebar"] [data-baseweb="select"] div{color:#000!important}
-/* itens selecionados */
 [data-testid="stSidebar"] .stMultiSelect [aria-selected="true"]{
     background:#e37777!important;color:#fff!important;border-radius:1px!important
 }
@@ -87,8 +129,14 @@ button[kind="pillsActive"][data-testid="stBaseButton-pillsActive"] p{
     [data-testid="stSidebar"]{width:100%!important;margin:0!important;padding:0!important}
 }
 """
-st.markdown(obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER),
-            unsafe_allow_html=True)
+
+# primeiro: CSS específico dos “containers” (KPI etc.)
+st.markdown(
+    obter_estilo_css_container(PARAMETROS_ESTILO_CONTAINER),
+    unsafe_allow_html=True,
+)
+
+# depois: todo o restante do estilo
 st.markdown(f"<style>{CSS_IN_LINE}</style>", unsafe_allow_html=True)
 
 # ─── 4. FUNÇÕES AUXILIARES ───────────────────────────────────────────
