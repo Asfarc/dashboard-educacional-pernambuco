@@ -156,23 +156,22 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = """
-/* título já colado */
-.filter-title{margin:0 0 .15rem}
+/* ... mantém regras anteriores ... */
 
-/* some com o label vazio */
-.panel-filtros label[data-testid="stWidgetLabel"][aria-hidden="true"]{
-    display:none!important; height:0!important; margin:0!important; padding:0!important
+/* Remove espaçamento ENTRE os elementos titulo↔caixa */
+.panel-filtros [data-testid="element-container"] {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* zera/encolhe o GAP vertical que o Streamlit injeta                 */
-/* (div cuja class começa por stVerticalBlock)                         */
-.panel-filtros div[class^="stVerticalBlock"]{
-    row-gap:0.25rem!important;   /* 0.25 rem ≈ 4 px  — use 0 rem se quiser colado */
+/* Ajusta containers dos títulos */
+.panel-filtros .stMarkdown[data-testid="stMarkdown"] {
+    margin-bottom: -0.5rem !important;  /* Compensa margem residual */
 }
 
-/* remove folga extra depois do widget */
-.panel-filtros div[class^="stVerticalBlock"] > div[data-testid="element-container"]:last-child{
-    margin-bottom:0!important
+/* Ajuste fino para alinhamento vertical */
+.panel-filtros [data-testid="stVerticalBlock"] > div {
+    gap: 0 !important;
 }
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
