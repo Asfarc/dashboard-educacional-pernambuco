@@ -141,11 +141,19 @@ with st.container():
     # ----- Série (depende de Etapa e Subetapa)
     with c_serie:
         st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
-        mask = df["Etapa"].eq(etapa_sel) if etapa_sel != "Todas" else True
+
+        # 1. começa com todos verdadeiros
+        mask = pd.Series(True, index=df.index)
+
+        # 2. refina conforme filtros escolhidos
+        if etapa_sel != "Todas":
+            mask &= df["Etapa"] == etapa_sel
         if sub_sel != "Todas":
-            mask &= df["Subetapa"].eq(sub_sel)
-        serie_disp = sorted(df[mask]["Série"].unique())
-        serie_sel  = st.selectbox("", ["Todas"] + serie_disp, key="serie_sel")
+            mask &= df["Subetapa"] == sub_sel
+
+        # 3. aplica a máscara para listar as séries disponíveis
+        serie_disp = sorted(df.loc[mask, "Série"].unique())
+        serie_sel = st.selectbox("", ["Todas"] + serie_disp, key="serie_sel")
 
     # ----- Rede(s)
     with c_rede:
