@@ -226,7 +226,7 @@ with st.container():
         else:
             sub_sel = []
 
-        # Mesmo padrão para Série
+        # Mesmo padrão para Série - completando o código
         if etapa_sel and sub_sel:
             st.markdown('<div class="filter-title" style="margin:0;padding:0;margin-top:5px">Série</div>',
                         unsafe_allow_html=True)
@@ -238,7 +238,7 @@ with st.container():
                     "Série"
                 ].unique()
             )
-            serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel")
+            serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel", label_visibility="collapsed")
         else:
             serie_sel = []
 
