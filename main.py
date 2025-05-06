@@ -155,24 +155,34 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 #    por isso nunca “escorregam” mesmo que a caixa de Ano(s) cresça.
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
-EXTRA_CSS = """
-/* ... mantém regras anteriores ... */
-
-/* Remove espaçamento ENTRE os elementos titulo↔caixa */
-.panel-filtros [data-testid="element-container"] {
+EXTRA_CSS = f"""
+/* ─── 👇🏼 SOLUÇÃO DEFINITIVA 👇🏼 ──────────────────── */
+.panel-filtros .stMarkdown[data-testid="stMarkdown"] {{
     margin: 0 !important;
     padding: 0 !important;
-}
+}}
 
-/* Ajusta containers dos títulos */
-.panel-filtros .stMarkdown[data-testid="stMarkdown"] {
-    margin-bottom: -0.5rem !important;  /* Compensa margem residual */
-}
-
-/* Ajuste fino para alinhamento vertical */
-.panel-filtros [data-testid="stVerticalBlock"] > div {
+.panel-filtros [data-testid="stVerticalBlock"] > div:has(.element-container) {{
     gap: 0 !important;
-}
+}}
+
+/* Ataque direto aos containers dos títulos */
+.panel-filtros [data-testid="element-container"]:has(.filter-title) {{
+    margin-bottom: -8px !important;  /* Ajuste fino baseado no seu HTML */
+}}
+
+/* Remove espaços fantasmas nos containers dos selects */
+.panel-filtros [data-testid="stMultiSelectContainer"] {{
+    margin-top: -4px !important;
+    padding-top: 0 !important;
+}}
+
+/* Ajuste final para alinhamento perfeito */
+.panel-filtros .filter-title {{
+    padding-bottom: 2px !important;
+    line-height: 1 !important;
+    min-height: auto !important;
+}}
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
 
