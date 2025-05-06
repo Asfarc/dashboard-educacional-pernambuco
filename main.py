@@ -193,19 +193,18 @@ with st.container():
 
     # ●–––––  Ano(s) + Rede(s)  (coluna da ESQUERDA) –––––●
     with c_left:
-        # Ano(s)
-        st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
+        # Ano(s) - com espaço vertical mínimo
+        st.markdown('<div class="filter-title" style="margin:0;padding:0">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
-        ano_sel = st.multiselect("", anos_disp, default=anos_disp, key="ano_sel")
+        ano_sel = st.multiselect("", anos_disp, default=anos_disp, key="ano_sel", label_visibility="collapsed")
 
-        # Rede(s)
-        st.markdown('<div class="filter-title" style="margin-top:0.4rem">Rede(s)</div>',
+        # Rede(s) - com margem negativa para aproximar da caixa anterior
+        st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Rede(s)</div>',
                     unsafe_allow_html=True)
         redes_disp = sorted(df_base["Rede"].dropna().unique())
-        rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel")
+        rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel", label_visibility="collapsed")
 
-    # ●–––––  Etapa → Subetapa → Série  (coluna da DIREITA) –––––●
-    # Na seção de filtros, tente esta abordagem para Etapa:
+    # ELIMINAR ESPAÇAMENTO DAS CAIXAS DE SELEÇÃO E RÓTULOS
     with c_right:
         # Etapa com mínimo de espaço vertical
         st.markdown('<div class="filter-title" style="margin:0;padding:0">Etapa</div>', unsafe_allow_html=True)
