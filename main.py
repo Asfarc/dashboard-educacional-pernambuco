@@ -47,10 +47,14 @@ CSS_IN_LINE = """
 /* ===== PAINEL DE FILTROS ========================================== */
 .panel-filtros{
     background:#eef2f7;border:1px solid #dce6f3;border-radius:6px;
-    padding:0.8rem 1rem 1rem;margin-bottom:1.2rem;
-    display:flex;flex-wrap:nowrap;align-items:flex-start;gap:0.8rem}
-.panel-filtros>div{flex:1 1 0}
-.filter-title{font-weight:600;color:#364b60;font-size:0.92rem;margin:0 0 0.35rem}
+    padding:0.7rem 1rem 1rem;margin-bottom:1.1rem;
+}
+.panel-row{display:flex;flex-wrap:nowrap;gap:0.8rem}      /* NOVO  */
+.panel-row>div{flex:1 1 0}
+
+.filter-title{
+    font-weight:600;color:#364b60;font-size:0.90rem;margin:0 0 0.15rem /* ↓ */
+}
 
 /* ===== SIDEBAR ===================================================== */
 [data-testid="stSidebar"]{width:260px!important;min-width:260px!important}
