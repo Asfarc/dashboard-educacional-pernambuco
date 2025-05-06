@@ -156,11 +156,14 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = """
-.filter-title{margin:0 0 0rem}                 /* título colado          */
-div[data-baseweb="select"]>div{max-height:140px;overflow:auto}
+/* título já colado: */
+.filter-title{margin:0 0 .2rem}
 
-.panel-filtros div[data-baseweb="select"]{       /* << aqui é o truque     */
-    margin-top:0rem !important;                /*  ↳ encosta na label    */
+/* reduz (ou zera) folga do widget ↓ */
+.panel-filtros .stSelectbox,
+.panel-filtros .stMultiSelect{
+    margin-top:0 !important;      /* zera margem externa   */
+    padding-top:0 !important;     /* zera eventual padding */
 }
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
