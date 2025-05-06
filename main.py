@@ -13,7 +13,6 @@ from constantes import *                       # TITULO_*, ERRO_*, INFO_* …
 from layout_primeiros_indicadores import (
     obter_estilo_css_container,
     PARAMETROS_ESTILO_CONTAINER,
-    construir_grafico_linha_evolucao,
 )
 
 # ─── 2. CONFIG. DA PÁGINA ────────────────────────────────────────────
@@ -64,10 +63,16 @@ def importar_parquet_unico():
                   .replace("<NA>", "")                       # tira 'NaN'
             )
 
-    # 2. Cria colunas Etapa e Subetapa a partir da string completa
-    df["Etapa"] = df["Etapa de Ensino"].str.split(" - ").str[0]
-    df["Subetapa"] = (
-        df["Etapa de Ensino"].str.split(" - ").str[1:].str.join(" - ").replace("", "—")
+    # 2. Cria colunas Etapa, Subetapa, Série
+    def _split_etapa(s):
+        partes = s.split(" - ")
+        etapa = partes[0]
+        subetapa = partes[1] if len(partes) > 1 else "—"
+        serie = " - ".join(partes[2:]) if len(partes) > 2 else "—"
+        return etapa, subetapa, serie
+
+    df[["Etapa", "Subetapa", "Série"]] = df["Etapa de Ensino"].apply(
+        lambda x: pd.Series(_split_etapa(x))
     )
 
     # 3. Ajusta tipos
@@ -93,7 +98,7 @@ nivel = st.sidebar.radio("Número de Matrículas por:",
 df = {"Escola": escolas_df, "Município": municipio_df, "Estado PE": estado_df}[nivel]
 if df.empty: st.error("DataFrame vazio"); st.stop()
 
-# ─── 8. PAINEL ANOS / ETAPA / SUBETAPA / REDE ------------------------
+# ─── 8. PAINEL ANO / ETAPA / SUB / SÉRIE / REDE ---------------------
 st.markdown("""
 <style>
 .panel-filtros{background:#eef2f7;border:1px solid #dce6f3;border-radius:6px;
@@ -104,18 +109,17 @@ padding:0.7rem 1rem 1rem;margin-bottom:1.2rem;}
 
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
-    c_ano, c_etapa, c_sub, c_rede = st.columns([1.1, 1.7, 1.7, 1.5], gap="small")
+    c_ano, c_etapa, c_sub, c_serie, c_rede = st.columns([1.0, 1.6, 1.6, 1.6, 1.4],
+                                                        gap="small")
 
     # ----- Ano(s)
     with c_ano:
         st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df["Ano"].unique(), reverse=True)
         all_anos  = st.checkbox("Tudo", True, key="anos_all")
-        anos_sel  = st.multiselect(
-            "", anos_disp,
-            default=(anos_disp if all_anos else anos_disp[:1]),
-            key="anos_multiselect"
-        )
+        anos_sel  = st.multiselect("", anos_disp,
+                                   default=(anos_disp if all_anos else anos_disp[:1]),
+                                   key="anos_multiselect")
         if all_anos and len(anos_sel) != len(anos_disp):
             st.session_state["anos_all"] = False
 
@@ -125,7 +129,7 @@ with st.container():
         etapas_disp = sorted(df["Etapa"].unique())
         etapa_sel   = st.selectbox("", ["Todas"] + etapas_disp, key="etapa_sel")
 
-    # ----- Subetapa
+    # ----- Subetapa (depende da Etapa selecionada)
     with c_sub:
         st.markdown('<div class="filter-title">Subetapa</div>', unsafe_allow_html=True)
         if etapa_sel == "Todas":
@@ -134,19 +138,27 @@ with st.container():
             sub_disp = sorted(df[df["Etapa"] == etapa_sel]["Subetapa"].unique())
         sub_sel = st.selectbox("", ["Todas"] + sub_disp, key="sub_sel")
 
+    # ----- Série (depende de Etapa e Subetapa)
+    with c_serie:
+        st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
+        mask = df["Etapa"].eq(etapa_sel) if etapa_sel != "Todas" else True
+        if sub_sel != "Todas":
+            mask &= df["Subetapa"].eq(sub_sel)
+        serie_disp = sorted(df[mask]["Série"].unique())
+        serie_sel  = st.selectbox("", ["Todas"] + serie_disp, key="serie_sel")
+
     # ----- Rede(s)
     with c_rede:
         st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
         redes_disp = sorted(df["Rede"].dropna().unique())
         all_rede   = st.checkbox("Tudo", True, key="rede_all")
-        rede_sel   = st.multiselect(
-            "", redes_disp,
-            default=(redes_disp if all_rede else []),
-            key="dep_selection"
-        )
+        rede_sel   = st.multiselect("", redes_disp,
+                                    default=(redes_disp if all_rede else []),
+                                    key="dep_selection")
         if all_rede and len(rede_sel) != len(redes_disp):
             st.session_state["rede_all"] = False
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ─── 9. APLICA FILTROS AO DATAFRAME ---------------------------------
 df_filt = df[df["Ano"].isin(st.session_state["anos_multiselect"])]
@@ -157,13 +169,15 @@ if etapa_sel != "Todas":
     df_filt = df_filt[df_filt["Etapa"] == etapa_sel]
 if sub_sel != "Todas":
     df_filt = df_filt[df_filt["Subetapa"] == sub_sel]
+if serie_sel != "Todas":
+    df_filt = df_filt[df_filt["Série"] == serie_sel]
 
 # ─── 10. EXPANDER CONFIG. AVANÇADAS ---------------------------------
 with st.sidebar.expander("Configurações avançadas da tabela", False):
     altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
 
 # >>>>>>>   RECUPERA AS COLUNAS QUE VAMOS MOSTRAR   <<<<<<<<<
-base_cols = ["Ano", "Etapa", "Subetapa", "Número de Matrículas"]
+base_cols = ["Ano", "Etapa", "Subetapa", "Série", "Número de Matrículas"]
 
 if nivel == "Escola":
     base_cols += [
