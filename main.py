@@ -155,35 +155,31 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 #    por isso nunca “escorregam” mesmo que a caixa de Ano(s) cresça.
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
-EXTRA_CSS = f"""
-/* ─── 👇🏼 SOLUÇÃO DEFINITIVA (V3) 👇🏼 ──────────────────── */
-.panel-filtros [data-testid="element-container"] {{
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-}}
-
-.panel-filtros [data-testid="stMarkdownContainer"] {{
-    margin: -8px 0 -10px 0 !important;  /* Ataque vertical */
-    padding: 0 !important;
-    line-height: 1 !important;
-}}
-
-.panel-filtros [data-testid="stVerticalBlock"] > div {{
+EXTRA_CSS = """
+/* Redução de espaço vertical geral */
+.panel-filtros div[data-testid="stVerticalBlock"] {
     gap: 0 !important;
-    margin: -4px 0 !important;
-}}
+}
 
-.panel-filtros [data-testid="stMultiSelectContainer"] {{
-    margin-top: -8px !important;
+/* Redução de margem dos títulos */
+.panel-filtros .filter-title {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Ajuste nos multiselects */
+.panel-filtros [data-baseweb="select"] {
+    margin-top: -5px !important;
+}
+
+/* Redução de padding nos containers */
+.panel-filtros [data-testid="stVerticalBlock"] > div {
     padding-top: 0 !important;
-}}
-
-.filter-title {{
-    transform: translateY(-2px);  /* Levanta o título */
-    font-size: 0.88rem !important;
-    letter-spacing: -0.05px !important;
-}}
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
 
