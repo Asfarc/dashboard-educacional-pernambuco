@@ -156,27 +156,25 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = """
-/* 1️⃣ – cola o título à caixa (já funcionava) */
-.filter-title            { margin:0 0 .2rem }
-.panel-filtros .stSelectbox,
-.panel-filtros .stMultiSelect {
-    margin-top:0 !important;
+/* Ajusta espaçamento dos títulos específicos */
+.panel-filtros .filter-title {
+    margin: 0 0 0 !important;  /* Remove margem inferior */
+    padding-bottom: 0 !important;
 }
 
-/* 2️⃣ – elimina o label vazio que sobra 24 px */
-.panel-filtros label[data-testid="stWidgetLabel"][aria-hidden="true"]{
-    display:none !important;        /* some com o “calço”      */
-    height:0  !important;
-    min-height:0 !important;
-    margin:0 !important;
-    padding:0 !important;
+/* Remove espaçamento residual nos containers dos selects */
+.panel-filtros div[data-testid="stSelectContainer"] > label,
+.panel-filtros div[data-testid="stMultiSelectContainer"] > label {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Ajusta containers dos selects */
+.panel-filtros [data-testid="stVerticalBlock"] > div:nth-child(2) {
+    margin-top: 0 !important;
 }
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
-
-
-
-
 
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
