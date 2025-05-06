@@ -16,10 +16,6 @@ def load_parquets():
 
     df = pd.read_parquet(ARQUIVO_UNICO)
 
-    # elimina coluna duplicada se ainda existir
-    if "Nome da Escola.1" in df.columns:
-        df = df.drop(columns="Nome da Escola.1")
-
     # tipos: numéricos e textos
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
     df["Ano"] = df["Ano"].astype(str)
