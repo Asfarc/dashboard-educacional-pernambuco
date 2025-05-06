@@ -156,32 +156,33 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = f"""
-/* ─── 👇🏼 SOLUÇÃO DEFINITIVA 👇🏼 ──────────────────── */
-.panel-filtros .stMarkdown[data-testid="stMarkdown"] {{
+/* ─── 👇🏼 SOLUÇÃO DEFINITIVA (V3) 👇🏼 ──────────────────── */
+.panel-filtros [data-testid="element-container"] {{
     margin: 0 !important;
     padding: 0 !important;
+    border: 0 !important;
 }}
 
-.panel-filtros [data-testid="stVerticalBlock"] > div:has(.element-container) {{
+.panel-filtros [data-testid="stMarkdownContainer"] {{
+    margin: -8px 0 -10px 0 !important;  /* Ataque vertical */
+    padding: 0 !important;
+    line-height: 1 !important;
+}}
+
+.panel-filtros [data-testid="stVerticalBlock"] > div {{
     gap: 0 !important;
+    margin: -4px 0 !important;
 }}
 
-/* Ataque direto aos containers dos títulos */
-.panel-filtros [data-testid="element-container"]:has(.filter-title) {{
-    margin-bottom: -8px !important;  /* Ajuste fino baseado no seu HTML */
-}}
-
-/* Remove espaços fantasmas nos containers dos selects */
 .panel-filtros [data-testid="stMultiSelectContainer"] {{
-    margin-top: -4px !important;
+    margin-top: -8px !important;
     padding-top: 0 !important;
 }}
 
-/* Ajuste final para alinhamento perfeito */
-.panel-filtros .filter-title {{
-    padding-bottom: 2px !important;
-    line-height: 1 !important;
-    min-height: auto !important;
+.filter-title {{
+    transform: translateY(-2px);  /* Levanta o título */
+    font-size: 0.88rem !important;
+    letter-spacing: -0.05px !important;
 }}
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
@@ -210,13 +211,19 @@ with st.container():
     # ●–––––  Etapa → Subetapa → Série  (coluna da DIREITA) –––––●
     with c_right:
         # Etapa
-        st.markdown('<div class="filter-title">Etapa</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="filter-title" style="margin-bottom:-5px">Etapa</div>',
+            unsafe_allow_html=True
+        )
         etapas_disp = sorted(df_base["Etapa"].unique())
         etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel")
 
         # Subetapa  (só aparece se houver Etapa selecionada)
         if etapa_sel:
-            st.markdown('<div class="filter-title">Subetapa</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="filter-title" style="margin-bottom:-5px">Subetapa</div>',
+                unsafe_allow_html=True
+            )
             sub_disp = sorted(
                 df_base.loc[
                     df_base["Etapa"].isin(etapa_sel) & (df_base["Subetapa"] != ""),
@@ -229,7 +236,10 @@ with st.container():
 
         # Série  (aparece se houver Etapa + Subetapa)
         if etapa_sel and sub_sel:
-            st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="filter-title" style="margin-bottom:-5px">Série</div>',
+                unsafe_allow_html=True
+            )
             serie_disp = sorted(
                 df_base.loc[
                     df_base["Etapa"].isin(etapa_sel) &
