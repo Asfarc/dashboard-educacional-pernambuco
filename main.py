@@ -212,9 +212,9 @@ with st.container():
         etapas_disp = sorted(df_base["Etapa"].unique())
         etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
 
-        # Se houver etapas selecionadas, mostrar subetapa com espaço mínimo
+        # Subetapa - com margem negativa para aproximar do campo acima
         if etapa_sel:
-            st.markdown('<div class="filter-title" style="margin:0;padding:0;margin-top:5px">Subetapa</div>',
+            st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Subetapa</div>',
                         unsafe_allow_html=True)
             sub_disp = sorted(
                 df_base.loc[
@@ -226,9 +226,9 @@ with st.container():
         else:
             sub_sel = []
 
-        # Mesmo padrão para Série - completando o código
+        # Série - também com margem negativa para aproximar do campo acima
         if etapa_sel and sub_sel:
-            st.markdown('<div class="filter-title" style="margin:0;padding:0;margin-top:5px">Série</div>',
+            st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Série</div>',
                         unsafe_allow_html=True)
             serie_disp = sorted(
                 df_base.loc[
