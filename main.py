@@ -156,25 +156,27 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = """
-/* Ajusta espaçamento dos títulos específicos */
-.panel-filtros .filter-title {
-    margin: 0 0 0 !important;  /* Remove margem inferior */
-    padding-bottom: 0 !important;
+/* 1 – título ↓ grudado na caixa: já estava OK --------------------- */
+.filter-title{margin:0 0 .15rem}
+
+/* 2 – zera margem/padding do label vazio (continua necessário) ---- */
+.panel-filtros label[data-testid="stWidgetLabel"][aria-hidden="true"]{
+    display:none !important; height:0!important; min-height:0!important;
+    margin:0!important; padding:0!important;
 }
 
-/* Remove espaçamento residual nos containers dos selects */
-.panel-filtros div[data-testid="stSelectContainer"] > label,
-.panel-filtros div[data-testid="stMultiSelectContainer"] > label {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
+/* 3 – reduz o row‑gap criado pelo stVerticalBlock ------------------ */
+.panel-filtros  div[data-testid="stVerticalBlock"]{
+    row-gap:0.25rem !important;   /* 4 px – ajuste ao seu gosto      */
 }
 
-/* Ajusta containers dos selects */
-.panel-filtros [data-testid="stVerticalBlock"] > div:nth-child(2) {
-    margin-top: 0 !important;
+/* 4 – como garantia, tira margin‑bottom extra do último elemento --- */
+.panel-filtros  div[data-testid="stVerticalBlock"] > div[data-testid="element-container"]:last-child{
+    margin-bottom:0 !important;
 }
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
+
 
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
