@@ -54,42 +54,22 @@ def format_number_br(num):
 def importar_parquet_unico():
     df = pd.read_parquet("dados.parquet")
 
-    # 1. Remove duplicata
-    if "Nome da Escola.1" in df.columns and "Nome da Escola" in df.columns:
-        df = df.drop(columns="Nome da Escola.1")
-
-    # 2. Renomeia para manter compatibilidade com o código original
-    rename_map = {
-        "Nível de agregação": "NIVEL",
-        "Ano": "ANO",
-        "Cód. Município": "CODIGO DO MUNICIPIO",
-        "Nome do Município": "NOME DO MUNICIPIO",
-        "Cód. da Escola": "CODIGO DA ESCOLA",
-        "Nome da Escola": "NOME DA ESCOLA",
-        "Rede": "DEPENDENCIA ADMINISTRATIVA",
-        # “Número de Matrículas” e “Etapa de Ensino” já estão corretos
-    }
-    df = df.rename(columns=rename_map)
-    # 2.1 cria um ALIAS para manter compatibilidade com o dicionário antigo
-    if "Número de Matrículas" in df.columns and "Número de Matrículas da Educação Básica" not in df.columns:
+    if ("Número de Matrículas" in df.columns and
+        "Número de Matrículas da Educação Básica" not in df.columns):
         df["Número de Matrículas da Educação Básica"] = df["Número de Matrículas"]
 
-    # 3. Normaliza tipos
-    df["NIVEL"] = df["NIVEL"].str.lower()      # escola / município / estado
-    df["ANO"]   = df["ANO"].astype(str)
+    # tipos
+    df["Nível de agregação"] = df["Nível de agregação"].str.lower()
+    df["Ano"] = df["Ano"].astype(str)
     for c in df.columns:
         if c.startswith("Número de"):
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # 4. Cria três DataFrames como antes
-    escolas_df   = df[df["NIVEL"] == "escola"].copy()
-    municipio_df = df[df["NIVEL"] == "município"].copy()
-    estado_df    = df[df["NIVEL"] == "estado"].copy()
-
+    # separa por nível
+    escolas_df   = df[df["Nível de agregação"] == "escola"].copy()
+    municipio_df = df[df["Nível de agregação"] == "município"].copy()
+    estado_df    = df[df["Nível de agregação"] == "estado"].copy()
     return escolas_df, estado_df, municipio_df
-
-# Agora basta chamar a função normalmente
-escolas_df, estado_df, municipio_df = importar_parquet_unico()
 
 # ─── 6. DICIONÁRIO DE ETAPAS ----------------------------------------
 @st.cache_data
@@ -141,44 +121,49 @@ padding:0.7rem 1rem 1rem;margin-bottom:1.2rem;}
 
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
-    c_ano,c_etapa,c_rede = st.columns([1.3,2.2,1.8], gap="small")
+    c_ano, c_etapa, c_rede = st.columns([1.3, 2.2, 1.8], gap="small")
 
     # ----- Ano(s)
     with c_ano:
         st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
-        anos_disp = sorted(df["ANO"].unique(), reverse=True)
+        anos_disp = sorted(df["Ano"].unique(), reverse=True)
         all_anos  = st.checkbox("Selecionar tudo", value=True, key="anos_all")
-        anos_sel  = st.multiselect("", anos_disp,
-                                   default=(anos_disp if all_anos else anos_disp[:1]),
-                                   key="anos_multiselect")
-        if all_anos and len(anos_sel)!=len(anos_disp):
-            st.session_state["anos_all"]=False
+        anos_sel  = st.multiselect(
+            "", anos_disp,
+            default=(anos_disp if all_anos else anos_disp[:1]),
+            key="anos_multiselect"
+        )
+        if all_anos and len(anos_sel) != len(anos_disp):
+            st.session_state["anos_all"] = False
 
     # ----- Etapa / Subetapa
-    mapa = padronizar_dict_etapas(df); lista_etapas=list(mapa.keys())
+    mapa = padronizar_dict_etapas(df)
+    lista_etapas = list(mapa.keys())
     with c_etapa:
         st.markdown('<div class="filter-title">Etapa / Subetapa</div>', unsafe_allow_html=True)
         etapa_sel = st.selectbox("", lista_etapas, key="etapa_ensino")
-        sub_opts  = ["Todas"]+list(mapa[etapa_sel]["subetapas"].keys())
+        sub_opts  = ["Todas"] + list(mapa[etapa_sel]["subetapas"].keys())
         sub_sel   = st.selectbox("", sub_opts, key="subetapa")
 
     # ----- Rede(s)
     with c_rede:
         st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
-        redes_disp = sorted(df["DEPENDENCIA ADMINISTRATIVA"].dropna().unique())
+        redes_disp = sorted(df["Rede"].dropna().unique())
         all_rede   = st.checkbox("Selecionar tudo", value=True, key="rede_all")
-        rede_sel   = st.multiselect("", redes_disp,
-                                    default=(redes_disp if all_rede else []),
-                                    key="dep_selection")
-        if all_rede and len(rede_sel)!=len(redes_disp):
-            st.session_state["rede_all"]=False
+        rede_sel   = st.multiselect(
+            "", redes_disp,
+            default=(redes_disp if all_rede else []),
+            key="dep_selection"
+        )
+        if all_rede and len(rede_sel) != len(redes_disp):
+            st.session_state["rede_all"] = False
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ─── 9. APLICA FILTROS AO DATAFRAME ---------------------------------
-df_filt = df[df["ANO"].isin(st.session_state["anos_multiselect"])]
-if "DEPENDENCIA ADMINISTRATIVA" in df_filt.columns and st.session_state["dep_selection"]:
-    df_filt = df_filt[df_filt["DEPENDENCIA ADMINISTRATIVA"]
-                      .isin(st.session_state["dep_selection"])]
+df_filt = df[df["Ano"].isin(st.session_state["anos_multiselect"])]
+
+if "Rede" in df_filt.columns and st.session_state["dep_selection"]:
+    df_filt = df_filt[df_filt["Rede"].isin(st.session_state["dep_selection"])]
 
 col_mat = procurar_coluna_matriculas(etapa_sel, sub_sel, "Todas", mapa)
 _, col_real = confirmar_coluna(df_filt, col_mat)
@@ -190,16 +175,21 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
     altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
 
 # >>>>>>>   RECUPERA AS COLUNAS QUE VAMOS MOSTRAR   <<<<<<<<<
-base_cols = ["ANO"]
+base_cols = ["Ano"]
+
 if nivel == "Escola":
-    base_cols += ["CODIGO DA ESCOLA","NOME DA ESCOLA",
-                  "CODIGO DO MUNICIPIO","NOME DO MUNICIPIO",
-                  "DEPENDENCIA ADMINISTRATIVA"]
+    base_cols += [
+        "Cód. da Escola", "Nome da Escola",
+        "Cód. Município", "Nome do Município",
+        "Rede"
+    ]
 elif nivel == "Município":
-    base_cols += ["CODIGO DO MUNICIPIO","NOME DO MUNICIPIO",
-                  "DEPENDENCIA ADMINISTRATIVA"]
+    base_cols += [
+        "Cód. Município", "Nome do Município",
+        "Rede"
+    ]
 else:  # Estado
-    base_cols += ["DEPENDENCIA ADMINISTRATIVA","CODIGO DA UF","NOME DA UF"]
+    base_cols += ["Rede"]   # o parquet não tem código/nome de UF
 
 colunas_visiveis = [c for c in base_cols if c in df_filt.columns]
 if col_real and col_real not in colunas_visiveis:
@@ -208,6 +198,7 @@ if col_real and col_real not in colunas_visiveis:
 
 # só as colunas previamente escolhidas ----------------
 df_para_tabela = df_filt[colunas_visiveis].copy()
+
 
 if df_para_tabela.empty:
     st.warning("Não há dados para exibir."); st.stop()
