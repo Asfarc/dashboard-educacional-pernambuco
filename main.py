@@ -70,6 +70,9 @@ def importar_parquet_unico():
         # “Número de Matrículas” e “Etapa de Ensino” já estão corretos
     }
     df = df.rename(columns=rename_map)
+    # 2.1 cria um ALIAS para manter compatibilidade com o dicionário antigo
+    if "Número de Matrículas" in df.columns and "Número de Matrículas da Educação Básica" not in df.columns:
+        df["Número de Matrículas da Educação Básica"] = df["Número de Matrículas"]
 
     # 3. Normaliza tipos
     df["NIVEL"] = df["NIVEL"].str.lower()      # escola / município / estado
