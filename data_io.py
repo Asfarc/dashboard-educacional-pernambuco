@@ -1,30 +1,46 @@
-# data_io.py  ─────────────────────────────────────────────
+# data_io.py ──────────────────────────────────────────────────────────
 import os, io, pandas as pd, streamlit as st
 
-# ── FUNÇÃO DE CARGA ──────────────────────────────────────
-@st.cache_data(ttl=3600)
+ARQUIVO_UNICO = "dados.parquet"        # deixe o nome aqui se mudar de pasta
+
+# ── FUNÇÃO DE CARGA ──────────────────────────────────────────────────
+@st.cache_data(ttl=3600, show_spinner="Carregando dados.parquet…")
 def load_parquets():
-    """Carrega e tipa os três .parquet esperados; retorna (escola, uf, mun)."""
-    paths = {
-        "escolas": "escolas.parquet",
-        "estado":  "estado.parquet",
-        "municipio":"municipio.parquet",
-    }
-    if not all(os.path.exists(p) for p in paths.values()):
-        st.error("Arquivos .parquet não encontrados."); st.stop()
+    """
+    Lê o arquivo único (dados.parquet), faz o tratamento de tipos e
+    devolve três DataFrames separados por nível de agregação:
+    (escolas_df, estado_df, municipio_df)
+    """
+    if not os.path.exists(ARQUIVO_UNICO):
+        st.error(f"Arquivo {ARQUIVO_UNICO} não encontrado."); st.stop()
 
-    dfs = {k: pd.read_parquet(p) for k, p in paths.items()}
+    df = pd.read_parquet(ARQUIVO_UNICO)
 
-    for df in dfs.values():
-        for col in df.columns:
-            if col.startswith("Número de"):
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-            elif col in ("ANO", "CODIGO DO MUNICIPIO",
-                         "CODIGO DA ESCOLA", "CODIGO DA UF"):
-                df[col] = df[col].astype(str)
-    return dfs["escolas"], dfs["estado"], dfs["municipio"]
+    # elimina coluna duplicada se ainda existir
+    if "Nome da Escola.1" in df.columns:
+        df = df.drop(columns="Nome da Escola.1")
 
-# ── EXPORTAÇÕES CACHEADAS ─────────────────────────────────
+    # tipos: numéricos e textos
+    df["Nível de agregação"] = df["Nível de agregação"].str.lower()
+    df["Ano"] = df["Ano"].astype(str)
+
+    for col in df.columns:
+        if col.startswith("Número de"):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # ALIAS p/ compatibilidade com o dicionário de etapas
+    if ("Número de Matrículas" in df.columns and
+        "Número de Matrículas da Educação Básica" not in df.columns):
+        df["Número de Matrículas da Educação Básica"] = df["Número de Matrículas"]
+
+    # separa pelos níveis que o parquet traz
+    escolas_df   = df[df["Nível de agregação"] == "escola"].copy()
+    municipio_df = df[df["Nível de agregação"] == "município"].copy()
+    estado_df    = df[df["Nível de agregação"] == "estado"].copy()
+
+    return escolas_df, estado_df, municipio_df
+
+# ── EXPORTAÇÕES CACHEADAS ────────────────────────────────────────────
 @st.cache_data
 def df_to_csv(df: pd.DataFrame) -> bytes:
     return df.to_csv(index=False).encode("utf-8")
