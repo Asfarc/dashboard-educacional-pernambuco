@@ -71,6 +71,8 @@ def importar_parquet_unico():
     estado_df    = df[df["Nível de agregação"] == "estado"].copy()
     return escolas_df, estado_df, municipio_df
 
+escolas_df, estado_df, municipio_df = importar_parquet_unico()
+
 # ─── 6. DICIONÁRIO DE ETAPAS ----------------------------------------
 @st.cache_data
 def ler_dicionario_etapas():
