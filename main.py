@@ -148,56 +148,75 @@ if df_base.empty:
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
 
-    # primeira linha — Ano(s) | Rede(s)
-    c_ano, c_rede = st.columns([1.2, 3], gap="small")
+    # 1ª LINHA  –  Ano(s) | Rede(s) | Etapa
+    with st.container():
+        st.markdown('<div class="panel-row">', unsafe_allow_html=True)
 
-    with c_ano:
-        st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
-        anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
-        ano_sel = st.multiselect("", anos_disp, default=anos_disp, key="ano_sel")
+        c_ano, c_rede, c_etapa = st.columns([1.2, 2.2, 1.6], gap="small")
 
-    with c_rede:
-        st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
-        redes_disp = sorted(df_base["Rede"].dropna().unique())
-        rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel")
+        # Ano(s) ------------------------------------------------------
+        with c_ano:
+            st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
+            anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
+            ano_sel = st.multiselect("", anos_disp, default=anos_disp, key="ano_sel")
 
-    # segunda linha — Etapa → Subetapa → Série
-    c_etapa, c_sub, c_serie = st.columns(3, gap="small")
+        # Rede(s) -----------------------------------------------------
+        with c_rede:
+            st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
+            redes_disp = sorted(df_base["Rede"].dropna().unique())
+            rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel")
 
-    with c_etapa:
-        st.markdown('<div class="filter-title">Etapa</div>', unsafe_allow_html=True)
-        etapas_disp = sorted(df_base["Etapa"].unique())
-        etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel")
+        # Etapa -------------------------------------------------------
+        with c_etapa:
+            st.markdown('<div class="filter-title">Etapa</div>', unsafe_allow_html=True)
+            etapas_disp = sorted(df_base["Etapa"].unique())
+            etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel")
 
-    with c_sub:
-        st.markdown('<div class="filter-title">Subetapa</div>', unsafe_allow_html=True)
-        if etapa_sel:
-            sub_disp = sorted(
-                df_base.loc[
-                    df_base["Etapa"].isin(etapa_sel) & (df_base["Subetapa"] != ""),
-                    "Subetapa"
-                ].unique()
-            )
-        else:
-            sub_disp = []
-        sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel")
+        st.markdown('</div>', unsafe_allow_html=True)   # fecha .panel-row
 
-    with c_serie:
-        st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
-        if etapa_sel and sub_sel:
-            serie_disp = sorted(
-                df_base.loc[
-                    df_base["Etapa"].isin(etapa_sel) &
-                    df_base["Subetapa"].isin(sub_sel) &
-                    (df_base["Série"] != ""),
-                    "Série"
-                ].unique()
-            )
-        else:
-            serie_disp = []
-        serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel")
+    # 2ª LINHA  –  Subetapa (abre só após escolher Etapa)
+    if etapa_sel:
+        with st.container():
+            st.markdown('<div class="panel-row">', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
+            c_sub = st.columns(1)[0]
+            with c_sub:
+                st.markdown('<div class="filter-title">Subetapa</div>', unsafe_allow_html=True)
+                sub_disp = sorted(
+                    df_base.loc[
+                        df_base["Etapa"].isin(etapa_sel) & (df_base["Subetapa"] != ""),
+                        "Subetapa"
+                    ].unique()
+                )
+                sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel")
+
+            st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-row
+    else:
+        sub_sel = []
+
+    # 3ª LINHA  –  Série (abre só quando há Subetapa)
+    if etapa_sel and sub_sel:
+        with st.container():
+            st.markdown('<div class="panel-row">', unsafe_allow_html=True)
+
+            c_ser = st.columns(1)[0]
+            with c_ser:
+                st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
+                serie_disp = sorted(
+                    df_base.loc[
+                        df_base["Etapa"].isin(etapa_sel) &
+                        df_base["Subetapa"].isin(sub_sel) &
+                        (df_base["Série"] != ""),
+                        "Série"
+                    ].unique()
+                )
+                serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel")
+
+            st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-row
+    else:
+        serie_sel = []
+
+    st.markdown('</div>', unsafe_allow_html=True)          # fecha .panel-filtros
 
 # ─── 8. FUNÇÃO DE FILTRO CACHEADA ───────────────────────────────────
 @st.cache_data
