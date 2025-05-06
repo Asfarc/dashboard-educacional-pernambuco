@@ -156,20 +156,26 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = """
-/* ‑‑ rótulo (label) dos widgets só dentro do painel ‑‑ */
-.panel-filtros label[data-testid="stWidgetLabel"]{
-    margin-bottom:0 !important;   /* tira folga inferior            */
-    min-height:0  !important;     /* não reserva altura extra       */
+/* 1) cola o título à caixa de seleção
+      (já tinha resolvido a maior parte) */
+.panel-filtros .filter-title{
+    margin:0 0 .2rem;
 }
 
-/* já tínhamos zerado a margem do contêiner do select:               */
+/* 2) remove qualquer folga que venha do contêiner do widget            */
 .panel-filtros div[data-testid="stSelectContainer"],
 .panel-filtros div[data-testid="stMultiSelectContainer"]{
     margin-top:0 !important;
     padding-top:0 !important;
 }
+
+/* 3) some com o <label> “placeholder” que está deixando 24 px de altura */
+.panel-filtros label[data-testid="stWidgetLabel"]{
+    display:none !important;       /* ↓ pronto, 0 px de altura         */
+}
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
+
 
 
 with st.container():
