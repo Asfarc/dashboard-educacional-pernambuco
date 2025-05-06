@@ -13,8 +13,16 @@ import pandas as pd
 import io, re, time
 import altair as alt
 
-# ─── 2. CONFIG GLOBALS (Altair + CSS helpers) ───────────────────────
-alt.renderers.set_embed_options({      # locale PT‑BR (caso use gráficos)
+# ─── 2. SET PAGE CONFIG (tem de ser o 1º comando Streamlit) ──────────
+st.set_page_config(
+    page_title="Dashboard PNE",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ─── 3. CONFIG GLOBALS (Altair + CSS helpers) ───────────────────────
+alt.renderers.set_embed_options({      # locale PT‑BR para milhares/decimais
     "formatLocale": {"decimal": ",", "thousands": ".", "grouping": [3]},
 })
 
@@ -27,15 +35,15 @@ PARAMETROS_ESTILO_CONTAINER = {
     "cor_fonte_conteudo": "#364b60",
 }
 
-
-def obter_estilo_css_container(p=PARAMETROS_ESTILO_CONTAINER):
+def obter_estilo_css_container(p=PARAMETROS_ESTILO_CONTAINER) -> str:
+    """CSS simples para contêineres de KPI, etc."""
     return f"""
     <style>
     .container-custom{{padding:0!important;margin:0!important;background:transparent!important}}
     .container-title{{font-size:{p['tamanho_fonte_titulo']};color:{p['cor_titulo']}}}
     .container-text {{font-size:{p['tamanho_fonte_conteudo']};color:{p['cor_fonte_conteudo']}}}
-    </style>"""
-
+    </style>
+    """
 
 CSS_IN_LINE = """
 /* ===== PAINEL DE FILTROS ===== */
@@ -67,13 +75,7 @@ CSS_IN_LINE = """
     box-shadow:0 2px 5px rgba(0,0,0,.1)}
 """
 
-# ─── 3. CONFIGURAÇÃO DA PÁGINA & CSS ─────────────────────────────────
-st.set_page_config(
-    page_title="Dashboard PNE",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+# Injeção do CSS
 st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 st.markdown(f"<style>{CSS_IN_LINE}</style>", unsafe_allow_html=True)
 
