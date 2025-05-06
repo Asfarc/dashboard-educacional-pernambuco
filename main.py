@@ -205,31 +205,37 @@ with st.container():
         rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel")
 
     # ●–––––  Etapa → Subetapa → Série  (coluna da DIREITA) –––––●
-    # Na seção de filtros, tente esta abordagem para Etapa:
     with c_right:
-        # Etapa com mínimo de espaço vertical
-        st.markdown('<div class="filter-title" style="margin:0;padding:0">Etapa</div>', unsafe_allow_html=True)
+        # Etapa
+        st.markdown(
+            '<div class="filter-title" style="margin-bottom:-5px">Etapa</div>',
+            unsafe_allow_html=True
+        )
         etapas_disp = sorted(df_base["Etapa"].unique())
-        etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
+        etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel")
 
-        # Se houver etapas selecionadas, mostrar subetapa com espaço mínimo
+        # Subetapa  (só aparece se houver Etapa selecionada)
         if etapa_sel:
-            st.markdown('<div class="filter-title" style="margin:0;padding:0;margin-top:5px">Subetapa</div>',
-                        unsafe_allow_html=True)
+            st.markdown(
+                '<div class="filter-title" style="margin-bottom:-5px">Subetapa</div>',
+                unsafe_allow_html=True
+            )
             sub_disp = sorted(
                 df_base.loc[
                     df_base["Etapa"].isin(etapa_sel) & (df_base["Subetapa"] != ""),
                     "Subetapa"
                 ].unique()
             )
-            sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
+            sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel")
         else:
-            sub_sel = []
+            sub_sel = []  # mantém a variável criada para o restante do script
 
-        # Mesmo padrão para Série
+        # Série  (aparece se houver Etapa + Subetapa)
         if etapa_sel and sub_sel:
-            st.markdown('<div class="filter-title" style="margin:0;padding:0;margin-top:5px">Série</div>',
-                        unsafe_allow_html=True)
+            st.markdown(
+                '<div class="filter-title" style="margin-bottom:-5px">Série</div>',
+                unsafe_allow_html=True
+            )
             serie_disp = sorted(
                 df_base.loc[
                     df_base["Etapa"].isin(etapa_sel) &
