@@ -167,7 +167,7 @@ EXTRA_CSS = """
 
 /* 3 – reduz o row‑gap criado pelo stVerticalBlock ------------------ */
 .panel-filtros  div[data-testid="stVerticalBlock"]{
-    row-gap:0.25rem !important;   /* 4 px – ajuste ao seu gosto      */
+    row-gap:0.25rem !important;   /* 0px – ajuste ao seu gosto      */
 }
 
 /* 4 – como garantia, tira margin‑bottom extra do último elemento --- */
