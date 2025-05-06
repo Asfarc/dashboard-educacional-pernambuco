@@ -156,17 +156,25 @@ COL_WIDTHS = [1.2, 2.2, 1.6]         # Ano | Rede | Etapa
 
 # -- CSS extra: distância menor título↔widget + altura baixa dos multiselect
 EXTRA_CSS = """
-/* título já colado: */
-.filter-title{margin:0 0 .2rem}
+/* distanciário logo abaixo do título: */
+.filter-title{margin:0 0 .25rem}
 
-/* reduz (ou zera) folga do widget ↓ */
-.panel-filtros .stSelectbox,
-.panel-filtros .stMultiSelect{
-    margin-top:0 !important;      /* zera margem externa   */
-    padding-top:0 !important;     /* zera eventual padding */
+/* zera a folga do contêiner do widget ---------------------------- */
+.panel-filtros div[data-testid="stSelectContainer"],
+.panel-filtros div[data-testid="stMultiSelectContainer"]{
+    margin-top:0 !important;        /* margem externa      */
+    padding-top:0 !important;       /* eventual padding    */
+}
+
+/* (opcional) também pode ajustar a margem‑bottom se quiser colar um
+   widget no outro:                                                  */
+.panel-filtros div[data-testid="stSelectContainer"],
+.panel-filtros div[data-testid="stMultiSelectContainer"]{
+    margin-bottom:.25rem !important;
 }
 """
 st.markdown(f"<style>{EXTRA_CSS}</style>", unsafe_allow_html=True)
+
 
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
