@@ -49,23 +49,44 @@ def format_number_br(num):
     try: return f"{int(num):,}".replace(",", ".")
     except Exception: return str(num)
 
-# ─── 5. CARREGA .PARQUET --------------------------------------------
-@st.cache_resource(show_spinner="Carregando .parquet…")
-def importar_arquivos_parquet():
-    paths = ["escolas.parquet", "estado.parquet", "municipio.parquet"]
-    if not all(Path(p).exists() for p in paths):
-        st.error(ERRO_ARQUIVOS_NAO_ENCONTRADOS); st.stop()
-    escolas, estado, municipio = [pd.read_parquet(p) for p in paths]
+# ─── 5. IMPORTA .PARQUET ÚNICO ───────────────────────────────────────
+@st.cache_resource(show_spinner="Carregando dados.parquet…")
+def importar_parquet_unico():
+    df = pd.read_parquet("dados.parquet")
 
-    for _df in (escolas, estado, municipio):
-        for c in _df.columns:
-            if c.startswith("Número de"):
-                _df[c] = pd.to_numeric(_df[c], errors="coerce")
-            elif c in ["ANO", "CODIGO DO MUNICIPIO", "CODIGO DA ESCOLA", "CODIGO DA UF"]:
-                _df[c] = _df[c].astype(str)
-    return escolas, estado, municipio
+    # 1. Remove duplicata
+    if "Nome da Escola.1" in df.columns and "Nome da Escola" in df.columns:
+        df = df.drop(columns="Nome da Escola.1")
 
-escolas_df, estado_df, municipio_df = importar_arquivos_parquet()
+    # 2. Renomeia para manter compatibilidade com o código original
+    rename_map = {
+        "Nível de agregação": "NIVEL",
+        "Ano": "ANO",
+        "Cód. Município": "CODIGO DO MUNICIPIO",
+        "Nome do Município": "NOME DO MUNICIPIO",
+        "Cód. da Escola": "CODIGO DA ESCOLA",
+        "Nome da Escola": "NOME DA ESCOLA",
+        "Rede": "DEPENDENCIA ADMINISTRATIVA",
+        # “Número de Matrículas” e “Etapa de Ensino” já estão corretos
+    }
+    df = df.rename(columns=rename_map)
+
+    # 3. Normaliza tipos
+    df["NIVEL"] = df["NIVEL"].str.lower()      # escola / município / estado
+    df["ANO"]   = df["ANO"].astype(str)
+    for c in df.columns:
+        if c.startswith("Número de"):
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    # 4. Cria três DataFrames como antes
+    escolas_df   = df[df["NIVEL"] == "escola"].copy()
+    municipio_df = df[df["NIVEL"] == "município"].copy()
+    estado_df    = df[df["NIVEL"] == "estado"].copy()
+
+    return escolas_df, estado_df, municipio_df
+
+# Agora basta chamar a função normalmente
+escolas_df, estado_df, municipio_df = importar_parquet_unico()
 
 # ─── 6. DICIONÁRIO DE ETAPAS ----------------------------------------
 @st.cache_data
