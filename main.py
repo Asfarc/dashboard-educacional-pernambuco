@@ -9,7 +9,6 @@
 # ─── 1. IMPORTS ──────────────────────────────────────────────────────
 import streamlit as st, pandas as pd, io, os, re, time
 from pathlib import Path
-from constantes import *                       # TITULO_*, ERRO_*, INFO_* …
 from layout_primeiros_indicadores import (
     obter_estilo_css_container,
     PARAMETROS_ESTILO_CONTAINER,
@@ -98,78 +97,73 @@ nivel = st.sidebar.radio("Número de Matrículas por:",
 df = {"Escola": escolas_df, "Município": municipio_df, "Estado PE": estado_df}[nivel]
 if df.empty: st.error("DataFrame vazio"); st.stop()
 
-# ─── 8. PAINEL ANO / ETAPA / SUB / SÉRIE / REDE ---------------------
+# ─── 8. PAINEL DE FILTROS ------------------------------------------------
 st.markdown("""
 <style>
 .panel-filtros{background:#eef2f7;border:1px solid #dce6f3;border-radius:6px;
-padding:0.7rem 1rem 1rem;margin-bottom:1.2rem;}
-.filter-title{font-weight:600;color:#364b60;font-size:0.92rem;margin-bottom:0.25rem}
-.stSelectbox>div,.stMultiSelect>div{min-height:38px}
+padding:0.8rem 1rem 1rem;margin-bottom:1.2rem;}
+.filter-title{font-weight:600;color:#364b60;font-size:0.92rem;margin:0 0 0.35rem}
 </style>""", unsafe_allow_html=True)
 
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
-    c_ano, c_etapa, c_sub, c_serie, c_rede = st.columns([1.0, 1.6, 1.6, 1.6, 1.4],
-                                                        gap="small")
 
-    # ----- Ano(s)
-    with c_ano:
+    # ----- Ano(s)  +  Etapa  -----------------------------------------
+    c1, c2 = st.columns([1.2, 3], gap="small")
+
+    with c1:  # Ano(s)
         st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df["Ano"].unique(), reverse=True)
         all_anos  = st.checkbox("Tudo", True, key="anos_all")
-        anos_sel  = st.multiselect("", anos_disp,
-                                   default=(anos_disp if all_anos else anos_disp[:1]),
-                                   key="anos_multiselect")
+        anos_sel  = st.multiselect(
+            "", anos_disp,
+            default=(anos_disp if all_anos else anos_disp[:1]),
+            key="anos_multiselect"
+        )
         if all_anos and len(anos_sel) != len(anos_disp):
             st.session_state["anos_all"] = False
 
-    # ----- Etapa
-    with c_etapa:
+    with c2:  # Etapa
         st.markdown('<div class="filter-title">Etapa</div>', unsafe_allow_html=True)
         etapas_disp = sorted(df["Etapa"].unique())
-        etapa_sel   = st.selectbox("", ["Todas"] + etapas_disp, key="etapa_sel")
+        etapa_sel = st.selectbox("", ["Todas"] + etapas_disp, key="etapa_sel")
 
-    # ----- Subetapa (depende da Etapa selecionada)
-    with c_sub:
+    # ----- Subetapa (aparece só se uma etapa foi escolhida) -----------
+    if etapa_sel != "Todas" and df[df["Etapa"] == etapa_sel]["Subetapa"].nunique() > 1:
         st.markdown('<div class="filter-title">Subetapa</div>', unsafe_allow_html=True)
-        if etapa_sel == "Todas":
-            sub_disp = sorted(df["Subetapa"].unique())
-        else:
-            sub_disp = sorted(df[df["Etapa"] == etapa_sel]["Subetapa"].unique())
+        sub_disp = sorted(df[df["Etapa"] == etapa_sel]["Subetapa"].unique())
         sub_sel = st.selectbox("", ["Todas"] + sub_disp, key="sub_sel")
+    else:
+        sub_sel = "Todas"  # placeholder se o select não aparece
 
-    # ----- Série (depende de Etapa e Subetapa)
-    with c_serie:
+    # ----- Série (aparece só se subetapa contém séries) ---------------
+    if (sub_sel != "Todas" and
+        df[(df["Etapa"] == etapa_sel) & (df["Subetapa"] == sub_sel)]["Série"].nunique() > 1):
         st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
-
-        # 1. começa com todos verdadeiros
-        mask = pd.Series(True, index=df.index)
-
-        # 2. refina conforme filtros escolhidos
-        if etapa_sel != "Todas":
-            mask &= df["Etapa"] == etapa_sel
-        if sub_sel != "Todas":
-            mask &= df["Subetapa"] == sub_sel
-
-        # 3. aplica a máscara para listar as séries disponíveis
-        serie_disp = sorted(df.loc[mask, "Série"].unique())
+        serie_disp = sorted(
+            df[(df["Etapa"] == etapa_sel) & (df["Subetapa"] == sub_sel)]["Série"].unique()
+        )
         serie_sel = st.selectbox("", ["Todas"] + serie_disp, key="serie_sel")
+    else:
+        serie_sel = "Todas"
 
-    # ----- Rede(s)
-    with c_rede:
-        st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
-        redes_disp = sorted(df["Rede"].dropna().unique())
-        all_rede   = st.checkbox("Tudo", True, key="rede_all")
-        rede_sel   = st.multiselect("", redes_disp,
-                                    default=(redes_disp if all_rede else []),
-                                    key="dep_selection")
-        if all_rede and len(rede_sel) != len(redes_disp):
-            st.session_state["rede_all"] = False
+    # ----- Rede(s) -----------------------------------------------------
+    st.markdown('<div class="filter-title" style="margin-top:0.6rem">Rede(s)</div>',
+                unsafe_allow_html=True)
+    redes_disp = sorted(df["Rede"].dropna().unique())
+    all_rede   = st.checkbox("Tudo", True, key="rede_all")
+    rede_sel   = st.multiselect(
+        "", redes_disp,
+        default=(redes_disp if all_rede else []),
+        key="dep_selection"
+    )
+    if all_rede and len(rede_sel) != len(redes_disp):
+        st.session_state["rede_all"] = False
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-
 # ─── 9. APLICA FILTROS AO DATAFRAME ---------------------------------
-df_filt = df[df["Ano"].isin(st.session_state["anos_multiselect"])]
+df_filt = df[df["Ano"].isin(anos_sel)]
 
 if rede_sel:
     df_filt = df_filt[df_filt["Rede"].isin(rede_sel)]
