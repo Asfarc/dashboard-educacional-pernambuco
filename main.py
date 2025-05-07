@@ -323,15 +323,6 @@ if df_base.empty:
 
 # CSS combinado para todos os ajustes necessários
 COMBINED_CSS = """
-/* Estilos para os filtros */
-.filter-title {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    height: 32px; /* Ajuste conforme necessário */
-    vertical-align: middle;
-}
 /* Resto do CSS omitido para brevidade */
 """
 st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
