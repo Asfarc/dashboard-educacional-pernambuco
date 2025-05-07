@@ -11,9 +11,9 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import io, re, time
-import base64
-import os
+import base64, os
 from pathlib import Path
+import streamlit.components.v1 as components
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
@@ -23,85 +23,76 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
+def _musica_de_fundo(arquivo_mp3: str,
+                      volume: float = 0.25,
+                      flag: str = "musica_injetada"):
+    """
+    Injeta um <audio> invisível e tenta tocar automaticamente.
+    Se o navegador bloquear, exibe um botão "▶️ Tocar música".
+    Executa só uma vez por sessão (controlado por st.session_state[flag]).
+    """
+    if st.session_state.get(flag):
+        return
 
-# Adicione esta função após o st.set_page_config()
-def tocar_musica():
-    # Lista de músicas disponíveis na pasta static
+    # procura o arquivo em possíveis caminhos
+    caminhos = [
+        arquivo_mp3,                              # raiz do repo
+        f"static/{arquivo_mp3}",                  # pasta static (Streamlit Cloud)
+        Path(__file__).parent / "static" / arquivo_mp3
+    ]
+    for c in caminhos:
+        if os.path.exists(c):
+            mp3_bytes = Path(c).read_bytes()
+            break
+    else:
+        st.warning("Áudio não encontrado."); return
+
+    b64 = base64.b64encode(mp3_bytes).decode()
+    components.html(
+        f"""
+        <audio id="bg-music" loop>
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        </audio>
+        <script>
+          const audio = document.getElementById('bg-music');
+          audio.volume = {volume};
+          audio.play().catch(() => {{
+              const btn = document.createElement('button');
+              btn.textContent = "▶️ Tocar música";
+              btn.style = `
+                  position:fixed; bottom:20px; left:20px; z-index:10000;
+                  padding:8px 16px; font-size:16px; cursor:pointer;
+              `;
+              btn.onclick = () => {{ audio.play(); btn.remove(); }};
+              document.body.appendChild(btn);
+          }});
+        </script>
+        """,
+        height=0, width=0
+    )
+    st.session_state[flag] = True
+
+def tocar_musica_sidebar():
+    """Interface simples na sidebar para escolher e ativar a música."""
     musicas = {
         "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3"
+        "Vá Com Deus":      "02 ROBERTA MIRANDA VA COM DEUS.mp3",
     }
 
-    # Interface na sidebar
     with st.sidebar:
         st.markdown("### 🎵 Música")
-        ativar_musica = st.checkbox("Ativar música", value=True)
-
-        if not ativar_musica:
+        ativar = st.checkbox("Ativar música", value=True)
+        if not ativar:
+            # se o usuário desmarcar, remove flag para parar nas próximas execuções
+            st.session_state.pop("musica_injetada", None)
             return
-        musica_selecionada = st.selectbox(
-            "Selecionar música:",
-            options=list(musicas.keys())
-        )
 
-        # Definir o arquivo da música selecionada
-        nome_arquivo = musicas[musica_selecionada]
+        musica_sel = st.selectbox("Selecionar música:", list(musicas.keys()))
+    _musica_de_fundo(musicas[musica_sel])
 
-        # IMPORTANTE: Caminhos para ambiente local e hospedagem Streamlit
-        caminhos = [
-            # Caminho direto (funciona na hospedagem Streamlit)
-            f"static/{nome_arquivo}",
-            # Caminho relativo ao script (funciona localmente)
-            str(Path(__file__).parent / "static" / nome_arquivo)
-        ]
-
-        # Tentar cada caminho
-        for caminho in caminhos:
-            if os.path.exists(caminho):
-                try:
-                    with open(caminho, "rb") as f:
-                        bytes_musica = f.read()
-                        encoded = base64.b64encode(bytes_musica).decode()
-                        audio_html = f"""
-                        <audio autoplay loop controls>
-                            <source src="data:audio/mp3;base64,{encoded}" type="audio/mp3">
-                        </audio>
-                        """
-                        st.markdown(audio_html, unsafe_allow_html=True)
-                        return
-                except Exception as e:
-                    st.sidebar.warning(f"Erro ao reproduzir: {e}")
-
-        # Se nenhum caminho funcionou
-        st.sidebar.warning("Não foi possível reproduzir a música. Verifique se os arquivos existem na pasta 'static'.")
-
-        # Para hospedagem Streamlit, mostre instruções adicionais
-        with st.sidebar.expander("Solução para hospedagem Streamlit"):
-            st.markdown("""
-            Se estiver usando a hospedagem Streamlit Cloud:
-
-            1. Certifique-se de que a pasta `static` existe no repositório GitHub
-            2. Verifique se os arquivos MP3 foram enviados (git add/commit/push)
-            3. Use este código alternativo que funciona na hospedagem:
-
-            ```python
-            def reproduzir_musica_streamlit_cloud():
-                import streamlit as st
-
-                musica_url = "https://SEU_REPOSITORIO_GITHUB_RAW/static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3"
-
-                audio_html = f'''
-                <audio autoplay loop controls>
-                    <source src="{musica_url}" type="audio/mp3">
-                </audio>
-                '''
-                st.markdown(audio_html, unsafe_allow_html=True)
-            ```
-            """)
-
-
-# Chamar a função após a configuração da página
-tocar_musica()
+# chama logo após a configuração da página
+tocar_musica_sidebar()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
