@@ -535,10 +535,9 @@ with st.container():
                 for etapa in etapa_sel:
                     # Adicionar opção de total para cada etapa
                     sub_disp.append(f"Total - Todas as Subetapas ({etapa})")
-                    # Filtrar apenas as subetapas da etapa atual
-                    etapa_subs = [s for s in sub_disp_originais
-                                  if s in df_base.loc[df_base["Etapa"] == etapa, "Subetapa"].unique()]
-                    sub_disp.extend(etapa_subs)
+
+                # Adicionar todas as subetapas originais
+                sub_disp.extend(sub_disp_originais)
 
                 sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
             else:
@@ -549,59 +548,122 @@ with st.container():
                 st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Série</div>',
                             unsafe_allow_html=True)
 
-                # Preparar para adicionar opções de "Total"
+                # Separar subetapas normais e totais
+                sub_normais = [s for s in sub_sel if not s.startswith("Total")]
+                sub_totais = [s for s in sub_sel if s.startswith("Total")]
+
+                # Determinar as etapas dos totais
+                etapas_totais = []
+                for st in sub_totais:
+                    etapa = st[st.find("(") + 1:st.find(")")]
+                    etapas_totais.append(etapa)
+
+                # Obter séries baseadas nas subetapas normais selecionadas
                 serie_disp = []
 
-                # Processar cada subetapa selecionada
-                for sub in sub_sel:
-                    if sub.startswith("Total - Todas as Subetapas"):
-                        # Extrair a etapa da opção "Total"
-                        etapa_nome = sub[sub.find("(") + 1:sub.find(")")]
+                # Para subetapas normais
+                if sub_normais:
+                    series_normais = sorted(
+                        df_base.loc[
+                            df_base["Etapa"].isin(etapa_sel) &
+                            df_base["Subetapa"].isin(sub_normais) &
+                            (df_base["Série"] != ""),
+                            "Série"
+                        ].unique()
+                    )
+                    serie_disp.extend(series_normais)
 
-                        # Adicionar todas as séries para todas as subetapas desta etapa
-                        subetapas_da_etapa = df_base.loc[
-                            df_base["Etapa"] == etapa_nome, "Subetapa"
+                # Para subetapas totais, adicionar todas as séries de todas as subetapas da etapa
+                if sub_totais:
+                    for etapa in etapas_totais:
+                        # Encontrar todas as subetapas desta etapa
+                        subetapas_desta_etapa = df_base.loc[
+                            df_base["Etapa"] == etapa, "Subetapa"
                         ].unique()
 
-                        # Para cada subetapa real, adicionar opção "Total - Todas as Séries"
-                        for real_sub in subetapas_da_etapa:
-                            if real_sub:  # Verificar se não é vazia
-                                serie_disp.append(f"Total - Todas as Séries ({etapa_nome} - {real_sub})")
+                        # Para cada subetapa real desta etapa, adicionar uma opção de total
+                        for sub in subetapas_desta_etapa:
+                            if sub:  # Verificar se não é vazia
+                                serie_disp.append(f"Total - Todas as Séries ({etapa} - {sub})")
 
-                                # Adicionar também as séries individuais
-                                series_da_subetapa = sorted(
-                                    df_base.loc[
-                                        (df_base["Etapa"] == etapa_nome) &
-                                        (df_base["Subetapa"] == real_sub) &
-                                        (df_base["Série"] != ""),
-                                        "Série"
-                                    ].unique()
-                                )
-                                serie_disp.extend(series_da_subetapa)
-                    else:
-                        # Esta é uma subetapa normal, adicionar opção "Total" para ela
-                        # Encontrar a etapa à qual esta subetapa pertence
-                        etapas_da_subetapa = df_base.loc[
-                            df_base["Subetapa"] == sub, "Etapa"
+                # Remover duplicatas e ordenar
+                serie_disp = sorted(list(set(serie_disp)))
+
+                serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel", label_visibility="collapsed")
+            else:
+                serie_sel = []
+
+            # Para Subetapa
+            if etapa_sel:
+                st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Subetapa</div>',
+                            unsafe_allow_html=True)
+
+                # Obter subetapas existentes
+                sub_disp_originais = sorted(
+                    df_base.loc[
+                        df_base["Etapa"].isin(etapa_sel) & (df_base["Subetapa"] != ""),
+                        "Subetapa"
+                    ].unique()
+                )
+
+                # Adicionar opção "Total" para cada Etapa selecionada
+                sub_disp = []
+                for etapa in etapa_sel:
+                    # Adicionar opção de total para cada etapa
+                    sub_disp.append(f"Total - Todas as Subetapas ({etapa})")
+
+                # Adicionar todas as subetapas originais
+                sub_disp.extend(sub_disp_originais)
+
+                sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
+            else:
+                sub_sel = []
+
+            # Para Séries
+            if etapa_sel and sub_sel:
+                st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Série</div>',
+                            unsafe_allow_html=True)
+
+                # Separar subetapas normais e totais
+                sub_normais = [s for s in sub_sel if not s.startswith("Total")]
+                sub_totais = [s for s in sub_sel if s.startswith("Total")]
+
+                # Determinar as etapas dos totais
+                etapas_totais = []
+                for st in sub_totais:
+                    etapa = st[st.find("(") + 1:st.find(")")]
+                    etapas_totais.append(etapa)
+
+                # Obter séries baseadas nas subetapas normais selecionadas
+                serie_disp = []
+
+                # Para subetapas normais
+                if sub_normais:
+                    series_normais = sorted(
+                        df_base.loc[
+                            df_base["Etapa"].isin(etapa_sel) &
+                            df_base["Subetapa"].isin(sub_normais) &
+                            (df_base["Série"] != ""),
+                            "Série"
+                        ].unique()
+                    )
+                    serie_disp.extend(series_normais)
+
+                # Para subetapas totais, adicionar todas as séries de todas as subetapas da etapa
+                if sub_totais:
+                    for etapa in etapas_totais:
+                        # Encontrar todas as subetapas desta etapa
+                        subetapas_desta_etapa = df_base.loc[
+                            df_base["Etapa"] == etapa, "Subetapa"
                         ].unique()
 
-                        for etapa_da_sub in etapas_da_subetapa:
-                            if etapa_da_sub in etapa_sel:  # Verificar se esta etapa está selecionada
-                                serie_disp.append(f"Total - Todas as Séries ({etapa_da_sub} - {sub})")
+                        # Para cada subetapa real desta etapa, adicionar uma opção de total
+                        for sub in subetapas_desta_etapa:
+                            if sub:  # Verificar se não é vazia
+                                serie_disp.append(f"Total - Todas as Séries ({etapa} - {sub})")
 
-                                # Adicionar séries individuais
-                                series_da_subetapa = sorted(
-                                    df_base.loc[
-                                        (df_base["Etapa"] == etapa_da_sub) &
-                                        (df_base["Subetapa"] == sub) &
-                                        (df_base["Série"] != ""),
-                                        "Série"
-                                    ].unique()
-                                )
-                                serie_disp.extend(series_da_subetapa)
-
-                # Remover duplicatas mantendo a ordem
-                serie_disp = list(dict.fromkeys(serie_disp))
+                # Remover duplicatas e ordenar
+                serie_disp = sorted(list(set(serie_disp)))
 
                 serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel", label_visibility="collapsed")
             else:
@@ -609,29 +671,69 @@ with st.container():
 
 # ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
 def filtrar(
-    df: pd.DataFrame,
-    anos: tuple[str, ...],
-    redes: tuple[str, ...],
-    etapas: tuple[str, ...],
-    subetapas: tuple[str, ...],
-    series: tuple[str, ...],
+        df: pd.DataFrame,
+        anos: tuple[str, ...],
+        redes: tuple[str, ...],
+        etapas: tuple[str, ...],
+        subetapas: tuple[str, ...],
+        series: tuple[str, ...],
 ) -> pd.DataFrame:
+    # Filtro base por ano
     m = df["Ano"].isin(anos)
-    if redes:     m &= df["Rede"].isin(redes)
-    if etapas:    m &= df["Etapa"].isin(etapas)
-    if subetapas: m &= df["Subetapa"].isin(subetapas)
-    if series:    m &= df["Série"].isin(series)
-    return df.loc[m]
 
-# Aplica o filtro com base nas seleções
-df_filtrado = filtrar(
-    df_base,
-    tuple(ano_sel),
-    tuple(rede_sel),
-    tuple(etapa_sel),
-    tuple(sub_sel),
-    tuple(serie_sel),
-)
+    # Filtro por redes
+    if redes:
+        m &= df["Rede"].isin(redes)
+
+    # Filtro por etapas
+    if etapas:
+        m &= df["Etapa"].isin(etapas)
+
+    # Separar subetapas normais e totais
+    sub_normais = [s for s in subetapas if not s.startswith("Total")]
+    sub_totais = [s for s in subetapas if s.startswith("Total")]
+
+    # Filtrar por subetapas
+    if sub_normais or sub_totais:
+        # Criar máscara para subetapas normais
+        sub_mask = pd.Series(False, index=df.index)
+
+        if sub_normais:
+            sub_mask |= df["Subetapa"].isin(sub_normais)
+
+        # Adicionar máscara para totais
+        if sub_totais:
+            for total in sub_totais:
+                etapa_nome = total[total.find("(") + 1:total.find(")")]
+                sub_mask |= df["Etapa"] == etapa_nome
+
+        m &= sub_mask
+
+    # Separar séries normais e totais
+    serie_normais = [s for s in series if not s.startswith("Total")]
+    serie_totais = [s for s in series if s.startswith("Total")]
+
+    # Filtrar por séries
+    if serie_normais or serie_totais:
+        # Criar máscara para séries normais
+        serie_mask = pd.Series(False, index=df.index)
+
+        if serie_normais:
+            serie_mask |= df["Série"].isin(serie_normais)
+
+        # Adicionar máscara para totais
+        if serie_totais:
+            for total in serie_totais:
+                info = total[total.find("(") + 1:total.find(")")]
+                partes = info.split(" - ")
+
+                if len(partes) == 2:
+                    etapa_nome, subetapa_nome = partes
+                    serie_mask |= (df["Etapa"] == etapa_nome) & (df["Subetapa"] == subetapa_nome)
+
+        m &= serie_mask
+
+    return df.loc[m]
 
 # ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
 with st.sidebar.expander("Ajustar tamanho da tabela", False):
