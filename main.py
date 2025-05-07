@@ -25,65 +25,76 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
+def _musica_de_fundo(arquivo_mp3: str,
+                      volume: float = 0.25,
+                      flag: str = "musica_injetada"):
+    """
+    Injeta um <audio> invisível e tenta tocar automaticamente.
+    Se o navegador bloquear, exibe um botão "▶️ Tocar música".
+    Executa só uma vez por sessão (controlado por st.session_state[flag]).
+    """
+    if st.session_state.get(flag):
+        return
 
-def verificar_arquivos_musica():
-    """Verifica se os arquivos de música estão disponíveis."""
-    try:
-        # Tenta diferentes caminhos possíveis
-        caminhos = ["./static", "../static", "static", "/mount/src/dashboard-educacional-pernambuco/static"]
+    # procura o arquivo em possíveis caminhos
+    caminhos = [
+        arquivo_mp3,                              # raiz do repo
+        f"static/{arquivo_mp3}",                  # pasta static (Streamlit Cloud)
+        Path(__file__).parent / "static" / arquivo_mp3
+    ]
+    for c in caminhos:
+        if os.path.exists(c):
+            mp3_bytes = Path(c).read_bytes()
+            break
+    else:
+        st.warning("Áudio não encontrado."); return
 
-        for caminho in caminhos:
-            static_dir = Path(caminho)
-            if static_dir.exists():
-                st.sidebar.success(f"Pasta encontrada: {static_dir}")
-                arquivos = list(static_dir.glob("*.mp3"))
-                if arquivos:
-                    st.sidebar.success(f"Encontrados {len(arquivos)} arquivos MP3")
-                    for arq in arquivos:
-                        st.sidebar.info(f"- {arq.name}")
-                    return True
-                else:
-                    st.sidebar.warning(f"Pasta {static_dir} existe, mas não contém arquivos MP3")
+    b64 = base64.b64encode(mp3_bytes).decode()
+    components.html(
+        f"""
+        <audio id="bg-music" loop>
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        </audio>
+        <script>
+          const audio = document.getElementById('bg-music');
+          audio.volume = {volume};
+          audio.play().catch(() => {{
+              const btn = document.createElement('button');
+              btn.textContent = "▶️ Tocar música";
+              btn.style = `
+                  position:fixed; bottom:20px; left:20px; z-index:10000;
+                  padding:8px 16px; font-size:16px; cursor:pointer;
+              `;
+              btn.onclick = () => {{ audio.play(); btn.remove(); }};
+              document.body.appendChild(btn);
+          }});
+        </script>
+        """,
+        height=0, width=0
+    )
+    st.session_state[flag] = True
 
-        st.sidebar.error("Nenhuma pasta 'static' com arquivos MP3 foi encontrada")
-        return False
-    except Exception as e:
-        st.sidebar.error(f"Erro ao verificar arquivos: {e}")
-        return False
-
-
-# Chame esta função antes de tentar tocar a música
-verificar_arquivos_musica()
-
-
-def tocar_musica_sidebar_nativo():
+def tocar_musica_sidebar():
+    """Interface simples na sidebar para escolher e ativar a música."""
     musicas = {
         "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "Vá Com Deus":      "02 ROBERTA MIRANDA VA COM DEUS.mp3",
     }
 
     with st.sidebar:
         st.markdown("### 🎵 Música")
         ativar = st.checkbox("Ativar música", value=True)
         if not ativar:
+            # se o usuário desmarcar, remove flag para parar nas próximas execuções
+            st.session_state.pop("musica_injetada", None)
             return
 
-        faixa = st.selectbox("Selecionar música:", list(musicas))
+        musica_sel = st.selectbox("Selecionar música:", list(musicas.keys()))
+    _musica_de_fundo(musicas[musica_sel])
 
-        # Tenta diferentes caminhos possíveis para o arquivo
-        caminhos = ["./static/", "../static/", "static/", "/mount/src/dashboard-educacional-pernambuco/static/"]
-
-        for caminho in caminhos:
-            arquivo = f"{caminho}{musicas[faixa]}"
-            try:
-                if Path(arquivo).exists():
-                    audio_file = open(arquivo, "rb")
-                    st.audio(audio_file, format="audio/mp3")
-                    break
-            except Exception as e:
-                continue
-        else:
-            st.error("Arquivo de música não encontrado")
+# chama logo após a configuração da página
+tocar_musica_sidebar()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ─── 3. ESTILO GLOBAL  ──────────────────────────────────────────────
