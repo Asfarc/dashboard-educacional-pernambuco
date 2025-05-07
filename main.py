@@ -55,78 +55,35 @@ def verificar_arquivos_musica():
 # Chame esta função antes de tentar tocar a música
 verificar_arquivos_musica()
 
-# ─── 2‑B. MÚSICA ───────────────────────────────────────────
-from urllib.parse import quote
 
-
-def _musica_de_fundo(nome_arquivo: str,
-                     volume: float = 0.25,
-                     flag: str = "_musica_injetada"):
-    if st.session_state.get(flag):
-        return  # já injetou nesta sessão
-
-    # Tenta usar o caminho esperado no Streamlit Cloud
-    url = f"./static/{quote(nome_arquivo)}"  # tenta caminho relativo
-
-    components.html(
-        f"""
-        <audio id="bg-music" src="{url}" loop autoplay></audio>
-        <div id="audio-debug"></div>
-
-        <script>
-          const audio = document.getElementById('bg-music');
-          const debug = document.getElementById('audio-debug');
-          audio.volume = {volume};
-
-          audio.addEventListener('error', (e) => {{
-              console.error('Erro de áudio:', e);
-              debug.innerHTML = `Erro ao carregar áudio: ${{e.target.error.code}}`;
-          }});
-
-          /* se o navegador bloquear autoplay sem interação */
-          audio.play().catch((e) => {{
-              console.error('Erro play:', e);
-              debug.innerHTML = `Erro ao tocar: ${{e.message}}`;
-
-              const btn = document.createElement('button');
-              btn.innerText = "▶️ Tocar música";
-              btn.style = `
-                position:fixed;bottom:20px;left:20px;z-index:10000;
-                padding:8px 16px;font-size:16px;cursor:pointer`;
-              btn.onclick = () => {{ 
-                  audio.play().catch(err => {{
-                      debug.innerHTML = `Erro ao tocar após clique: ${{err.message}}`;
-                  }});
-                  btn.remove(); 
-              }};
-              document.body.appendChild(btn);
-          }});
-        </script>
-        """,
-        height=30  # Altura mínima para mostrar mensagens de erro
-    )
-    st.session_state[flag] = True
-
-
-def tocar_musica_sidebar():
+def tocar_musica_sidebar_nativo():
     musicas = {
         "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Vá Com Deus":       "02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3",
     }
 
     with st.sidebar:
         st.markdown("### 🎵 Música")
         ativar = st.checkbox("Ativar música", value=True)
         if not ativar:
-            # força reinjeção quando reativar
-            st.session_state.pop("_musica_injetada", None)
             return
 
         faixa = st.selectbox("Selecionar música:", list(musicas))
-    _musica_de_fundo(musicas[faixa])
 
-# chama logo após st.set_page_config
-tocar_musica_sidebar()
+        # Tenta diferentes caminhos possíveis para o arquivo
+        caminhos = ["./static/", "../static/", "static/", "/mount/src/dashboard-educacional-pernambuco/static/"]
+
+        for caminho in caminhos:
+            arquivo = f"{caminho}{musicas[faixa]}"
+            try:
+                if Path(arquivo).exists():
+                    audio_file = open(arquivo, "rb")
+                    st.audio(audio_file, format="audio/mp3")
+                    break
+            except Exception as e:
+                continue
+        else:
+            st.error("Arquivo de música não encontrado")
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ─── 3. ESTILO GLOBAL  ──────────────────────────────────────────────
