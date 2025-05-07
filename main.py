@@ -100,7 +100,7 @@ tocar_musica_sidebar()
 # ─── 3. ESTILO GLOBAL  ──────────────────────────────────────────────
 CORES = {
     # principais
-    "primaria":  "#92b0c3",    # fundo da sidebar
+    "primaria":  "#6b8190",    # fundo da sidebar
     "secundaria":"#d53e4f",    # títulos de filtros
     "terciaria": "#0073ba",    # fundo dos botões‑rádio
 
