@@ -110,10 +110,10 @@ CORES = {
     "selecionado": "#08306b",  # Cor para itens selecionados
 
     # Cores específicas para sidebar
-    "sidebar_titulo": "#000000",             # Título "Filtros"
-    "sidebar_subtitulo": "#000000",          # Subtítulo "Número de Matrículas por:"
-    "sidebar_radio_texto": "#000000",        # NOVO! Texto dos botões rádio (Escola, Município, Estado PE)
-    "sidebar_secao": "#000000",              # Seções como "Download" e "Configurações avançadas"
+    "sidebar_titulo": "#ffffff",             # Título "Filtros"
+    "sidebar_subtitulo": "#ffffff",          # Subtítulo "Número de Matrículas por:"
+    "sidebar_radio_texto": "#ffffff",        # NOVO! Texto dos botões rádio (Escola, Município, Estado PE)
+    "sidebar_secao": "#ffffff",              # Seções como "Download" e "Configurações avançadas"
     "sidebar_texto_normal": "#ffffff",       # Texto normal na sidebar
     "sidebar_slider_cor": "#ffffff",         # Cor para sliders na sidebar
     "sidebar_slider_texto": "#ffffff",       # Texto do slider (Altura da tabela)
