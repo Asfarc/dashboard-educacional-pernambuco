@@ -5,4 +5,4 @@ pyarrow
 openpyxl
 xlsxwriter
 altair
-psutil
+psutil==5.9.8
