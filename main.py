@@ -582,21 +582,19 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
 
     return df.loc[m]
 
+# 7‑B • CHAMA O FILTRO COM AS ESCOLHAS ATUAIS • gera df_filtrado
+df_filtrado = filtrar(
+    df_base,
+    tuple(ano_sel),
+    tuple(rede_sel),
+    tuple(etapa_sel),
+    tuple(sub_sel),
+    tuple(serie_sel),
+)
 
-# ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
-with st.sidebar.expander("Ajustar tamanho da tabela", False):
-    # Adicionar um estilo personalizado para o texto do slider
-    st.markdown("""
-    <style>
-    /* Seletor mais específico para o texto do slider */
-    [data-testid="stExpander"] [data-testid="stSlider"] > div:first-child {
-        color: #000000 !important;
-        font-weight: 500 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
+# se não houver linhas depois do filtro, pare logo aqui
+if df_filtrado.empty:
+    st.warning("Não há dados após os filtros."); st.stop()
 
 # ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 
