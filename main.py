@@ -486,103 +486,105 @@ st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
 
-    # 1ª LINHA - Ajuste na proporção para o lado direito ter menos espaço
+    # 1ª LINHA – Ano(s) / Rede(s) / Etapa
     c_left, c_right = st.columns([0.5, 0.7], gap="large")
 
-    # Lado esquerdo permanece o mesmo
+    # ----- LADO ESQUERDO -------------------------------------------------
     with c_left:
-        # Ano(s) - com espaço vertical mínimo
-        st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Ano(s)</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="filter-title" '
+            'style="margin:0;padding:0;display:flex;align-items:center;height:32px">'
+            'Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
-        ano_sel = st.multiselect("Ano(s)", anos_disp, default=anos_disp,
-                                 key="ano_sel", label_visibility="collapsed")
+        ano_sel = st.multiselect(
+            "Ano(s)", anos_disp, default=anos_disp,
+            key="ano_sel", label_visibility="collapsed")
 
-        # Rede(s) - com margem negativa para aproximar da caixa anterior
-        st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Rede(s)</div>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            '<div class="filter-title" '
+            'style="margin-top:-12px;padding:0">Rede(s)</div>',
+            unsafe_allow_html=True)
         redes_disp = sorted(df_base["Rede"].dropna().unique())
-        rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel", label_visibility="collapsed")
+        rede_sel = st.multiselect(
+            "", redes_disp, default=redes_disp,
+            key="rede_sel", label_visibility="collapsed")
 
-    # Lado direito - Ajuste para posicionar Etapa mais à esquerda
+    # ----- LADO DIREITO --------------------------------------------------
     with c_right:
-        # Use uma coluna com proporção menor para mover Etapa para a esquerda
-        c_right_col1, c_right_col2 = st.columns([0.9, 1])  # Mais espaço para Etapa, menos espaço vazio
+        c_right_col1, _ = st.columns([0.9, 1])   # a 2ª coluna é “só espaço”
 
         with c_right_col1:
-            # Etapa com mínimo de espaço vertical
-            st.markdown('<div class="filter-title" style="margin:0;padding:0">Etapa</div>', unsafe_allow_html=True)
+            st.markdown('<div class="filter-title" style="margin:0;padding:0">Etapa</div>',
+                        unsafe_allow_html=True)
             etapas_disp = sorted(df_base["Etapa"].unique())
-            etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
+            etapa_sel = st.multiselect(
+                "", etapas_disp, default=[],
+                key="etapa_sel", label_visibility="collapsed")
 
-            # Modificação da seção de filtros cascata (Etapa → Subetapa → Série)
-            # Na parte onde você implementa Subetapa e Série
-
-            # Para Subetapa
+            # ---------- SUBETAPA ----------
             if etapa_sel:
                 st.markdown(
-                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
-                    unsafe_allow_html=True)
+                    '<div class="filter-title" '
+                    'style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">'
+                    'Subetapa</div>', unsafe_allow_html=True)
 
-                # Opções reais daquela(s) etapa(s)
-                sub_real = sorted(df_base.loc[
-                                      df_base["Etapa"].isin(etapa_sel) & df_base["Subetapa"].ne(""),
-                                      "Subetapa"
-                                  ].unique())
-
-                # Um único "total" agregado, se houver seleção de etapa
-                sub_disp = (["Total - Todas as Subetapas"] if etapa_sel else []) + sub_real
-
-                sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
+                sub_real = sorted(
+                    df_base.loc[
+                        df_base["Etapa"].isin(etapa_sel) &
+                        df_base["Subetapa"].ne(""),
+                        "Subetapa"
+                    ].unique()
+                )
+                sub_disp = ["Total - Todas as Subetapas"] + sub_real
+                sub_sel = st.multiselect(
+                    "", sub_disp, default=[],
+                    key="sub_sel", label_visibility="collapsed")
             else:
                 sub_sel = []
 
-            # Para Séries
-                if etapa_sel and sub_sel:
-                    st.markdown(
-                        '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
-                        unsafe_allow_html=True)
+            # ---------- SÉRIE -------------
+            if etapa_sel and sub_sel:
+                st.markdown(
+                    '<div class="filter-title" '
+                    'style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">'
+                    'Série</div>', unsafe_allow_html=True)
 
-                    # Séries normais
-                    serie_real = sorted(df_base.loc[
-                                            df_base["Etapa"].isin(etapa_sel) &
-                                            df_base["Subetapa"].isin(
-                                                [s for s in sub_sel if not s.startswith("Total")]) &
-                                            df_base["Série"].ne(""),
-                                            "Série"
-                                        ].unique())
+                serie_real = sorted(
+                    df_base.loc[
+                        df_base["Etapa"].isin(etapa_sel) &
+                        df_base["Subetapa"].isin(
+                            [s for s in sub_sel if not s.startswith("Total")]
+                        ) &
+                        df_base["Série"].ne(""),
+                        "Série"
+                    ].unique()
+                )
+                serie_disp = ["Total - Todas as Séries"] + serie_real
+                serie_sel = st.multiselect(
+                    "", serie_disp, default=[],
+                    key="serie_sel", label_visibility="collapsed")
+            else:
+                serie_sel = []
 
-                    # Se escolheu QUALQUER subetapa, sempre ofereça o "total"
-                    serie_disp = (["Total - Todas as Séries"] if sub_sel else []) + serie_real
+    st.markdown('</div>', unsafe_allow_html=True)   # ← fora do with c_right
 
-                    serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
-                                               label_visibility="collapsed")
-                else:
-                    serie_sel = []
-
-        st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
-
-# ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
-# Função de filtro simplificada
+# --------------------------------------------------------------------
+# função de filtro enxuta
 def filtrar(df, anos, redes, etapas, subetapas, series):
     m = df["Ano"].isin(anos)
-    if redes: m &= df["Rede"].isin(redes)
-    if etapas: m &= df["Etapa"].isin(etapas)
+    if redes:   m &= df["Rede"].isin(redes)
+    if etapas:  m &= df["Etapa"].isin(etapas)
 
-    # --- SUBETAPA -------------------------------------------------
-    if subetapas:
-        if "Total - Todas as Subetapas" in subetapas:
-            pass  # já cobre tudo da etapa escolhida
-        else:
-            m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total")])
+    # Subetapa
+    if subetapas and not any(s.startswith("Total") for s in subetapas):
+        m &= df["Subetapa"].isin(subetapas)
 
-    # --- SÉRIE ----------------------------------------------------
-    if series:
-        if "Total - Todas as Séries" in series:
-            pass  # já cobre todas as séries da subetapa
-        else:
-            m &= df["Série"].isin([s for s in series if not s.startswith("Total")])
+    # Série
+    if series and not any(s.startswith("Total") for s in series):
+        m &= df["Série"].isin(series)
 
     return df.loc[m]
+
 
 # ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
 with st.sidebar.expander("Ajustar tamanho da tabela", False):
