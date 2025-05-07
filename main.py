@@ -159,7 +159,7 @@ CSS_COMPLETO = f"""
     background:{CORES["cinza_claro"]};
     border:1px solid {CORES["cinza_medio"]};
     border-radius:6px;
-    padding:0.1rem 1rem 0.5rem;
+    padding:0.2rem 1rem 0.5rem;
     margin-bottom:0.5rem;
 }}
 
