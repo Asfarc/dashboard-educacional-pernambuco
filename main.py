@@ -25,6 +25,36 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
+def verificar_arquivos_musica():
+    """Verifica se os arquivos de música estão disponíveis."""
+    try:
+        # Tenta diferentes caminhos possíveis
+        caminhos = ["./static", "../static", "static", "/mount/src/dashboard-educacional-pernambuco/static"]
+
+        for caminho in caminhos:
+            static_dir = Path(caminho)
+            if static_dir.exists():
+                st.sidebar.success(f"Pasta encontrada: {static_dir}")
+                arquivos = list(static_dir.glob("*.mp3"))
+                if arquivos:
+                    st.sidebar.success(f"Encontrados {len(arquivos)} arquivos MP3")
+                    for arq in arquivos:
+                        st.sidebar.info(f"- {arq.name}")
+                    return True
+                else:
+                    st.sidebar.warning(f"Pasta {static_dir} existe, mas não contém arquivos MP3")
+
+        st.sidebar.error("Nenhuma pasta 'static' com arquivos MP3 foi encontrada")
+        return False
+    except Exception as e:
+        st.sidebar.error(f"Erro ao verificar arquivos: {e}")
+        return False
+
+
+# Chame esta função antes de tentar tocar a música
+verificar_arquivos_musica()
+
 # ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
 from urllib.parse import quote
 
@@ -77,7 +107,6 @@ def tocar_musica_sidebar():
 
         faixa = st.selectbox("Selecionar música:", list(musicas))
     _musica_de_fundo(musicas[faixa])
-
 
 # chama logo após st.set_page_config
 tocar_musica_sidebar()
