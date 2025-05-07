@@ -114,8 +114,8 @@ CORES = {
     "sidebar_subtitulo": "#000000",          # Subtítulo "Número de Matrículas por:"
     "sidebar_radio_texto": "#000000",        # NOVO! Texto dos botões rádio (Escola, Município, Estado PE)
     "sidebar_secao": "#000000",              # Seções como "Download" e "Configurações avançadas"
-    "sidebar_texto_normal": "#000000",       # Texto normal na sidebar
-    "sidebar_slider_cor": "#000000",         # Cor para sliders na sidebar
+    "sidebar_texto_normal": "#ffffff",       # Texto normal na sidebar
+    "sidebar_slider_cor": "#ffffff",         # Cor para sliders na sidebar
     "sidebar_slider_texto": "#ffffff",       # Texto do slider (Altura da tabela)
 }
 
