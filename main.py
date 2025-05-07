@@ -265,7 +265,6 @@ except Exception as e:
 ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
 st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
 
-
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
 
@@ -300,9 +299,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# título em preto
+# Para melhorar o título "Número de Matrículas por:"
 st.sidebar.markdown(
-    '<p style="color:#000000;font-weight:600">'
+    '<p style="color:#FFFFFF;font-weight:600;font-size:1.1rem;margin-top:1.2rem">'
     'Número de Matrículas por:</p>',
     unsafe_allow_html=True
 )
