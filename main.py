@@ -250,9 +250,8 @@ except Exception as e:
     st.info("Tente recarregar a página ou contate o administrador.")
     st.stop()
 
-
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
-st.sidebar.title("fitr")
+st.sidebar.title("Filtrosss")
 
 # ▶️ Medidor de memória RAM
 ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
