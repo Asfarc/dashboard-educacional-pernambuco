@@ -15,6 +15,12 @@ import base64, os
 from pathlib import Path
 import streamlit.components.v1 as components
 
+# Gera um ID único para cada sessão de usuário
+if "user_id" not in st.session_state:
+    st.session_state.user_id = f"user_{hash(time.time())}"
+
+user_key = st.session_state.user_id
+
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
     page_title="Dashboard PNE",
@@ -23,36 +29,27 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
-def _musica_de_fundo(arquivo_mp3: str,
+# ─── 2‑B. MÚSICA DE FUNDO (versão sem Base‑64 em RAM) ────────────────
+from urllib.parse import quote  # para escapar espaços no nome do arquivo
+
+def _musica_de_fundo(nome_arquivo: str,
                       volume: float = 0.25,
                       flag: str = "musica_injetada"):
     """
-    Injeta um <audio> invisível e tenta tocar automaticamente.
-    Se o navegador bloquear, exibe um botão "▶️ Tocar música".
+    Injeta um <audio> apontando para /static/<arquivo>.
+    Tenta dar autoplay; se o navegador bloquear, exibe botão “▶️ Tocar música”.
     Executa só uma vez por sessão (controlado por st.session_state[flag]).
     """
     if st.session_state.get(flag):
         return
 
-    # procura o arquivo em possíveis caminhos
-    caminhos = [
-        arquivo_mp3,                              # raiz do repo
-        f"static/{arquivo_mp3}",                  # pasta static (Streamlit Cloud)
-        Path(__file__).parent / "static" / arquivo_mp3
-    ]
-    for c in caminhos:
-        if os.path.exists(c):
-            mp3_bytes = Path(c).read_bytes()
-            break
-    else:
-        st.warning("Áudio não encontrado."); return
+    # URL do arquivo atendido pelo próprio servidor static do Streamlit
+    url = f"/static/{quote(nome_arquivo)}"   # escapa espaços
 
-    b64 = base64.b64encode(mp3_bytes).decode()
     components.html(
         f"""
         <audio id="bg-music" loop>
-            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+            <source src="{url}" type="audio/mp3">
         </audio>
         <script>
           const audio = document.getElementById('bg-music');
@@ -69,30 +66,31 @@ def _musica_de_fundo(arquivo_mp3: str,
           }});
         </script>
         """,
-        height=0, width=0
+        height=0, width=0      # iframe invisível
     )
     st.session_state[flag] = True
 
 def tocar_musica_sidebar():
-    """Interface simples na sidebar para escolher e ativar a música."""
+    """Interface na sidebar para ativar/desativar e escolher a faixa."""
     musicas = {
-        "Roberta Miranda-Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Roberta Miranda-Vá Com Deus":      "02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "Roberta Miranda – Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
+        "Roberta Miranda – Vá Com Deus":       "02 ROBERTA MIRANDA VA COM DEUS.mp3",
     }
 
     with st.sidebar:
         st.markdown("### 🎵 Música")
         ativar = st.checkbox("Ativar música", value=True)
         if not ativar:
-            # se o usuário desmarcar, remove flag para parar nas próximas execuções
-            st.session_state.pop("musica_injetada", None)
+            st.session_state.pop("musica_injetada", None)   # pára nas próximas execuções
             return
 
-        musica_sel = st.selectbox("Selecionar música:", list(musicas.keys()))
-    _musica_de_fundo(musicas[musica_sel])
+        faixa = st.selectbox("Selecionar música:", list(musicas.keys()))
+
+    _musica_de_fundo(musicas[faixa])
 
 # chama logo após a configuração da página
 tocar_musica_sidebar()
+
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
@@ -344,7 +342,7 @@ def format_number_br(num):
     except: return str(num)
 
 # ─── 5. CARGA DO PARQUET (rápido + tipos category) ──────────────────
-@st.cache_data(ttl=60*10, show_spinner="Carregando dados…")  # 10 minutos
+@st.cache_data(ttl=60*5, max_entries=10, show_spinner="Carregando dados…")
 def carregar_dados():
     df = pd.read_parquet("dados.parquet", engine="pyarrow")
 
@@ -586,7 +584,7 @@ col_filters = st.columns(len(vis_cols))
 filter_values = {}
 for i, col in enumerate(vis_cols):
     with col_filters[i]:
-        filter_values[col] = st.text_input("", key=f"filter_{col}", label_visibility="collapsed")
+        filter_values[col] = st.text_input("Filtro", key=f"filter_{col}", label_visibility="collapsed")
 
 # Aplicar filtros
 mask = pd.Series(True, index=df_tabela.index)
@@ -606,16 +604,17 @@ for col, value in filter_values.items():
 df_texto = df_tabela[mask]
 
 # Paginação
-PAGE_SIZE = st.session_state.get("page_size", 25)
+# Depois
+PAGE_SIZE = st.session_state.get(f"{user_key}_page_size", 25)
 total_pg = max(1, (len(df_texto)-1)//PAGE_SIZE + 1)
-pg_atual = min(st.session_state.get("current_page", 1), total_pg)
+pg_atual = min(st.session_state.get(f"{user_key}_current_page", 1), total_pg)
 start = (pg_atual-1)*PAGE_SIZE
 df_page = df_texto.iloc[start:start+PAGE_SIZE]
 
 # Formatação para exibição
 for c in df_page.columns:
     if c.startswith("Número de"):
-        df_page[c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
+        df_page.loc[:, c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
 
 # Exibe a tabela principal
 st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index=True)
@@ -623,8 +622,9 @@ st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index
 # Navegação
 b1, b2, b3, b4 = st.columns([1,1,1,2])
 with b1:
-    if st.button("◀", disabled=pg_atual==1):
-        st.session_state["current_page"] = pg_atual-1; st.rerun()
+    if st.button("◀", disabled=pg_atual == 1):
+        st.session_state[f"{user_key}_current_page"] = pg_atual - 1;
+        st.rerun()
 with b2:
     if st.button("▶", disabled=pg_atual==total_pg):
         st.session_state["current_page"] = pg_atual+1; st.rerun()
