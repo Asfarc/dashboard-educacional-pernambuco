@@ -314,7 +314,7 @@ nivel = st.sidebar.radio(
 )
 
 # Selecionar o DataFrame baseado no nível
-df_base = {"Escola": escolas_df, "Município": municipio_df, "Estado PE": estado_df}[nivel]
+df_base = {"Escolas": escolas_df, "Municípios": municipio_df, "Pernambuco": estado_df}[nivel]
 if df_base.empty:
     st.error("DataFrame vazio"); st.stop()
 
