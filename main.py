@@ -33,7 +33,7 @@ def autoplay_audio(file_path):
             """
         st.markdown(md, unsafe_allow_html=True)
 # Verificar se o arquivo de música existe
-audio_file = "static/02 ROBERTA MIRANDA VA COM DEUS.mp3"
+audio_file = "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3"
 if os.path.exists(audio_file):
     autoplay_audio(audio_file)
 else:
