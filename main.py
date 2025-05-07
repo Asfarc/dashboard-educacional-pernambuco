@@ -264,7 +264,7 @@ except Exception as e:
 # E coloque antes do título da sidebar:
 ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
 st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
-st.sidebar.title("Filtros")
+
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
