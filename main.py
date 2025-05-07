@@ -24,8 +24,13 @@ st.set_page_config(
 )
 
 
-def reproduzir_musica_com_autoplay():
-    """Função melhorada para reproduzir música com estratégias de autoplay."""
+# Adicione esta função após o st.set_page_config()
+def tocar_musica():
+    # Lista de músicas disponíveis na pasta static
+    musicas = {
+        "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
+        "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3"
+    }
 
     # Interface na sidebar
     with st.sidebar:
@@ -34,88 +39,69 @@ def reproduzir_musica_com_autoplay():
 
         if not ativar_musica:
             return
-
-        # Opções de música
         musica_selecionada = st.selectbox(
             "Selecionar música:",
-            options=["Sol da Minha Vida", "Vá Com Deus"]
+            options=list(musicas.keys())
         )
 
-        # Mapeamento de nomes para arquivos
-        nome_arquivo = {
-            "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-            "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3"
-        }[musica_selecionada]
+        # Definir o arquivo da música selecionada
+        nome_arquivo = musicas[musica_selecionada]
 
-        # Caminho para o arquivo
-        caminho = f"static/{nome_arquivo}"
+        # IMPORTANTE: Caminhos para ambiente local e hospedagem Streamlit
+        caminhos = [
+            # Caminho direto (funciona na hospedagem Streamlit)
+            f"static/{nome_arquivo}",
+            # Caminho relativo ao script (funciona localmente)
+            str(Path(__file__).parent / "static" / nome_arquivo)
+        ]
 
-        if os.path.exists(caminho):
-            try:
-                with open(caminho, "rb") as f:
-                    bytes_musica = f.read()
-                    encoded = base64.b64encode(bytes_musica).decode()
+        # Tentar cada caminho
+        for caminho in caminhos:
+            if os.path.exists(caminho):
+                try:
+                    with open(caminho, "rb") as f:
+                        bytes_musica = f.read()
+                        encoded = base64.b64encode(bytes_musica).decode()
+                        audio_html = f"""
+                        <audio autoplay loop controls>
+                            <source src="data:audio/mp3;base64,{encoded}" type="audio/mp3">
+                        </audio>
+                        """
+                        st.markdown(audio_html, unsafe_allow_html=True)
+                        return
+                except Exception as e:
+                    st.sidebar.warning(f"Erro ao reproduzir: {e}")
 
-                    # 1. Estratégia principal: Audio muted com autoplay (permitido pelos navegadores)
-                    # com JavaScript para tentar remover o mute após iniciar
-                    html = f"""
-                    <audio id="backgroundAudio" autoplay loop muted>
-                        <source src="data:audio/mp3;base64,{encoded}" type="audio/mp3">
-                    </audio>
+        # Se nenhum caminho funcionou
+        st.sidebar.warning("Não foi possível reproduzir a música. Verifique se os arquivos existem na pasta 'static'.")
 
-                    <script>
-                        // Função que será executada quando o documento carregar
-                        document.addEventListener('DOMContentLoaded', function() {{
-                            var audio = document.getElementById('backgroundAudio');
+        # Para hospedagem Streamlit, mostre instruções adicionais
+        with st.sidebar.expander("Solução para hospedagem Streamlit"):
+            st.markdown("""
+            Se estiver usando a hospedagem Streamlit Cloud:
 
-                            // Tenta iniciar a reprodução
-                            var playPromise = audio.play();
+            1. Certifique-se de que a pasta `static` existe no repositório GitHub
+            2. Verifique se os arquivos MP3 foram enviados (git add/commit/push)
+            3. Use este código alternativo que funciona na hospedagem:
 
-                            if (playPromise !== undefined) {{
-                                playPromise.then(_ => {{
-                                    console.log("Autoplay iniciado com sucesso!");
-                                }})
-                                .catch(error => {{
-                                    console.log("Autoplay foi bloqueado pelo navegador");
-                                }});
-                            }}
+            ```python
+            def reproduzir_musica_streamlit_cloud():
+                import streamlit as st
 
-                            // Tenta remover o mudo após qualquer interação do usuário
-                            document.addEventListener('click', function() {{
-                                audio.muted = false;
-                                audio.play();
-                            }}, {{ once: true }});
-                        }});
-                    </script>
-                    """
+                musica_url = "https://SEU_REPOSITORIO_GITHUB_RAW/static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3"
 
-                    # Injetar o HTML
-                    st.markdown(html, unsafe_allow_html=True)
-
-                    # 2. Estratégia alternativa: botão explícito para iniciar
-                    if st.button("▶️ Clique para iniciar/ativar som"):
-                        # Este botão recarrega a página, o que pode acionar permissões de autoplay
-                        st.experimental_rerun()
-
-                    # 3. Instruções para o usuário
-                    st.info("""
-                    ℹ️ **Nota sobre reprodução automática**: 
-                    Devido às políticas de segurança dos navegadores, a música pode iniciar sem som.
-
-                    Para ativar o som:
-                    - Clique em qualquer lugar da página
-                    - Ou clique no botão acima
-                    - Ou use os controles do player de áudio
-                    """)
-
-            except Exception as e:
-                st.sidebar.error(f"Erro ao reproduzir: {e}")
-        else:
-            st.sidebar.warning(f"Arquivo não encontrado: {caminho}")
+                audio_html = f'''
+                <audio autoplay loop controls>
+                    <source src="{musica_url}" type="audio/mp3">
+                </audio>
+                '''
+                st.markdown(audio_html, unsafe_allow_html=True)
+            ```
+            """)
 
 
-# Use esta função no lugar da sua implementação atual
-reproduzir_musica_com_autoplay()
+# Chamar a função após a configuração da página
+tocar_musica()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
