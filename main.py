@@ -290,10 +290,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Colocar o botão rádio original (agora com estilo melhorado)
+# título em preto
+st.sidebar.markdown(
+    '<p style="color:#000000;font-weight:600">'
+    'Número de Matrículas por:</p>',
+    unsafe_allow_html=True
+)
+
+# radio sem rótulo
 nivel = st.sidebar.radio(
-    "Número de Matrículas por:",
-    ["Escola", "Município", "Estado PE"]
+    "",                            # rótulo vazio
+    ["Escola", "Município", "Estado PE"],
+    label_visibility="collapsed"   # esconde o label vazio
 )
 
 # Selecionar o DataFrame baseado no nível
