@@ -323,7 +323,20 @@ if df_base.empty:
 
 # CSS combinado para todos os ajustes necessários
 COMBINED_CSS = """
-/* Resto do CSS omitido para brevidade */
+/* Estilo para alinhar verticalmente os inputs de filtro */
+[data-testid="stDataFrame"] + div [data-baseweb="input"] {
+    margin-top: 5px !important;  /* Ajuste este valor conforme necessário */
+    margin-bottom: 10px !important;
+}
+
+/* Espaçamento entre cabeçalhos e filtros */
+.column-header {
+    margin-bottom: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 40px !important;  /* Ajuste a altura conforme necessário */
+}
 """
 st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
 
