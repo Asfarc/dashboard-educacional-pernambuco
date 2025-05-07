@@ -252,7 +252,7 @@ except Exception as e:
 
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
-st.sidebar.title("Filtros")
+st.sidebar.title("Filtross")
 
 # ▶️ Medidor de memória RAM
 ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
