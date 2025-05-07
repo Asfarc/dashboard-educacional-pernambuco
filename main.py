@@ -19,7 +19,34 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# ─── 2‑B. ÁUDIO DE BOAS‑VINDAS ─────────────────────────────────────
+import base64
+from pathlib import Path
+import streamlit.components.v1 as components
 
+def tocar_audio_autoplay(caminho_mp3: str, chave_state: str = "audio_started"):
+    """
+    Injeta o áudio em base64 e toca só uma vez por sessão.
+    """
+    if st.session_state.get(chave_state):
+        return                              # Já tocou ⇒ não faz nada
+    
+    mp3_bytes = Path(caminho_mp3).read_bytes()
+    b64_mp3   = base64.b64encode(mp3_bytes).decode()
+
+    components.html(
+        f"""
+        <audio autoplay>
+            <source src="data:audio/mpeg;base64,{b64_mp3}" type="audio/mpeg">
+        </audio>
+        """,
+        height=0,     # 0 ⇒ não mostra player
+        width=0
+    )
+    st.session_state[chave_state] = True    # Marca que já tocou
+
+# Chame a função apontando para o arquivo
+tocar_audio_autoplay("02 ROBERTA MIRANDA VA COM DEUS.mp3")
 # ─── 3. CONFIG GLOBALS (Altair + CSS helpers) ───────────────────────
 alt.renderers.set_embed_options({
     "formatLocale": {"decimal": ",", "thousands": ".", "grouping": [3]},
