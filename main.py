@@ -11,6 +11,8 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import io, re, time
+import base64
+import os
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
@@ -19,38 +21,24 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-# ─── 2‑B. ÁUDIO DE BOAS‑VINDAS ─────────────────────────────────────
-import base64
-from pathlib import Path
-import streamlit.components.v1 as components
+# Reprodução automática de música
+def autoplay_audio(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+        b64 = base64.b64encode(data).decode()
+        md = f"""
+            <audio autoplay loop>
+                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+            </audio>
+            """
+        st.markdown(md, unsafe_allow_html=True)
+# Verificar se o arquivo de música existe
+audio_file = "static/02 ROBERTA MIRANDA VA COM DEUS.mp3"
+if os.path.exists(audio_file):
+    autoplay_audio(audio_file)
+else:
+    st.warning("Arquivo de música não encontrado. Verifique se o arquivo está na pasta 'static'.")
 
-def tocar_audio_autoplay(caminho_mp3: str, chave_state: str = "audio_started"):
-    """
-    Injeta o áudio em base64 e toca só uma vez por sessão.
-    """
-    if st.session_state.get(chave_state):
-        return                              # Já tocou ⇒ não faz nada
-    
-    mp3_bytes = Path(caminho_mp3).read_bytes()
-    b64_mp3   = base64.b64encode(mp3_bytes).decode()
-
-    components.html(
-        f"""
-        <audio autoplay>
-            <source src="data:audio/mpeg;base64,{b64_mp3}" type="audio/mpeg">
-        </audio>
-        """,
-        height=0,     # 0 ⇒ não mostra player
-        width=0
-    )
-    st.session_state[chave_state] = True    # Marca que já tocou
-
-# Chame a função apontando para o arquivo
-tocar_audio_autoplay("02 ROBERTA MIRANDA VA COM DEUS.mp3")
-# ─── 3. CONFIG GLOBALS (Altair + CSS helpers) ───────────────────────
-alt.renderers.set_embed_options({
-    "formatLocale": {"decimal": ",", "thousands": ".", "grouping": [3]},
-})
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
