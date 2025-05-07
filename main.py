@@ -351,7 +351,24 @@ COMBINED_CSS = """
 [data-testid="stDataFrame"] + div [data-baseweb="input"] input {
     height: 100% !important;
 }
+/* Diminuir o recuo do texto na sidebar */
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
+    padding-left: 0.5rem !important;  /* Reduz o padding à esquerda */
+}
 
+/* Ajustar os botões de download para evitar quebra de linha */
+section[data-testid="stSidebar"] .stDownloadButton > button,
+section[data-testid="stSidebar"] .stButton > button {
+    white-space: nowrap;              /* Evita quebra de linha */
+    width: 100%;                      /* Ocupa toda a largura da coluna */
+    padding: 0.3rem 0.5rem;           /* Reduz o padding lateral */
+    font-size: 0.9rem;                /* Reduz um pouco o tamanho da fonte */
+}
+
+/* Mais espaço para a área dos botões de download */
+section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
+    padding: 0 0.3rem;                /* Reduz o espaço lateral nas colunas */
+}
 /* Resto do CSS omitido para brevidade */
 """
 st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
