@@ -14,6 +14,8 @@ import io, re, time
 import base64, os
 from pathlib import Path
 import streamlit.components.v1 as components
+import psutil
+
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
@@ -375,6 +377,11 @@ escolas_df, municipio_df, estado_df = carregar_dados()
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
+
+# ▶️ Medidor de memória RAM
+ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
+st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
+
 
 # Adicionar estilo para melhorar a aparência dos botões rádio
 st.markdown("""
