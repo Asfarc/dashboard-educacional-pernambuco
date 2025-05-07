@@ -596,6 +596,21 @@ df_filtrado = filtrar(
 if df_filtrado.empty:
     st.warning("Não há dados após os filtros."); st.stop()
 
+# ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
+with st.sidebar.expander("Configurações avançadas da tabela", False):
+    # Adicionar um estilo personalizado para o texto do slider
+    st.markdown("""
+    <style>
+    /* Seletor mais específico para o texto do slider */
+    [data-testid="stExpander"] [data-testid="stSlider"] > div:first-child {
+        color: #000000 !important;
+        font-weight: 500 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
+
 # ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 
 # 1. Colunas visíveis
