@@ -13,6 +13,7 @@ import altair as alt
 import io, re, time
 import base64
 import os
+from pathlib import Path
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
@@ -21,31 +22,63 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-# Reprodução automática de música
-def autoplay_audio(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-        b64 = base64.b64encode(data).decode()
-        md = f"""
-            <audio autoplay loop>
-                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-            </audio>
-            """
-        st.markdown(md, unsafe_allow_html=True)
-# Adicione após a função autoplay_audio
-musicas = {
-    "Sol da Minha Vida": "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-    "Vá Com Deus": "static/02 ROBERTA MIRANDA VA COM DEUS.mp3"
-}
 
-musica_selecionada = st.sidebar.selectbox("Selecionar música:", list(musicas.keys()))
-audio_file = musicas[musica_selecionada]
 
-if os.path.exists(audio_file):
-    autoplay_audio(audio_file)
-else:
-    st.warning(f"Arquivo de música '{audio_file}' não encontrado.")
+def configurar_player_musica():
+    """Configuração do player de música com tratamento de erros específico para a estrutura de pastas observada."""
 
+    # Lista de músicas disponíveis
+    musicas = {
+        "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
+        "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3"
+    }
+
+    # Interface na sidebar para seleção de música
+    with st.sidebar:
+        st.markdown("### 🎵 Música de Fundo")
+        ativar_musica = st.checkbox("Ativar música", value=True)
+
+        if not ativar_musica:
+            return
+
+        musica_selecionada = st.selectbox(
+            "Selecionar música:",
+            options=list(musicas.keys())
+        )
+
+        # Obter nome do arquivo da música selecionada
+        nome_arquivo = musicas[musica_selecionada]
+
+        # Caminhos possíveis baseados na estrutura vista no screenshot
+        caminhos_possiveis = [
+            f"static/{nome_arquivo}",
+            os.path.join("static", nome_arquivo),
+            os.path.join(os.path.dirname(__file__), "static", nome_arquivo),
+            str(Path(__file__).parent.absolute() / "static" / nome_arquivo)
+        ]
+
+        try:
+            # Tentar cada caminho e reportar para debug
+            for idx, caminho in enumerate(caminhos_possiveis):
+                st.sidebar.text(f"Tentando caminho {idx + 1}: {caminho}")
+
+                if os.path.exists(caminho):
+                    st.sidebar.success(f"Arquivo encontrado: {caminho}")
+
+                    with open(caminho, "rb") as f:
+                        data = f.read()
+                        b64 = base64.b64encode(data).decode()
+                        md = f"""
+                            <audio autoplay loop controls>
+                                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                            </audio>
+                            """
+                        st.markdown(md, unsafe_allow_html=True)
+                        return
+                else:
+                    st.sidebar.text(f"Não encontrado em: {caminho}")
+        except Exception as e:
+            st.sidebar.error(f"Erro ao reproduzir: {str(e)}")
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
