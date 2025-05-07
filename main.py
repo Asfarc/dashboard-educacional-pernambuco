@@ -83,242 +83,95 @@ def tocar_musica_sidebar():
 tocar_musica_sidebar()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
-# ===================================================================
-# Cores do tema
+# ─── 3. ESTILO GLOBAL  ──────────────────────────────────────────────
 CORES = {
-    # Cores principais
-    "primaria": "#ffdfba",  # SIDEBAR
-    "secundaria": "#d53e4f",  # TÍTULOS DOS FILTROS
-    "terciaria": "#0073ba",  # Botões rádio - Azul (corrigido para usar o mesmo valor)
+    # principais
+    "primaria":  "#ffdfba",    # fundo da sidebar
+    "secundaria":"#d53e4f",    # títulos de filtros
+    "terciaria": "#0073ba",    # fundo dos botões‑rádio
 
-    # Cores neutras
-    "cinza_claro": "#ffffff",  #  (fundo de painéis)
-    "cinza_medio": "#ffffff",  #  médio (bordas)
-    "cinza_escuro": "#f6b119",  #  (texto)
-    "branco": "#ffffff",  # Branco
-    "preto": "#000000",  # Preto (corrigido - estava vermelho)
+    # neutras
+    "cinza_claro":"#ffffff",
+    "cinza_medio":"#e0e0e0",
+    "cinza_escuro":"#333333",
+    "branco":"#ffffff",
+    "preto":"#000000",
 
-    # Cores funcionais
-    "highlight": "#ffdfba",  #  (cabeçalhos de tabela)
-    "botao_hover": "#fc4e2a",  # Cor de hover para botões
-    "selecionado": "#08306b",  # Cor para itens selecionados
+    # funcionais
+    "highlight":"#ffdfba",
+    "botao_hover":"#fc4e2a",
+    "selecionado":"#08306b",
 
-    # Cores específicas para sidebar
-    "sidebar_titulo": "#ffffff",             # Título "Filtros"
-    "sidebar_subtitulo": "#ffffff",          # Subtítulo "Número de Matrículas por:"
-    "sidebar_radio_texto": "#ffffff",        # NOVO! Texto dos botões rádio (Escola, Município, Estado PE)
-    "sidebar_secao": "#ffffff",              # Seções como "Download" e "Configurações avançadas"
-    "sidebar_texto_normal": "#ffffff",       # Texto normal na sidebar
-    "sidebar_slider_cor": "#ffffff",         # Cor para sliders na sidebar
-    "sidebar_slider_texto": "#ffffff",       # Texto do slider (Altura da tabela)
+    # sidebar
+    "sb_titulo":   "#ffffff",
+    "sb_subtitulo":"#ffffff",
+    "sb_radio":    "#ffffff",
+    "sb_secao":    "#ffffff",
+    "sb_texto":    "#ffffff",
+    "sb_slider":   "#ffffff",
 }
 
-# Tipografia
-FONTES = {
-    "titulo": "1.1rem",
-    "conteudo": "1rem",
-    "filtro_titulo": "0.90rem",
-}
-
-# Parâmetros para containers
-PARAMETROS_ESTILO_CONTAINER = {
-    "raio_borda": 8,
-    "cor_borda": CORES["cinza_medio"],
-    "cor_titulo": CORES["cinza_escuro"],
-    "tamanho_fonte_titulo": FONTES["titulo"],
-    "tamanho_fonte_conteudo": FONTES["conteudo"],
-    "cor_fonte_conteudo": CORES["cinza_escuro"],
-}
-
-# CSS para containers
-def obter_estilo_css_container(p=PARAMETROS_ESTILO_CONTAINER) -> str:
+def css_global(c=CORES) -> str:
+    """Devolve todo o CSS, usando variáveis definidas no :root."""
     return f"""
     <style>
-    .container-custom{{padding:0!important;margin:0!important;background:transparent!important}}
-    .container-title{{font-size:{p['tamanho_fonte_titulo']};color:{p['cor_titulo']}}}
-    .container-text {{font-size:{p['tamanho_fonte_conteudo']};color:{p['cor_fonte_conteudo']}}}
+    /* ---- variáveis de cor --------------------------------------- */
+    :root {{
+      --sb-bg:        {c['primaria']};
+      --sb-title:     {c['sb_titulo']};
+      --sb-subtitle:  {c['sb_subtitulo']};
+      --sb-text:      {c['sb_texto']};
+      --sb-section:   {c['sb_secao']};
+      --sb-slider:    {c['sb_slider']};
+      --sb-radio:     {c['sb_radio']};
+      --radio-bg:     {c['terciaria']};
+      --radio-hover:  {c['cinza_medio']};
+      --btn-hover:    {c['botao_hover']};
+      --highlight:    {c['highlight']};
+    }}
+
+    /* ===== SIDEBAR =============================================== */
+    section[data-testid="stSidebar"]{{width:260px!important;min-width:260px}}
+    section[data-testid="stSidebar"]::before{{
+        content:"";position:absolute;inset:0;background:var(--sb-bg);z-index:0}}
+    section[data-testid="stSidebar"]>div{{position:relative;z-index:1;padding:2rem 1rem}}
+
+    section[data-testid="stSidebar"] h1{{color:var(--sb-title)!important}}
+    section[data-testid="stSidebar"] .stRadio span{{color:var(--sb-subtitle)!important}}
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] [data-testid="stExpander"] summary p{{
+        color:var(--sb-section)!important}}
+
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p{{color:var(--sb-text)!important}}
+
+    /* botão‑rádio */
+    section[data-testid="stSidebar"] .stRadio>div>label{{
+        background:var(--radio-bg);border:1px solid {c['preto']};border-radius:6px}}
+    section[data-testid="stSidebar"] .stRadio>div>label:hover{{
+        background:var(--radio-hover)}}
+    section[data-testid="stSidebar"] .stRadio>div>label div p{{
+        color:var(--sb-radio)!important}}
+
+    /* slider */
+    section[data-testid="stSidebar"] [data-testid="stSlider"] div[role="slider"]{{
+        background:var(--sb-slider)!important}}
+
+    /* ===== TABELA – cabeçalhos =================================== */
+    .column-header{{
+        background:var(--highlight);text-align:center;font-weight:bold}}
+
+    /* ===== BOTÕES GENERICOS ===================================== */
+    .stButton>button,.stDownloadButton>button{{
+        background:{c['cinza_escuro']};color:{c['branco']};border:none;border-radius:3px}}
+    .stButton>button:hover,.stDownloadButton>button:hover{{
+        background:var(--btn-hover)}}
     </style>
     """
 
-# CSS principal - todos os estilos em um único bloco
-CSS_COMPLETO = f"""
-/* ===== PAINEL DE FILTROS ========================================== */
-.panel-filtros{{
-    background:{CORES["cinza_claro"]};
-    border:1px solid {CORES["cinza_medio"]};
-    border-radius:6px;
-    padding:0.2rem 1rem 0.5rem;
-    margin-bottom:0.5rem;
-}}
+# aplicar na página
+st.markdown(css_global(), unsafe_allow_html=True)
 
-.panel-row{{display:flex;flex-wrap:nowrap;gap:0.8rem}}
-.panel-row>div{{flex:1 1 0}}
-
-.filter-title{{
-    font-weight:600;
-    color:{CORES["secundaria"]};
-    font-size:{PARAMETROS_ESTILO_CONTAINER["tamanho_fonte_conteudo"]};
-    margin:0 0 0.15rem
-}}
-
-/* ===== SIDEBAR ===================================================== */
-[data-testid="stSidebar"]{{width:260px!important;min-width:260px!important}}
-[data-testid="stSidebar"]::before{{
-    content:"";position:absolute;top:0;left:0;width:100%;height:100%;
-    background:{CORES["primaria"]};border-radius:1px;z-index:0}}
-[data-testid="stSidebar"]>div{{position:relative;z-index:1;padding:2rem 1rem!important}}
-
-/* Título principal da sidebar "Filtros" */
-[data-testid="stSidebar"] h1 {{
-    color:{CORES["sidebar_titulo"]}!important;
-    font-size:1.8rem!important;
-    font-weight:700!important;
-    margin-bottom:1.5rem!important;
-}}
-
-/* Subtítulo "Número de Matrículas por:" */
-[data-testid="stSidebar"] .stRadio span {{
-    color:{CORES["sidebar_subtitulo"]}!important;
-}}
-
-/* Também adicione esse seletor para garantir que funcione */
-[data-testid="stSidebar"] .stRadio p {{
-    color:{CORES["sidebar_subtitulo"]}!important;
-}}
-
-/* Título "Configurações avançadas" e "Download" */
-[data-testid="stSidebar"] h3, 
-[data-testid="stSidebar"] [data-testid="stExpander"] summary p {{
-    color:{CORES["sidebar_secao"]}!important;
-    font-size:1.2rem!important;
-    font-weight:600!important;
-    margin:1.5rem 0 0.8rem!important;
-}}
-
-/* Texto normal como "Altura da tabela (px)" */
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] p {{
-    color:{CORES["sidebar_texto_normal"]}!important;
-}}
-
-/* Texto do slider - seletor mais específico e direto */
-div[data-testid="stSidebar"] div[data-testid="stExpander"] div[data-testid="stSlider"] label {{
-    color: {CORES["sidebar_slider_texto"]}!important;
-    font-weight: 600!important;
-}}
-
-/* Sliders na sidebar */
-[data-testid="stSidebar"] [data-testid="stSlider"] div[role="slider"] {{
-    background-color: {CORES["sidebar_slider_cor"]}!important;
-}}
-
-/* Outros elementos de UI na sidebar */
-[data-testid="stSidebar"] option,
-[data-testid="stSidebar"] select,
-[data-testid="stSidebar"] [data-baseweb=select] div{{
-    color:{CORES["preto"]}!important
-}}
-
-[data-testid="stSidebar"] .stMultiSelect [aria-selected=true]{{
-    background:{CORES["selecionado"]}!important;
-    color:{CORES["branco"]}!important;
-    border-radius:1px!important
-}}
-
-/* ===== BOTÕES ====================================================== */
-.stButton>button,.stDownloadButton>button{{
-    background:{CORES["cinza_escuro"]}!important;color:{CORES["branco"]}!important;border:none!important;
-    border-radius:3px!important;transition:all .3s}}
-.stButton>button:hover,.stDownloadButton>button:hover{{
-    background:{CORES["botao_hover"]}!important;transform:translateY(-1px);
-    box-shadow:0 2px 5px rgba(0,0,0,.1)}}
-
-/* ===== MULTISELECT E BOTÕES RÁDIO ================================== */
-/* Reduzir a largura do container do multiselect */
-[data-testid="stMultiSelect"] {{
-    max-width: 460px !important;
-    width: 100% !important;
-}}
-
-/* Ajustar o container principal */
-.panel-filtros [data-baseweb="select"] {{
-    max-width: 100px !important;
-}}
-
-/* Reduzir largura do dropdown quando expandido */
-[data-baseweb="popover"] {{
-    max-width: 100px !important;
-}}
-
-/* Estilo para os botões rádio de nível */
-.stRadio > div {{
-    padding: 10px 0;
-}}
-
-/* Texto dentro dos botões rádio (Escola, Município, Estado PE) */
-.stRadio > div > label > div > p {{
-    color: {CORES["sidebar_radio_texto"]} !important;
-}}
-
-.stRadio > div > label {{
-    background-color: {CORES["terciaria"]};
-    border: 1px solid {CORES["preto"]};
-    border-radius: 6px;
-    padding: 10px;
-    margin: 5px 0;
-    display: flex;
-    align-items: center;
-    transition: all 0.2s ease;
-}}
-
-.stRadio > div > label:hover {{
-    background-color: {CORES["cinza_medio"]};
-    transform: translateY(-2px);
-}}
-
-.stRadio > div [data-testid="stMarkdownContainer"] p {{
-    margin: 0;
-    font-weight: 500;
-}}
-
-/* ===== TABELA E CABEÇALHOS ======================================== */
-/* Configuração para os cabeçalhos da tabela */
-.column-header {{
-    text-align: center;
-    font-weight: bold;
-    background-color: {CORES["highlight"]};
-    padding: 12px 4px;
-    border-radius: 0px;
-    margin-bottom: 2px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}}
-
-/* Centralização dos números na tabela */
-[data-testid="stDataFrame"] table tbody tr td:last-child {{
-    text-align: center !important;
-}}
-
-/* Também centraliza o cabeçalho da última coluna */
-[data-testid="stDataFrame"] table thead tr th:last-child {{
-    text-align: center !important;
-}}
-"""
-
-# Aplica os estilos CSS
-st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
-st.markdown(f"<style>{CSS_COMPLETO}</style>", unsafe_allow_html=True)
-
-# ---- override específico para o texto dos botões rádio --------------
-st.markdown(f"""
-<style>
-[data-testid="stSidebar"] .stRadio > div > label p {{
-    color: {CORES["sidebar_radio_texto"]} !important;
-}}
-</style>
-""", unsafe_allow_html=True)
 
 # ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
 def beautify(col: str) -> str:
