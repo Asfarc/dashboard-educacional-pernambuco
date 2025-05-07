@@ -309,7 +309,7 @@ st.sidebar.markdown(
 # radio sem rótulo
 nivel = st.sidebar.radio(
     "",                            # rótulo vazio
-    ["Escola", "Município", "Estado PE"],
+    ["Escolas", "Municípios", "Pernambuco"],
     label_visibility="collapsed"   # esconde o label vazio
 )
 
