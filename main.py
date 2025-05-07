@@ -336,7 +336,7 @@ def format_number_br(num):
     except: return str(num)
 
 # ─── 5. CARGA DO PARQUET (rápido + tipos category) ──────────────────
-@st.cache_data(ttl=60*5, max_entries=10, show_spinner="Carregando dados…")
+@st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_dados():
     df = pd.read_parquet("dados.parquet", engine="pyarrow")
 
@@ -488,21 +488,21 @@ with st.container():
 
     st.markdown('</div>', unsafe_allow_html=True)   # fecha .panel-filtros
 
-
-# ─── 8. FUNÇÃO DE FILTRO CACHEADA ───────────────────────────────────
-@st.cache_data
-def filtrar(base_df,
-            anos: tuple,
-            redes: tuple,
-            etapas: tuple,
-            subetapas: tuple,
-            series: tuple) -> pd.DataFrame:
-    m = base_df["Ano"].isin(anos)
-    if redes:      m &= base_df["Rede"].isin(redes)
-    if etapas:     m &= base_df["Etapa"].isin(etapas)
-    if subetapas:  m &= base_df["Subetapa"].isin(subetapas)
-    if series:     m &= base_df["Série"].isin(series)
-    return base_df.loc[m]
+# ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
+def filtrar(
+    df: pd.DataFrame,
+    anos: tuple[str, ...],
+    redes: tuple[str, ...],
+    etapas: tuple[str, ...],
+    subetapas: tuple[str, ...],
+    series: tuple[str, ...],
+) -> pd.DataFrame:
+    m = df["Ano"].isin(anos)
+    if redes:     m &= df["Rede"].isin(redes)
+    if etapas:    m &= df["Etapa"].isin(etapas)
+    if subetapas: m &= df["Subetapa"].isin(subetapas)
+    if series:    m &= df["Série"].isin(series)
+    return df.loc[m]
 
 # Aplica o filtro com base nas seleções
 df_filtrado = filtrar(
@@ -578,7 +578,9 @@ col_filters = st.columns(len(vis_cols))
 filter_values = {}
 for i, col in enumerate(vis_cols):
     with col_filters[i]:
-        filter_values[col] = st.text_input("Filtro", key=f"filter_{col}", label_visibility="collapsed")
+        filter_values[col] = st.text_input(
+            "Filtro", key=f"filter_{col}", label_visibility="collapsed"
+        )
 
 # Aplicar filtros
 mask = pd.Series(True, index=df_tabela.index)
@@ -598,20 +600,20 @@ for col, value in filter_values.items():
 df_texto = df_tabela[mask]
 
 # Paginação
-# Depois
 PAGE_SIZE = st.session_state.get("page_size", 25)
 total_pg = max(1, (len(df_texto)-1)//PAGE_SIZE + 1)
 pg_atual = min(st.session_state.get("current_page", 1), total_pg)
 start = (pg_atual-1)*PAGE_SIZE
 df_page = df_texto.iloc[start:start+PAGE_SIZE]
 
-# Formatação para exibição
+# Formatação para exibição - CORRIGIDO para evitar SettingWithCopyWarning
+df_page_formatado = df_page.copy()
 for c in df_page.columns:
     if c.startswith("Número de"):
-        df_page[c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
+        df_page_formatado.loc[:, c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
 
-# Exibe a tabela principal
-st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index=True)
+# Exibe a tabela principal usando o DataFrame formatado corretamente
+st.dataframe(df_page_formatado, height=altura_tabela, use_container_width=True, hide_index=True)
 
 # Navegação
 b1, b2, b3, b4 = st.columns([1,1,1,2])
