@@ -159,7 +159,7 @@ CSS_COMPLETO = f"""
     background:{CORES["cinza_claro"]};
     border:1px solid {CORES["cinza_medio"]};
     border-radius:6px;
-    padding:0.2rem 1rem 0.5rem;
+    padding:0.1rem 1rem 0.5rem;
     margin-bottom:0.5rem;
 }}
 
@@ -317,6 +317,15 @@ div[data-testid="stSidebar"] div[data-testid="stExpander"] div[data-testid="stSl
 # Aplica os estilos CSS
 st.markdown(obter_estilo_css_container(), unsafe_allow_html=True)
 st.markdown(f"<style>{CSS_COMPLETO}</style>", unsafe_allow_html=True)
+
+# ---- override específico para o texto dos botões rádio --------------
+st.markdown(f"""
+<style>
+[data-testid="stSidebar"] .stRadio > div > label p {{
+    color: {CORES["sidebar_radio_texto"]} !important;
+}}
+</style>
+""", unsafe_allow_html=True)
 
 # ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
 def beautify(col: str) -> str:
