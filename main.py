@@ -323,6 +323,35 @@ if df_base.empty:
 
 # CSS combinado para todos os ajustes necessários
 COMBINED_CSS = """
+/* Estilo para os cabeçalhos das colunas */
+.column-header {
+    height: 50px !important;  /* Altura fixa para todos os cabeçalhos */
+    display: flex !important;
+    align-items: center !important;  /* Centraliza verticalmente */
+    justify-content: center !important;  /* Centraliza horizontalmente */
+    padding: 5px !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+}
+
+/* Estilo para os filtros de coluna */
+[data-testid="stDataFrame"] + div [data-baseweb="input"] {
+    height: 40px !important;  /* Altura fixa para todos os filtros */
+}
+
+/* Certificando-se que o container dos filtros também tenha altura consistente */
+[data-testid="stDataFrame"] + div [data-testid="column"] {
+    min-height: 40px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+}
+
+/* Input interno do filtro */
+[data-testid="stDataFrame"] + div [data-baseweb="input"] input {
+    height: 100% !important;
+}
+
 /* Resto do CSS omitido para brevidade */
 """
 st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
