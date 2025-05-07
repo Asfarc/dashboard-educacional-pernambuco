@@ -32,12 +32,19 @@ def autoplay_audio(file_path):
             </audio>
             """
         st.markdown(md, unsafe_allow_html=True)
-# Verificar se o arquivo de música existe
-audio_file = "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3"
+# Adicione após a função autoplay_audio
+musicas = {
+    "Sol da Minha Vida": "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
+    "Vá Com Deus": "static/02 ROBERTA MIRANDA VA COM DEUS.mp3"
+}
+
+musica_selecionada = st.sidebar.selectbox("Selecionar música:", list(musicas.keys()))
+audio_file = musicas[musica_selecionada]
+
 if os.path.exists(audio_file):
     autoplay_audio(audio_file)
 else:
-    st.warning("Arquivo de música não encontrado. Verifique se o arquivo está na pasta 'static'.")
+    st.warning(f"Arquivo de música '{audio_file}' não encontrado.")
 
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
