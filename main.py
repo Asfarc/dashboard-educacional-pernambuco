@@ -112,7 +112,7 @@ CORES = {
     # Cores específicas para sidebar
     "sidebar_titulo": "#000000",             # Título "Filtros"
     "sidebar_subtitulo": "#000000",          # Subtítulo "Número de Matrículas por:"
-    "sidebar_radio_texto": "#ffffff",        # NOVO! Texto dos botões rádio (Escola, Município, Estado PE)
+    "sidebar_radio_texto": "#000000",        # NOVO! Texto dos botões rádio (Escola, Município, Estado PE)
     "sidebar_secao": "#000000",              # Seções como "Download" e "Configurações avançadas"
     "sidebar_texto_normal": "#ffffff",       # Texto normal na sidebar
     "sidebar_slider_cor": "#000000",         # Cor para sliders na sidebar
@@ -337,23 +337,34 @@ def format_number_br(num):
     try:    return f"{int(num):,}".replace(",", ".")
     except: return str(num)
 
-# ─── 5. CARGA DO PARQUET (rápido + tipos category) ──────────────────
+# ─── 4‑B. PAGINAÇÃO ────────────────────────────────────────────────
+class Paginator:
+    def __init__(self, total, page_size=25, current=1):
+        self.page_size   = page_size
+        self.total_pages = max(1, (total-1)//page_size + 1)
+        self.current     = max(1, min(current, self.total_pages))
+        self.start       = (self.current-1)*page_size
+        self.end         = self.start + page_size
+
+    def slice(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df.iloc[self.start:self.end]
+
+# ─── 5. CARGA DO PARQUET ────────────────────────────────────────────
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_dados():
     df = pd.read_parquet("dados.parquet", engine="pyarrow")
 
     for cod in ["Cód. Município", "Cód. da Escola"]:
         if cod in df.columns:
-            df[cod] = (
-                pd.to_numeric(df[cod], errors="coerce")
-                .astype("Int64").astype(str).replace("<NA>", "")
-            )
+            df[cod] = (pd.to_numeric(df[cod], errors="coerce")
+                          .astype("Int64").astype(str)
+                          .replace("<NA>", ""))
 
+    # Quebra a coluna "Etapa de Ensino"
     def _split(s: str):
         p = s.split(" - ")
-        etapa = p[0]
-        sub   = p[1] if len(p) > 1 else ""
-        serie = " - ".join(p[2:]) if len(p) > 2 else ""
+        etapa, sub = p[0], (p[1] if len(p) > 1 else "")
+        serie      = " - ".join(p[2:]) if len(p) > 2 else ""
         return etapa, sub, serie
 
     df[["Etapa", "Subetapa", "Série"]] = df["Etapa de Ensino"].apply(
@@ -361,19 +372,29 @@ def carregar_dados():
     )
 
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
-    df["Ano"] = df["Ano"].astype(str)
-    df["Número de Matrículas"] = pd.to_numeric(df["Número de Matrículas"], errors="coerce")
+    df["Ano"]                = df["Ano"].astype(str)
+    df["Número de Matrículas"] = pd.to_numeric(
+        df["Número de Matrículas"], errors="coerce"
+    )
 
     for c in ["Etapa", "Subetapa", "Série", "Rede"]:
         df[c] = df[c].astype("category")
 
+    # Retorna *views* (sem .copy()) para economizar RAM
     return (
-        df[df["Nível de agregação"] == "escola"],
-        df[df["Nível de agregação"] == "município"],
-        df[df["Nível de agregação"] == "estado"],
+        df[df["Nível de agregação"].eq("escola")],
+        df[df["Nível de agregação"].eq("município")],
+        df[df["Nível de agregação"].eq("estado")]
     )
 
-escolas_df, municipio_df, estado_df = carregar_dados()
+# ----- chamada protegida -------------------------------------------
+try:
+    escolas_df, municipio_df, estado_df = carregar_dados()
+except Exception as e:
+    st.error(f"Erro ao carregar dados: {e}")
+    st.info("Tente recarregar a página ou contate o administrador.")
+    st.stop()
+
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
@@ -537,113 +558,108 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
 
     altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
 
-# ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ──────────────────────
+# ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 
-# Definição das colunas da tabela
-# Reorganiza para colocar Número de Matrículas por último
+# 1. Colunas visíveis
 vis_cols = ["Ano", "Etapa", "Subetapa", "Série"]
 if nivel == "Escola":
-    vis_cols += ["Cód. da Escola", "Nome da Escola", "Cód. Município", "Nome do Município", "Rede"]
+    vis_cols += ["Cód. da Escola", "Nome da Escola",
+                 "Cód. Município", "Nome do Município", "Rede"]
 elif nivel == "Município":
     vis_cols += ["Cód. Município", "Nome do Município", "Rede"]
 else:
     vis_cols += ["Rede"]
-# Adiciona Número de Matrículas como última coluna
-vis_cols.append("Número de Matrículas")
+vis_cols.append("Número de Matrículas")      # sempre por último
 
-# Aplica os filtros principais primeiro
+# 2. DataFrame base da tabela
 df_tabela = df_filtrado[vis_cols]
 if df_tabela.empty:
     st.warning("Não há dados para exibir."); st.stop()
 
-# Adicione este CSS para centralizar os números na coluna de Matrículas
+# 3. CSS para centralizar coluna numérica
 st.markdown("""
 <style>
-/* Centralização de números na coluna de matrículas */
-[data-testid="stDataFrame"] table tbody tr td:last-child {
-    text-align: center !important;
-}
-
-/* Também centraliza o cabeçalho da última coluna */
+[data-testid="stDataFrame"] table tbody tr td:last-child,
 [data-testid="stDataFrame"] table thead tr th:last-child {
-    text-align: center !important;
+    text-align:center !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Colunas para cabeçalhos
+# 4. Cabeçalhos
 col_headers = st.columns(len(vis_cols))
-for i, col in enumerate(vis_cols):
-    with col_headers[i]:
-        # Se for a coluna de número de matrículas, aplica um estilo diferente
-        if col == "Número de Matrículas":
-            st.markdown(f"<div class='column-header' style='text-align:center'>{beautify(col)}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='column-header'>{beautify(col)}</div>", unsafe_allow_html=True)
+for col, slot in zip(vis_cols, col_headers):
+    with slot:
+        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
+        st.markdown(f"<div class='column-header'{extra}>{beautify(col)}</div>",
+                    unsafe_allow_html=True)
 
-# Colunas para filtros
+# 5. Filtros de coluna
 col_filters = st.columns(len(vis_cols))
 filter_values = {}
-for i, col in enumerate(vis_cols):
-    with col_filters[i]:
-        filter_values[col] = st.text_input(
-            "Filtro", key=f"filter_{col}", label_visibility="collapsed"
-        )
+for col, slot in zip(vis_cols, col_filters):
+    with slot:
+        filter_values[col] = st.text_input("Filtro",
+                                           key=f"filter_{col}",
+                                           label_visibility="collapsed")
 
-# Aplicar filtros
 mask = pd.Series(True, index=df_tabela.index)
-for col, value in filter_values.items():
-    if value.strip():
-        col_s = df_tabela[col]
-        if col.startswith("Número de") or pd.api.types.is_numeric_dtype(col_s):
-            f_val = value.replace(",", ".")
-            if re.fullmatch(r"-?\d+(\.\d+)?", f_val):
-                mask &= col_s == float(f_val)
+for col, val in filter_values.items():
+    if val.strip():
+        s = df_tabela[col]
+        if col.startswith("Número de") or pd.api.types.is_numeric_dtype(s):
+            v = val.replace(",", ".")
+            if re.fullmatch(r"-?\d+(\.\d+)?", v):
+                mask &= s == float(v)
             else:
-                mask &= col_s.astype(str).str.contains(value, case=False, regex=False)
+                mask &= s.astype(str).str.contains(val, case=False)
         else:
-            mask &= col_s.astype(str).str.contains(value, case=False, regex=False)
+            mask &= s.astype(str).str.contains(val, case=False)
 
-# Filtrar e preparar para exibição
 df_texto = df_tabela[mask]
 
-# Paginação
-PAGE_SIZE = st.session_state.get("page_size", 25)
-total_pg = max(1, (len(df_texto)-1)//PAGE_SIZE + 1)
-pg_atual = min(st.session_state.get("current_page", 1), total_pg)
-start = (pg_atual-1)*PAGE_SIZE
-df_page = df_texto.iloc[start:start+PAGE_SIZE]
+# 6. Paginação -------------------------------------------------------
+page_size = st.session_state.get("page_size", 25)
+pag       = Paginator(len(df_texto), page_size=page_size,
+                      current=st.session_state.get("current_page", 1))
+df_page   = pag.slice(df_texto)
 
-# Formatação para exibição - CORRIGIDO para evitar SettingWithCopyWarning
-df_page_formatado = df_page.copy()
-for c in df_page_formatado.columns:
-    if c.startswith("Número de"):
-        # Converter a coluna para string antes de aplicar a formatação
-        df_page_formatado[c] = df_page_formatado[c].astype(str)
-        df_page_formatado.loc[:, c] = df_page_formatado[c].apply(aplicar_padrao_numerico_brasileiro)
+# 7. Formatação numérica (sem warnings)
+df_show = df_page.copy()
+for c in df_show.filter(like="Número de").columns:
+    df_show.loc[:, c] = df_show[c].apply(aplicar_padrao_numerico_brasileiro)
 
-# Exibe a tabela principal usando o DataFrame formatado corretamente
-st.dataframe(df_page_formatado, height=altura_tabela, use_container_width=True, hide_index=True)
+st.dataframe(df_show, height=altura_tabela, use_container_width=True,
+             hide_index=True)
 
-# Navegação
-b1, b2, b3, b4 = st.columns([1,1,1,2])
+# 8. Controles de navegação ------------------------------------------
+b1, b2, b3, b4 = st.columns([1, 1, 1, 2])
+
 with b1:
-    if st.button("◀", disabled=pg_atual == 1):
-        st.session_state["current_page"] = pg_atual - 1;
+    if st.button("◀", disabled=pag.current == 1):
+        st.session_state["current_page"] = pag.current - 1
         st.rerun()
+
 with b2:
-    if st.button("▶", disabled=pg_atual==total_pg):
-        st.session_state["current_page"] = pg_atual+1; st.rerun()
+    if st.button("▶", disabled=pag.current == pag.total_pages):
+        st.session_state["current_page"] = pag.current + 1
+        st.rerun()
+
 with b3:
-    new_ps = st.selectbox("Itens", [10,25,50,100],
-                        index=[10,25,50,100].index(PAGE_SIZE),
-                        label_visibility="collapsed")
-    if new_ps != PAGE_SIZE:
-        st.session_state["page_size"] = new_ps
-        st.session_state["current_page"] = 1; st.rerun()
+    new_ps = st.selectbox("Itens", [10, 25, 50, 100],
+                          index=[10, 25, 50, 100].index(page_size),
+                          label_visibility="collapsed")
+    if new_ps != page_size:
+        st.session_state["page_size"]   = new_ps
+        st.session_state["current_page"] = 1
+        st.rerun()
+
 with b4:
-    st.markdown(f"**Página {pg_atual}/{total_pg} · "
-                f"{format_number_br(len(df_texto))} registros**")
+    st.markdown(
+        f"**Página {pag.current}/{pag.total_pages} · "
+        f"{format_number_br(len(df_texto))} registros**"
+    )
+
 
 # ─── 11. DOWNLOADS (on‑click) ───────────────────────────────────────
 def gerar_csv():
