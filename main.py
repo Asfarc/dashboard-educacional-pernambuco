@@ -261,13 +261,13 @@ except Exception as e:
     st.info("Tente recarregar a página ou contate o administrador.")
     st.stop()
 
-# ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
+# E coloque antes do título da sidebar:
+ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
+st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
 st.sidebar.title("Filtros")
 
-# ▶️ Medidor de memória RAM
-ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
-st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
-
+# ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
+st.sidebar.title("Filtros")
 
 # Adicionar estilo para melhorar a aparência dos botões rádio
 st.markdown("""
@@ -369,7 +369,118 @@ section[data-testid="stSidebar"] .stButton > button {
 section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
     padding: 0 0.3rem;                /* Reduz o espaço lateral nas colunas */
 }
-/* Resto do CSS omitido para brevidade */
+/* Estilos gerais para a sidebar */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
+}
+
+/* Título principal da sidebar */
+section[data-testid="stSidebar"] h1 {
+    font-size: 1.8rem !important;
+    margin-bottom: 1.2rem !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* Informação de RAM - movida para cima e estilizada */
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p:has(svg) {
+    position: absolute !important;
+    top: 0.8rem !important;
+    right: 1rem !important;
+    font-size: 0.8rem !important;
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    padding: 0.3rem 0.6rem !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+}
+
+/* Título "Número de Matrículas por:" */
+section[data-testid="stSidebar"] p[style*="color:#000000"] {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin: 1.2rem 0 0.8rem 0 !important;
+    padding-left: 0.3rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Botões rádio uniformes */
+section[data-testid="stSidebar"] .stRadio > div > label {
+    height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0.4rem 0 !important;
+    background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
+    border: 1px solid rgba(0, 0, 0, 0.3) !important;
+    border-radius: 5px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Estilo para hover nos botões */
+section[data-testid="stSidebar"] .stRadio > div > label:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+    background: linear-gradient(to bottom, #0090e0, #0073b3) !important;
+}
+
+/* Estilo para botão selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) {
+    background: linear-gradient(to bottom, #005c99, #004b7d) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(0) !important;
+    border: 1px solid rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Configurações avançadas - estilo consistente */
+section[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background: rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.3) !important;
+    border-radius: 5px !important;
+    margin: 1.5rem 0 !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    padding: 0.8rem 1rem !important;
+    font-weight: 500 !important;
+}
+
+/* Estilo para a seção de Download */
+section[data-testid="stSidebar"] h3 {
+    font-size: 1.2rem !important;
+    margin: 1.5rem 0 0.8rem 0 !important;
+    padding-left: 0.3rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding-bottom: 0.4rem !important;
+}
+
+/* Botões de download */
+section[data-testid="stSidebar"] .stButton > button,
+section[data-testid="stSidebar"] .stDownloadButton > button {
+    height: 2.5rem !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    background: #333333 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 5px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s ease !important;
+    font-weight: 500 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover,
+section[data-testid="stSidebar"] .stDownloadButton > button:hover {
+    background: #555555 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Espaçamento nas colunas dos botões de download */
+section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
+    padding: 0 0.3rem !important;
+}
 """
 st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
 
