@@ -104,14 +104,14 @@ CORES = {
     "terciaria": "#0073ba",  # Botões rádio - Azul (corrigido para usar o mesmo valor)
 
     # Cores neutras
-    "cinza_claro": "#ffffff",  # Cinza claro (fundo de painéis)
-    "cinza_medio": "#ffffff",  # Cinza médio (bordas)
-    "cinza_escuro": "#f6b119",  # Cinza escuro (texto)
+    "cinza_claro": "#ffffff",  #  (fundo de painéis)
+    "cinza_medio": "#ffffff",  #  médio (bordas)
+    "cinza_escuro": "#f6b119",  #  (texto)
     "branco": "#ffffff",  # Branco
     "preto": "#000000",  # Preto (corrigido - estava vermelho)
 
     # Cores funcionais
-    "highlight": "#ffdfba",  # Azul claro (cabeçalhos de tabela)
+    "highlight": "#ffdfba",  #  (cabeçalhos de tabela)
     "botao_hover": "#fc4e2a",  # Cor de hover para botões
     "selecionado": "#08306b",  # Cor para itens selecionados
 
