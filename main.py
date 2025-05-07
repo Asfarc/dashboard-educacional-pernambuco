@@ -187,6 +187,11 @@ CSS_COMPLETO = f"""
     color:{CORES["sidebar_subtitulo"]}!important;
 }}
 
+/* Também adicione esse seletor para garantir que funcione */
+[data-testid="stSidebar"] .stRadio p {{
+    color:{CORES["sidebar_subtitulo"]}!important;
+}}
+
 /* Título "Configurações avançadas" e "Download" */
 [data-testid="stSidebar"] h3, 
 [data-testid="stSidebar"] [data-testid="stExpander"] summary p {{
