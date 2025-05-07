@@ -25,68 +25,62 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── 2‑B. MÚSICA DE FUNDO (versão sem Base‑64 em RAM) ────────────────
-from urllib.parse import quote  # para escapar espaços no nome do arquivo
+# ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
+from urllib.parse import quote
 
 def _musica_de_fundo(nome_arquivo: str,
-                      volume: float = 0.25,
-                      flag: str = "musica_injetada"):
-    """
-    Injeta um <audio> apontando para /static/<arquivo>.
-    Tenta dar autoplay; se o navegador bloquear, exibe botão “▶️ Tocar música”.
-    Executa só uma vez por sessão (controlado por st.session_state[flag]).
-    """
+                     volume: float = 0.25,
+                     flag: str = "_musica_injetada"):
     if st.session_state.get(flag):
-        return
+        return                              # já injetou nesta sessão
 
-    # URL do arquivo atendido pelo próprio servidor static do Streamlit
-    url = f"/static/{quote(nome_arquivo)}"   # escapa espaços
+    url = f"/static/{quote(nome_arquivo)}"  # codifica espaços
 
     components.html(
         f"""
-        <audio id="bg-music" loop>
-            <source src="{url}" type="audio/mp3">
-        </audio>
+        <audio id="bg-music" src="{url}" loop autoplay></audio>
+
         <script>
           const audio = document.getElementById('bg-music');
           audio.volume = {volume};
+
+          /* se o navegador bloquear autoplay sem interação */
           audio.play().catch(() => {{
               const btn = document.createElement('button');
-              btn.textContent = "▶️ Tocar música";
+              btn.innerText = "▶️ Tocar música";
               btn.style = `
-                  position:fixed; bottom:20px; left:20px; z-index:10000;
-                  padding:8px 16px; font-size:16px; cursor:pointer;
-              `;
+                position:fixed;bottom:20px;left:20px;z-index:10000;
+                padding:8px 16px;font-size:16px;cursor:pointer`;
               btn.onclick = () => {{ audio.play(); btn.remove(); }};
               document.body.appendChild(btn);
           }});
         </script>
         """,
-        height=0, width=0      # iframe invisível
+        height=0, width=0
     )
     st.session_state[flag] = True
 
+
 def tocar_musica_sidebar():
-    """Interface na sidebar para ativar/desativar e escolher a faixa."""
     musicas = {
-        "Roberta Miranda – Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Roberta Miranda – Vá Com Deus":       "02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
+        "Vá Com Deus":       "02 ROBERTA MIRANDA VA COM DEUS.mp3",
     }
 
     with st.sidebar:
         st.markdown("### 🎵 Música")
         ativar = st.checkbox("Ativar música", value=True)
         if not ativar:
-            st.session_state.pop("musica_injetada", None)   # pára nas próximas execuções
+            # força reinjeção quando reativar
+            st.session_state.pop("_musica_injetada", None)
             return
 
-        faixa = st.selectbox("Selecionar música:", list(musicas.keys()))
-
+        faixa = st.selectbox("Selecionar música:", list(musicas))
     _musica_de_fundo(musicas[faixa])
 
-# chama logo após a configuração da página
-tocar_musica_sidebar()
 
+# chama logo após st.set_page_config
+tocar_musica_sidebar()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
