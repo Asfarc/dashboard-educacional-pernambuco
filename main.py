@@ -15,12 +15,6 @@ import base64, os
 from pathlib import Path
 import streamlit.components.v1 as components
 
-# Gera um ID único para cada sessão de usuário
-if "user_id" not in st.session_state:
-    st.session_state.user_id = f"user_{hash(time.time())}"
-
-user_key = st.session_state.user_id
-
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
     page_title="Dashboard PNE",
@@ -605,16 +599,16 @@ df_texto = df_tabela[mask]
 
 # Paginação
 # Depois
-PAGE_SIZE = st.session_state.get(f"{user_key}_page_size", 25)
+PAGE_SIZE = st.session_state.get("page_size", 25)
 total_pg = max(1, (len(df_texto)-1)//PAGE_SIZE + 1)
-pg_atual = min(st.session_state.get(f"{user_key}_current_page", 1), total_pg)
+pg_atual = min(st.session_state.get("current_page", 1), total_pg)
 start = (pg_atual-1)*PAGE_SIZE
 df_page = df_texto.iloc[start:start+PAGE_SIZE]
 
 # Formatação para exibição
 for c in df_page.columns:
     if c.startswith("Número de"):
-        df_page.loc[:, c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
+        df_page[c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
 
 # Exibe a tabela principal
 st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index=True)
@@ -623,7 +617,7 @@ st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index
 b1, b2, b3, b4 = st.columns([1,1,1,2])
 with b1:
     if st.button("◀", disabled=pg_atual == 1):
-        st.session_state[f"{user_key}_current_page"] = pg_atual - 1;
+        st.session_state["current_page"] = pg_atual - 1;
         st.rerun()
 with b2:
     if st.button("▶", disabled=pg_atual==total_pg):
