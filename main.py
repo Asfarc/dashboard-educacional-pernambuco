@@ -24,18 +24,17 @@ st.set_page_config(
 )
 
 
-def configurar_player_musica():
-    """Configuração do player de música com tratamento de erros específico para a estrutura de pastas observada."""
-
-    # Lista de músicas disponíveis
+# Adicione esta função após o st.set_page_config()
+def tocar_musica():
+    # Lista de músicas disponíveis na pasta static
     musicas = {
         "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
         "Vá Com Deus": "02 ROBERTA MIRANDA VA COM DEUS.mp3"
     }
 
-    # Interface na sidebar para seleção de música
+    # Interface na sidebar
     with st.sidebar:
-        st.markdown("### 🎵 Música de Fundo")
+        st.markdown("### 🎵 Música")
         ativar_musica = st.checkbox("Ativar música", value=True)
 
         if not ativar_musica:
@@ -46,39 +45,64 @@ def configurar_player_musica():
             options=list(musicas.keys())
         )
 
-        # Obter nome do arquivo da música selecionada
+        # Definir o arquivo da música selecionada
         nome_arquivo = musicas[musica_selecionada]
 
-        # Caminhos possíveis baseados na estrutura vista no screenshot
-        caminhos_possiveis = [
+        # IMPORTANTE: Caminhos para ambiente local e hospedagem Streamlit
+        caminhos = [
+            # Caminho direto (funciona na hospedagem Streamlit)
             f"static/{nome_arquivo}",
-            os.path.join("static", nome_arquivo),
-            os.path.join(os.path.dirname(__file__), "static", nome_arquivo),
-            str(Path(__file__).parent.absolute() / "static" / nome_arquivo)
+            # Caminho relativo ao script (funciona localmente)
+            str(Path(__file__).parent / "static" / nome_arquivo)
         ]
 
-        try:
-            # Tentar cada caminho e reportar para debug
-            for idx, caminho in enumerate(caminhos_possiveis):
-                st.sidebar.text(f"Tentando caminho {idx + 1}: {caminho}")
-
-                if os.path.exists(caminho):
-                    st.sidebar.success(f"Arquivo encontrado: {caminho}")
-
+        # Tentar cada caminho
+        for caminho in caminhos:
+            if os.path.exists(caminho):
+                try:
                     with open(caminho, "rb") as f:
-                        data = f.read()
-                        b64 = base64.b64encode(data).decode()
-                        md = f"""
-                            <audio autoplay loop controls>
-                                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                            </audio>
-                            """
-                        st.markdown(md, unsafe_allow_html=True)
+                        bytes_musica = f.read()
+                        encoded = base64.b64encode(bytes_musica).decode()
+                        audio_html = f"""
+                        <audio autoplay loop controls>
+                            <source src="data:audio/mp3;base64,{encoded}" type="audio/mp3">
+                        </audio>
+                        """
+                        st.markdown(audio_html, unsafe_allow_html=True)
                         return
-                else:
-                    st.sidebar.text(f"Não encontrado em: {caminho}")
-        except Exception as e:
-            st.sidebar.error(f"Erro ao reproduzir: {str(e)}")
+                except Exception as e:
+                    st.sidebar.warning(f"Erro ao reproduzir: {e}")
+
+        # Se nenhum caminho funcionou
+        st.sidebar.warning("Não foi possível reproduzir a música. Verifique se os arquivos existem na pasta 'static'.")
+
+        # Para hospedagem Streamlit, mostre instruções adicionais
+        with st.sidebar.expander("Solução para hospedagem Streamlit"):
+            st.markdown("""
+            Se estiver usando a hospedagem Streamlit Cloud:
+
+            1. Certifique-se de que a pasta `static` existe no repositório GitHub
+            2. Verifique se os arquivos MP3 foram enviados (git add/commit/push)
+            3. Use este código alternativo que funciona na hospedagem:
+
+            ```python
+            def reproduzir_musica_streamlit_cloud():
+                import streamlit as st
+
+                musica_url = "https://SEU_REPOSITORIO_GITHUB_RAW/static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3"
+
+                audio_html = f'''
+                <audio autoplay loop controls>
+                    <source src="{musica_url}" type="audio/mp3">
+                </audio>
+                '''
+                st.markdown(audio_html, unsafe_allow_html=True)
+            ```
+            """)
+
+
+# Chamar a função após a configuração da página
+tocar_musica()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
 # ===================================================================
