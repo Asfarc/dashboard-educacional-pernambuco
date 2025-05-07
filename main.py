@@ -368,9 +368,9 @@ def carregar_dados():
         df[c] = df[c].astype("category")
 
     return (
-        df[df["Nível de agregação"] == "escola"].copy(),
-        df[df["Nível de agregação"] == "município"].copy(),
-        df[df["Nível de agregação"] == "estado"].copy(),
+        df[df["Nível de agregação"] == "escola"],
+        df[df["Nível de agregação"] == "município"],
+        df[df["Nível de agregação"] == "estado"],
     )
 
 escolas_df, municipio_df, estado_df = carregar_dados()
@@ -552,7 +552,7 @@ else:
 vis_cols.append("Número de Matrículas")
 
 # Aplica os filtros principais primeiro
-df_tabela = df_filtrado[vis_cols].copy()
+df_tabela = df_filtrado[vis_cols]
 if df_tabela.empty:
     st.warning("Não há dados para exibir."); st.stop()
 
@@ -616,9 +616,11 @@ df_page = df_texto.iloc[start:start+PAGE_SIZE]
 
 # Formatação para exibição - CORRIGIDO para evitar SettingWithCopyWarning
 df_page_formatado = df_page.copy()
-for c in df_page.columns:
+for c in df_page_formatado.columns:
     if c.startswith("Número de"):
-        df_page_formatado.loc[:, c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
+        # Converter a coluna para string antes de aplicar a formatação
+        df_page_formatado[c] = df_page_formatado[c].astype(str)
+        df_page_formatado.loc[:, c] = df_page_formatado[c].apply(aplicar_padrao_numerico_brasileiro)
 
 # Exibe a tabela principal usando o DataFrame formatado corretamente
 st.dataframe(df_page_formatado, height=altura_tabela, use_container_width=True, hide_index=True)
