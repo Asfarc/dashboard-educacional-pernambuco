@@ -336,7 +336,7 @@ with st.container():
     # Lado esquerdo permanece o mesmo
     with c_left:
         # Ano(s) - com espaço vertical mínimo
-        st.markdown('<div class="filter-title" style="margin:0;padding:0">Ano(s)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
         ano_sel = st.multiselect("Ano(s)", anos_disp, default=anos_disp,
                                  key="ano_sel", label_visibility="collapsed")
