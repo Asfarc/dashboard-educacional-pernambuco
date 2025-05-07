@@ -344,7 +344,7 @@ def format_number_br(num):
     except: return str(num)
 
 # ─── 5. CARGA DO PARQUET (rápido + tipos category) ──────────────────
-@st.cache_data(ttl=None, persist=True, show_spinner="Carregando dados…")
+@st.cache_data(ttl=None, persist=True, show_spinner="Carregando dados…", max_entries=10)
 def carregar_dados():
     df = pd.read_parquet("dados.parquet", engine="pyarrow")
 
