@@ -574,7 +574,7 @@ df_filtrado = filtrar(
 )
 
 # ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
-with st.sidebar.expander("Configurações avançadas da tabela", False):
+with st.sidebar.expander("Ajustar tamanho da tabela", False):
     # Adicionar um estilo personalizado para o texto do slider
     st.markdown("""
     <style>
