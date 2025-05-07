@@ -581,3 +581,5 @@ delta = time.time() - st.session_state.get("tempo_inicio", time.time())
 st.caption(f"Tempo de processamento: {delta:.2f}s")
 st.session_state["tempo_inicio"] = time.time()
 # ====================================================================
+from datetime import datetime
+st.caption(f"Build: {datetime.utcnow():%Y-%m-%d %H:%M:%S} UTC")
