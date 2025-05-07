@@ -519,143 +519,68 @@ with st.container():
 
             # Para Subetapa
             if etapa_sel:
-                st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Subetapa</div>',
-                            unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
+                    unsafe_allow_html=True)
 
-                # Obter subetapas existentes
-                sub_disp_originais = sorted(
-                    df_base.loc[
-                        df_base["Etapa"].isin(etapa_sel) & (df_base["Subetapa"] != ""),
-                        "Subetapa"
-                    ].unique()
-                )
+                # Opções reais daquela(s) etapa(s)
+                sub_real = sorted(df_base.loc[
+                                      df_base["Etapa"].isin(etapa_sel) & df_base["Subetapa"].ne(""),
+                                      "Subetapa"
+                                  ].unique())
 
-                # Adicionar opção "Total" para cada Etapa selecionada
-                sub_disp = []
-                for etapa in etapa_sel:
-                    # Adicionar opção de total para cada etapa
-                    sub_disp.append(f"Total - Todas as Subetapas ({etapa})")
-
-                # Adicionar todas as subetapas originais
-                sub_disp.extend(sub_disp_originais)
+                # Um único "total" agregado, se houver seleção de etapa
+                sub_disp = (["Total - Todas as Subetapas"] if etapa_sel else []) + sub_real
 
                 sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
             else:
                 sub_sel = []
 
             # Para Séries
-            if etapa_sel and sub_sel:
-                st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0">Série</div>',
-                            unsafe_allow_html=True)
+                if etapa_sel and sub_sel:
+                    st.markdown(
+                        '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
+                        unsafe_allow_html=True)
 
-                # Separar subetapas normais e totais
-                sub_normais = [s for s in sub_sel if not s.startswith("Total")]
-                sub_totais = [s for s in sub_sel if s.startswith("Total")]
+                    # Séries normais
+                    serie_real = sorted(df_base.loc[
+                                            df_base["Etapa"].isin(etapa_sel) &
+                                            df_base["Subetapa"].isin(
+                                                [s for s in sub_sel if not s.startswith("Total")]) &
+                                            df_base["Série"].ne(""),
+                                            "Série"
+                                        ].unique())
 
-                # Determinar as etapas dos totais
-                etapas_totais = []
-                for st in sub_totais:
-                    etapa = st[st.find("(") + 1:st.find(")")]
-                    etapas_totais.append(etapa)
+                    # Se escolheu QUALQUER subetapa, sempre ofereça o "total"
+                    serie_disp = (["Total - Todas as Séries"] if sub_sel else []) + serie_real
 
-                # Obter séries baseadas nas subetapas normais selecionadas
-                serie_disp = []
+                    serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
+                                               label_visibility="collapsed")
+                else:
+                    serie_sel = []
 
-                # Para subetapas normais
-                if sub_normais:
-                    series_normais = sorted(
-                        df_base.loc[
-                            df_base["Etapa"].isin(etapa_sel) &
-                            df_base["Subetapa"].isin(sub_normais) &
-                            (df_base["Série"] != ""),
-                            "Série"
-                        ].unique()
-                    )
-                    serie_disp.extend(series_normais)
-
-                # Para subetapas totais, adicionar todas as séries de todas as subetapas da etapa
-                if sub_totais:
-                    for etapa in etapas_totais:
-                        # Encontrar todas as subetapas desta etapa
-                        subetapas_desta_etapa = df_base.loc[
-                            df_base["Etapa"] == etapa, "Subetapa"
-                        ].unique()
-
-                        # Para cada subetapa real desta etapa, adicionar uma opção de total
-                        for sub in subetapas_desta_etapa:
-                            if sub:  # Verificar se não é vazia
-                                serie_disp.append(f"Total - Todas as Séries ({etapa} - {sub})")
-
-                # Remover duplicatas e ordenar
-                serie_disp = sorted(list(set(serie_disp)))
-
-                serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel", label_visibility="collapsed")
-            else:
-                serie_sel = []
+        st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
 # ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
-def filtrar(
-        df: pd.DataFrame,
-        anos: tuple[str, ...],
-        redes: tuple[str, ...],
-        etapas: tuple[str, ...],
-        subetapas: tuple[str, ...],
-        series: tuple[str, ...],
-) -> pd.DataFrame:
-    # Filtro base por ano
+# Função de filtro simplificada
+def filtrar(df, anos, redes, etapas, subetapas, series):
     m = df["Ano"].isin(anos)
+    if redes: m &= df["Rede"].isin(redes)
+    if etapas: m &= df["Etapa"].isin(etapas)
 
-    # Filtro por redes
-    if redes:
-        m &= df["Rede"].isin(redes)
+    # --- SUBETAPA -------------------------------------------------
+    if subetapas:
+        if "Total - Todas as Subetapas" in subetapas:
+            pass  # já cobre tudo da etapa escolhida
+        else:
+            m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total")])
 
-    # Filtro por etapas
-    if etapas:
-        m &= df["Etapa"].isin(etapas)
-
-    # Separar subetapas normais e totais
-    sub_normais = [s for s in subetapas if not s.startswith("Total")]
-    sub_totais = [s for s in subetapas if s.startswith("Total")]
-
-    # Filtrar por subetapas
-    if sub_normais or sub_totais:
-        # Criar máscara para subetapas normais
-        sub_mask = pd.Series(False, index=df.index)
-
-        if sub_normais:
-            sub_mask |= df["Subetapa"].isin(sub_normais)
-
-        # Adicionar máscara para totais
-        if sub_totais:
-            for total in sub_totais:
-                etapa_nome = total[total.find("(") + 1:total.find(")")]
-                sub_mask |= df["Etapa"] == etapa_nome
-
-        m &= sub_mask
-
-    # Separar séries normais e totais
-    serie_normais = [s for s in series if not s.startswith("Total")]
-    serie_totais = [s for s in series if s.startswith("Total")]
-
-    # Filtrar por séries
-    if serie_normais or serie_totais:
-        # Criar máscara para séries normais
-        serie_mask = pd.Series(False, index=df.index)
-
-        if serie_normais:
-            serie_mask |= df["Série"].isin(serie_normais)
-
-        # Adicionar máscara para totais
-        if serie_totais:
-            for total in serie_totais:
-                info = total[total.find("(") + 1:total.find(")")]
-                partes = info.split(" - ")
-
-                if len(partes) == 2:
-                    etapa_nome, subetapa_nome = partes
-                    serie_mask |= (df["Etapa"] == etapa_nome) & (df["Subetapa"] == subetapa_nome)
-
-        m &= serie_mask
+    # --- SÉRIE ----------------------------------------------------
+    if series:
+        if "Total - Todas as Séries" in series:
+            pass  # já cobre todas as séries da subetapa
+        else:
+            m &= df["Série"].isin([s for s in series if not s.startswith("Total")])
 
     return df.loc[m]
 
