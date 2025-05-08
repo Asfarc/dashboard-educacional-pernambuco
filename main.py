@@ -81,7 +81,7 @@ def tocar_musica_sidebar():
         "Sol da Minha Vida": "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
         "Vá Com Deus":"static/02 ROBERTA MIRANDA VA COM DEUS.mp3",
         "O Meu Amor Chorou": "static/07 O Meu Amor Chorou.mp3",
-        "static/12 Vou-Me Embora.mp3",
+        "Vou-me embora": "static/12 Vou-Me Embora.mp3",
     }
 
     with st.sidebar:
