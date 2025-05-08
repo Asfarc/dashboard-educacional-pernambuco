@@ -78,9 +78,10 @@ def _musica_de_fundo(arquivo_mp3: str,
 def tocar_musica_sidebar():
     """Interface simples na sidebar para escolher e ativar a música."""
     musicas = {
-        "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Vá Com Deus":      "02 ROBERTA MIRANDA VA COM DEUS.mp3",
-        "O Meu Amor Chorou": "07 O Meu Amor Chorou.mp3",
+        "Sol da Minha Vida": "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
+        "Vá Com Deus":"static/02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "O Meu Amor Chorou": "static/07 O Meu Amor Chorou.mp3",
+        "static/12 Vou-Me Embora.mp3",
     }
 
     with st.sidebar:
