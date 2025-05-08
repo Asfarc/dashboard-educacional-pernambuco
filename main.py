@@ -80,6 +80,7 @@ def tocar_musica_sidebar():
     musicas = {
         "Sol da Minha Vida": "01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
         "Vá Com Deus":      "02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "O Meu Amor Chorou": "07 O Meu Amor Chorou.mp3",
     }
 
     with st.sidebar:
