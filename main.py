@@ -25,30 +25,59 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
 # ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
 def _musica_de_fundo(arquivo_mp3: str,
-                      volume: float = 0.25,
-                      flag: str = "musica_injetada"):
+                     volume: float = 0.25,
+                     flag: str = "musica_atual"):
     """
     Injeta um <audio> invisível e tenta tocar automaticamente.
-    Se o navegador bloquear, exibe um botão "▶️ Tocar música".
-    Executa só uma vez por sessão (controlado por st.session_state[flag]).
+    Se o navegador bloquear, exibe um botão "▶️ Tocar música".
+    Controla qual música está tocando atualmente.
     """
-    if st.session_state.get(flag):
-        return
+    # Verifica se a música selecionada é diferente da atual
+    musica_atual = st.session_state.get(flag, "")
+    if musica_atual == arquivo_mp3:
+        return  # Mesma música, não faz nada
+
+    # Limpa qualquer música anterior
+    if musica_atual:
+        components.html(
+            """
+            <script>
+                const oldAudio = document.getElementById('bg-music');
+                if (oldAudio) {
+                    oldAudio.pause();
+                    oldAudio.remove();
+                }
+                const oldBtn = document.querySelector('button[data-music-btn="true"]');
+                if (oldBtn) {
+                    oldBtn.remove();
+                }
+            </script>
+            """,
+            height=0, width=0
+        )
 
     # procura o arquivo em possíveis caminhos
     caminhos = [
-        arquivo_mp3,                              # raiz do repo
-        f"static/{arquivo_mp3}",                  # pasta static (Streamlit Cloud)
+        arquivo_mp3,  # raiz do repo
+        f"static/{arquivo_mp3}",  # pasta static (Streamlit Cloud)
         Path(__file__).parent / "static" / arquivo_mp3
     ]
+
+    arquivo_encontrado = False
     for c in caminhos:
         if os.path.exists(c):
             mp3_bytes = Path(c).read_bytes()
+            arquivo_encontrado = True
+            st.session_state["ultimo_caminho_usado"] = str(c)  # Debug
             break
-    else:
-        st.warning("Áudio não encontrado."); return
+
+    if not arquivo_encontrado:
+        st.sidebar.warning(f"Áudio não encontrado: {arquivo_mp3}")
+        st.session_state[flag] = ""  # Limpa a flag
+        return
 
     b64 = base64.b64encode(mp3_bytes).decode()
     components.html(
@@ -61,7 +90,8 @@ def _musica_de_fundo(arquivo_mp3: str,
           audio.volume = {volume};
           audio.play().catch(() => {{
               const btn = document.createElement('button');
-              btn.textContent = "▶️ Tocar música";
+              btn.textContent = "▶️ Tocar música";
+              btn.setAttribute('data-music-btn', 'true');
               btn.style = `
                   position:fixed; bottom:20px; left:20px; z-index:10000;
                   padding:8px 16px; font-size:16px; cursor:pointer;
@@ -73,13 +103,14 @@ def _musica_de_fundo(arquivo_mp3: str,
         """,
         height=0, width=0
     )
-    st.session_state[flag] = True
+    st.session_state[flag] = arquivo_mp3  # Atualiza a música atual
+
 
 def tocar_musica_sidebar():
     """Interface simples na sidebar para escolher e ativar a música."""
     musicas = {
         "Sol da Minha Vida": "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Vá Com Deus":"static/02 ROBERTA MIRANDA VA COM DEUS.mp3",
+        "Vá Com Deus": "static/02 ROBERTA MIRANDA VA COM DEUS.mp3",
         "O Meu Amor Chorou": "static/07 O Meu Amor Chorou.mp3",
         "Vou-me embora": "static/12 Vou-Me Embora.mp3",
     }
@@ -87,13 +118,31 @@ def tocar_musica_sidebar():
     with st.sidebar:
         st.markdown("### 🎵 Música")
         ativar = st.checkbox("Ativar música", value=True)
+
         if not ativar:
-            # se o usuário desmarcar, remove flag para parar nas próximas execuções
-            st.session_state.pop("musica_injetada", None)
+            # Se desativado, pausa qualquer música tocando
+            components.html(
+                """
+                <script>
+                    const audio = document.getElementById('bg-music');
+                    if (audio) {
+                        audio.pause();
+                    }
+                </script>
+                """,
+                height=0, width=0
+            )
             return
 
         musica_sel = st.selectbox("Selecionar música:", list(musicas.keys()))
-    _musica_de_fundo(musicas[musica_sel])
+
+        # Para debug: mostrar o último caminho encontrado
+        if "ultimo_caminho_usado" in st.session_state:
+            st.caption(f"Caminho: {st.session_state['ultimo_caminho_usado']}")
+
+    if ativar:
+        _musica_de_fundo(musicas[musica_sel])
+
 
 # chama logo após a configuração da página
 tocar_musica_sidebar()
