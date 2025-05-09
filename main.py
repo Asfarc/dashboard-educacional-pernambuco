@@ -153,7 +153,53 @@ st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
-# (continua todo o bloco de CSS + radio nivel + seleção df_base sem alteração)
+
+# Adicionar estilo para melhorar a aparência dos botões rádio
+st.markdown("""
+<style>
+/* Estilo para os botões rádio de nível */
+.stRadio > div {
+    padding: 10px 0;
+}
+.stRadio > div > label {
+    background-color: #0073ba;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+.stRadio > div > label:hover {
+    background-color: #dce6f3;
+    transform: translateY(-2px);
+}
+.stRadio > div [data-testid="stMarkdownContainer"] p {
+    margin: 0;
+    font-weight: 500;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Radio sem rótulo para escolha de nível
+nivel = st.sidebar.radio(
+    "",
+    ["Escolas", "Municípios", "Pernambuco"],
+    label_visibility="collapsed",
+    key="nivel_sel"
+)
+
+# Mapeia para o DataFrame correto
+df_base = {
+    "Escolas": escolas_df,
+    "Municípios": municipio_df,
+    "Pernambuco": estado_df
+}[nivel]
+if df_base.empty:
+    st.error("DataFrame vazio")
+    st.stop()
+
 
 # ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
 with st.container():
