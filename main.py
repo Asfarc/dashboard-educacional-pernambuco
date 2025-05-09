@@ -266,36 +266,59 @@ class Paginator:
     def slice(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.iloc[self.start:self.end]
 
+
 # ─── 5. CARGA DO PARQUET ────────────────────────────────────────────
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
-def carregar_dados():
-    df = pd.read_parquet("dados.parquet", engine="pyarrow")
+def carregar_dados(arquivo="Ensino Regular.parquet"):
+    """Carrega os dados do arquivo parquet especificado."""
+    df = pd.read_parquet(arquivo, engine="pyarrow")
 
     for cod in ["Cód. Município", "Cód. da Escola"]:
         if cod in df.columns:
             df[cod] = (pd.to_numeric(df[cod], errors="coerce")
-                          .astype("Int64").astype(str)
-                          .replace("<NA>", ""))
+                       .astype("Int64").astype(str)
+                       .replace("<NA>", ""))
 
-    # Quebra a coluna "Etapa de Ensino"
-    def _split(s: str):
-        p = s.split(" - ")
-        etapa, sub = p[0], (p[1] if len(p) > 1 else "")
-        serie      = " - ".join(p[2:]) if len(p) > 2 else ""
-        return etapa, sub, serie
+    # Para manter compatibilidade com o código existente
+    # Quebra a coluna "Etapa de Ensino" se não existirem as colunas
+    if not all(col in df.columns for col in ["Etapa", "Subetapa", "Série"]):
+        def _split(s: str):
+            p = s.split(" - ")
+            etapa, sub = p[0], (p[1] if len(p) > 1 else "")
+            serie = " - ".join(p[2:]) if len(p) > 2 else ""
+            return etapa, sub, serie
 
-    df[["Etapa", "Subetapa", "Série"]] = df["Etapa de Ensino"].apply(
-        lambda x: pd.Series(_split(x))
-    )
+        df[["Etapa", "Subetapa", "Série"]] = df["Etapa de Ensino"].apply(
+            lambda x: pd.Series(_split(x))
+        )
+
+    # Utiliza os novos campos se disponíveis
+    if "Etapa agregada" in df.columns and "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns:
+        # Mapeia campos novos para os campos antigos para compatibilidade
+        if "Etapa" not in df.columns:
+            df["Etapa"] = df["Etapa agregada"]
+
+        if "Subetapa" not in df.columns:
+            # Remove valores "Total" e None
+            df["Subetapa"] = df["Nome da Etapa de ensino/Nome do painel de filtro"].apply(
+                lambda x: "" if pd.isna(x) or x is None or x.startswith("Total") else x
+            )
+
+        # Para Ensino Regular, podemos usar a coluna Ano/Série para a Série
+        if "Ano/Série" in df.columns and "Série" not in df.columns:
+            df["Série"] = df["Ano/Série"].apply(
+                lambda x: "" if pd.isna(x) or x is None or x.startswith("Total") else x
+            )
 
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
-    df["Ano"]                = df["Ano"].astype(str)
+    df["Ano"] = df["Ano"].astype(str)
     df["Número de Matrículas"] = pd.to_numeric(
         df["Número de Matrículas"], errors="coerce"
     )
 
     for c in ["Etapa", "Subetapa", "Série", "Rede"]:
-        df[c] = df[c].astype("category")
+        if c in df.columns:
+            df[c] = df[c].astype("category")
 
     # Retorna *views* (sem .copy()) para economizar RAM
     return (
@@ -304,20 +327,46 @@ def carregar_dados():
         df[df["Nível de agregação"].eq("estado")]
     )
 
+
 # ----- chamada protegida -------------------------------------------
 try:
-    escolas_df, municipio_df, estado_df = carregar_dados()
+    # Adiciona seletor de modalidade ANTES do carregamento
+    st.sidebar.title("Filtros")
+
+    # Adicionar margem superior para separar do título
+    st.sidebar.markdown(
+        '<p style="color:#FFFFFF;font-weight:600;font-size:1.1rem;margin-top:0.5rem">'
+        'Modalidade:</p>',
+        unsafe_allow_html=True
+    )
+
+    modalidade = st.sidebar.radio(
+        "",
+        ["Ensino Regular", "Educação Profissional", "EJA"],
+        index=0,
+        label_visibility="collapsed",
+        key="modalidade_sel"
+    )
+
+    # Mapeia a seleção para os nomes dos arquivos
+    arquivo_modalidade = {
+        "Ensino Regular": "Ensino Regular.parquet",
+        "Educação Profissional": "Educação Profissional.parquet",
+        "EJA": "EJA - Educação de Jovens e Adultos.parquet"
+    }[modalidade]
+
+    escolas_df, municipio_df, estado_df = carregar_dados(arquivo_modalidade)
 except Exception as e:
     st.error(f"Erro ao carregar dados: {e}")
     st.info("Tente recarregar a página ou contate o administrador.")
     st.stop()
 
 # E coloque antes do título da sidebar:
-ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
+ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
 st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
-st.sidebar.title("Filtros")
+# Removemos o título "Filtros" pois já foi adicionado antes da seleção de modalidade
 
 # Adicionar estilo para melhorar a aparência dos botões rádio
 st.markdown("""
@@ -561,8 +610,13 @@ with st.container():
 
         with c_right_col1:
             # Etapa com mínimo de espaço vertical
-            st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>', unsafe_allow_html=True)
-            etapas_disp = sorted(df_base["Etapa"].unique())
+            st.markdown(
+                '<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>',
+                unsafe_allow_html=True)
+
+            # Determina qual coluna usar para o filtro de etapa
+            etapa_col = "Etapa agregada" if "Etapa agregada" in df_base.columns else "Etapa"
+            etapas_disp = sorted(df_base[etapa_col].unique())
             etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
 
             # Para Subetapa
@@ -571,10 +625,15 @@ with st.container():
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
                     unsafe_allow_html=True)
 
-                # Opções reais daquela(s) etapa(s)
+                # Determina qual coluna usar para o filtro de subetapa
+                sub_col = "Nome da Etapa de ensino/Nome do painel de filtro" if "Nome da Etapa de ensino/Nome do painel de filtro" in df_base.columns else "Subetapa"
+
+                # Opções reais daquela(s) etapa(s) - filtrar valores None
                 sub_real = sorted(df_base.loc[
-                                      df_base["Etapa"].isin(etapa_sel) & df_base["Subetapa"].ne(""),
-                                      "Subetapa"
+                                      df_base[etapa_col].isin(etapa_sel) &
+                                      df_base[sub_col].notna() &
+                                      df_base[sub_col].ne(""),
+                                      sub_col
                                   ].unique())
 
                 # Um único "total" agregado, se houver seleção de etapa
@@ -584,19 +643,23 @@ with st.container():
             else:
                 sub_sel = []
 
-            # Para Séries - CORRIGIDA A INDENTAÇÃO DESTE BLOCO
+            # Para Séries - adaptado para usar Ano/Série quando disponível
             if etapa_sel and sub_sel:
                 st.markdown(
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
                     unsafe_allow_html=True)
 
-                # Séries normais
+                # Determina qual coluna usar para o filtro de série
+                serie_col = "Ano/Série" if "Ano/Série" in df_base.columns else "Série"
+
+                # Séries normais - filtrando subetapas que não começam com "Total"
                 serie_real = sorted(df_base.loc[
-                                        df_base["Etapa"].isin(etapa_sel) &
-                                        df_base["Subetapa"].isin(
+                                        df_base[etapa_col].isin(etapa_sel) &
+                                        df_base[sub_col].isin(
                                             [s for s in sub_sel if not s.startswith("Total")]) &
-                                        df_base["Série"].ne(""),
-                                        "Série"
+                                        df_base[serie_col].notna() &
+                                        df_base[serie_col].ne(""),
+                                        serie_col
                                     ].unique())
 
                 # Se escolheu QUALQUER subetapa, sempre ofereça o "total"
@@ -607,33 +670,45 @@ with st.container():
             else:
                 serie_sel = []
 
-    # CORRIGIDO: fechamento do container deve estar fora do bloco c_right_col1
-    st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
 # ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
-# Função de filtro simplificada
+# Função de filtro adaptada para usar os novos campos se disponíveis
 def filtrar(df, anos, redes, etapas, subetapas, series):
     m = df["Ano"].isin(anos)
     if redes: m &= df["Rede"].isin(redes)
-    if etapas: m &= df["Etapa"].isin(etapas)
+
+    # Verificamos se estamos usando Etapa agregada ou Etapa
+    etapa_col = "Etapa agregada" if "Etapa agregada" in df.columns else "Etapa"
+    if etapas: m &= df[etapa_col].isin(etapas)
 
     # --- SUBETAPA -------------------------------------------------
     if subetapas:
         if "Total - Todas as Subetapas" in subetapas:
             pass  # já cobre tudo da etapa escolhida
         else:
-            m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total")])
+            # Verificamos se estamos usando o novo campo ou o antigo
+            sub_col = "Nome da Etapa de ensino/Nome do painel de filtro" if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns else "Subetapa"
+            m &= df[sub_col].isin([s for s in subetapas if not s.startswith("Total")])
 
     # --- SÉRIE ----------------------------------------------------
     if series:
         if "Total - Todas as Séries" in series:
             pass  # já cobre todas as séries da subetapa
         else:
-            m &= df["Série"].isin([s for s in series if not s.startswith("Total")])
+            # Verificamos se estamos usando o campo Ano/Série (no caso do Ensino Regular) ou Série
+            serie_col = "Ano/Série" if "Ano/Série" in df.columns else "Série"
+            m &= df[serie_col].isin([s for s in series if not s.startswith("Total")])
 
     return df.loc[m]
 
 # 7‑B • CHAMA O FILTRO COM AS ESCOLHAS ATUAIS • gera df_filtrado
+# Determina qual coluna usar para o filtro de etapa
+etapa_col = "Etapa agregada" if "Etapa agregada" in df_base.columns else "Etapa"
+# Determina qual coluna usar para o filtro de subetapa
+sub_col = "Nome da Etapa de ensino/Nome do painel de filtro" if "Nome da Etapa de ensino/Nome do painel de filtro" in df_base.columns else "Subetapa"
+# Determina qual coluna usar para o filtro de série
+serie_col = "Ano/Série" if "Ano/Série" in df_base.columns else "Série"
+
 df_filtrado = filtrar(
     df_base,
     tuple(ano_sel),
@@ -643,7 +718,7 @@ df_filtrado = filtrar(
     tuple(serie_sel),
 )
 
-# se não houver linhas depois do filtro, pare logo aqui
+# Se não houver linhas depois do filtro, pare logo aqui
 if df_filtrado.empty:
     st.warning("Não há dados após os filtros."); st.stop()
 
@@ -664,8 +739,26 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
 
 # ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 
-# 1. Colunas visíveis
-vis_cols = ["Ano", "Etapa", "Subetapa", "Série"]
+# 1. Colunas visíveis - adaptadas para os novos nomes de colunas
+vis_cols = ["Ano"]
+
+# Adiciona colunas de etapa/subetapa/série adaptadas aos novos nomes
+if "Etapa agregada" in df_filtrado.columns:
+    vis_cols.append("Etapa agregada")
+else:
+    vis_cols.append("Etapa")
+
+if "Nome da Etapa de ensino/Nome do painel de filtro" in df_filtrado.columns:
+    vis_cols.append("Nome da Etapa de ensino/Nome do painel de filtro")
+else:
+    vis_cols.append("Subetapa")
+
+if "Ano/Série" in df_filtrado.columns:
+    vis_cols.append("Ano/Série")
+else:
+    vis_cols.append("Série")
+
+# Adiciona as colunas específicas do nível
 if nivel == "Escola":
     vis_cols += ["Cód. da Escola", "Nome da Escola",
                  "Cód. Município", "Nome do Município", "Rede"]
@@ -673,29 +766,29 @@ elif nivel == "Município":
     vis_cols += ["Cód. Município", "Nome do Município", "Rede"]
 else:
     vis_cols += ["Rede"]
-vis_cols.append("Número de Matrículas")      # sempre por último
 
-# 2. DataFrame base da tabela
+vis_cols.append("Número de Matrículas")  # sempre por último
+
+# 2. DataFrame base da tabela - filtra apenas as colunas visíveis
 df_tabela = df_filtrado[vis_cols]
 if df_tabela.empty:
     st.warning("Não há dados para exibir."); st.stop()
 
-# 3. CSS para centralizar coluna numérica
-st.markdown("""
-<style>
-[data-testid="stDataFrame"] table tbody tr td:last-child,
-[data-testid="stDataFrame"] table thead tr th:last-child {
-    text-align:center !important;
+# Mapeamento para nomes mais amigáveis na exibição
+col_names = {
+    "Etapa agregada": "Etapa",
+    "Nome da Etapa de ensino/Nome do painel de filtro": "Subetapa",
+    "Ano/Série": "Série"
 }
-</style>
-""", unsafe_allow_html=True)
 
-# 4. Cabeçalhos
+# 4. Cabeçalhos adaptados para usar nomes amigáveis
 col_headers = st.columns(len(vis_cols))
 for col, slot in zip(vis_cols, col_headers):
     with slot:
+        # Usa o nome mapeado se disponível, senão usa o original
+        display_name = col_names.get(col, col)
         extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
-        st.markdown(f"<div class='column-header'{extra}>{beautify(col)}</div>",
+        st.markdown(f"<div class='column-header'{extra}>{beautify(display_name)}</div>",
                     unsafe_allow_html=True)
 
 # 5. Filtros de coluna
