@@ -44,6 +44,12 @@ CSS_COMPLETO = """
 }
 
 /* ─── AJUSTES GERAIS DA SIDEBAR ───────────────────────────────────── */
+/* Configurações da sidebar */
+section[data-testid="stSidebar"] {
+    min-width: 300px !important;
+    width: 300px !important;      /* LARGURA DO SIDEBAR */
+    background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
+}
 /* Container principal da sidebar */
 section[data-testid="stSidebar"] > div:first-child {
     padding-top: 0 !important;
@@ -72,12 +78,7 @@ div.panel-filtros {
     padding: 0 !important;
 }
 
-/* Configurações da sidebar */
-section[data-testid="stSidebar"] {
-    min-width: 300px !important;
-    width: 300px !important;      /* LARGURA DO SIDEBAR */
-    background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
-}
+
 
 section[data-testid="stSidebar"] > div {
     position: relative;
