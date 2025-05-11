@@ -435,30 +435,23 @@ with st.container():
 
                 # Se "Total - Todas as Subetapas" foi selecionado
                 if "Total - Todas as Subetapas" in sub_sel:
-                    # Mostra apenas os totais agregados (que começam com "Total -")
-                    serie_real = sorted(df_base.loc[
-                                            df_base["Etapa"].isin(etapa_sel) &
-                                            df_base["Série"].str.startswith("Total -", na=False),
-                                            "Série"
-                                        ].unique())
+                    # Mostra uma mensagem ou deixa vazio
+                    st.info("Série não aplicável quando 'Total - Todas as Subetapas' está selecionado")
+                    serie_sel = []
                 else:
-                    # Séries específicas das subetapas selecionadas (exclui totais)
+                    # Séries específicas das subetapas selecionadas
                     serie_real = sorted(df_base.loc[
                                             df_base["Etapa"].isin(etapa_sel) &
                                             df_base["Subetapa"].isin(sub_sel) &
-                                            df_base["Série"].ne("") &
-                                            ~df_base["Série"].str.startswith("Total -", na=False),
+                                            df_base["Série"].ne(""),
                                             "Série"
                                         ].unique())
 
-                # Adiciona opção de total apenas se houver séries não-totais
-                if serie_real and not all(s.startswith("Total -") for s in serie_real):
-                    serie_disp = ["Total - Todas as Séries"] + serie_real
-                else:
-                    serie_disp = serie_real
+                    # Adiciona "Total - Todas as Séries" apenas quando há séries específicas
+                    serie_disp = ["Total - Todas as Séries"] + serie_real if serie_real else []
 
-                serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
-                                           label_visibility="collapsed")
+                    serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
+                                               label_visibility="collapsed")
             else:
                 serie_sel = []
 
