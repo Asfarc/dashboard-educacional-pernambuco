@@ -28,13 +28,15 @@ CORES = {
 
 CSS_COMPLETO = """
 <style>
-/* Reset global para evitar texto vertical */
+/* ─── RESET E VARIAVEIS ──────────────────────────────────────────── */
 * {
     writing-mode: horizontal-tb !important;
     text-orientation: mixed !important;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* Variáveis de cor */
 :root {
     --sb-bg: #6b8190;
     --radio-bg: #0073ba;
