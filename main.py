@@ -242,7 +242,7 @@ st.markdown(CSS_COMPLETO, unsafe_allow_html=True)
 
 # ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
 def beautify(col: str) -> str:
-    # Comportamento original, sem abreviações
+
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
 
 
@@ -566,9 +566,8 @@ df_tabela = df_filtrado[vis_cols].copy()
 # --- Adicionar coluna UF apenas para Pernambuco ---
 if nivel == "Pernambuco":
     df_tabela["UF"] = "Pernambuco"
-
-    # Inserir "UF" na posição 1 (logo após "Ano")
     vis_cols.insert(1, "UF")  # 🔥 Posição correta!
+    df_tabela = df_tabela.rename(columns={"UF": "UF"})
 
 if df_tabela.empty:
     st.warning("Não há dados para exibir.")
