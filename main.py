@@ -119,9 +119,9 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
     flex-shrink: 0 !important;
 }
 
-/* NOVO: Cor da bolinha do radio button selecionado */
-section[data-testid="stSidebar"] .stRadio > div > label > div:first-child input[type="radio"]:checked {
-    accent-color: #ffdfba !important;
+/* ALTERNATIVA: Se accent-color não funcionar, use este pseudo-elemento */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child input[type="radio"]:checked::before {
+    background-color: #ffdfba !important;
 }
 
 /* Radio button texto */
