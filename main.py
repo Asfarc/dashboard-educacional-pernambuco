@@ -456,22 +456,24 @@ with st.container():
 def filtrar(df, anos, redes, etapas, subetapas, series):
     m = df["Ano"].isin(anos)
     if redes: m &= df["Rede"].isin(redes)
-    if etapas: m &= df["Etapa"].isin(etapas)
+
+    if etapas:
+        m &= df["Etapa"].isin(etapas)
+
+        # Se uma etapa foi selecionada mas nenhuma subetapa específica
+        if not subetapas:
+            m &= df["Subetapa"] == "Total"
 
     # --- SUBETAPA -------------------------------------------------
     if subetapas:
         if "Total - Todas as Subetapas" in subetapas:
-            # Quando "Total - Todas as Subetapas" é selecionado, devemos mostrar apenas "Total"
             m &= df["Subetapa"] == "Total"
         else:
-            # Filtrar apenas as subetapas selecionadas (excluindo o texto "Total - Todas as Subetapas")
             m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total -")])
 
     # --- SÉRIE ----------------------------------------------------
     if series:
         if "Total - Todas as Séries" in series:
-            # Manter o filtro vazio para séries não especificadas
-            # ou se necessário, filtrar para valores vazios
             pass
         else:
             m &= df["Série"].isin([s for s in series if not s.startswith("Total -")])
