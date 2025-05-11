@@ -175,6 +175,7 @@ st.markdown("""
 .stRadio > div {
     padding: 10px 0;
 }
+
 .stRadio > div > label {
     background-color: #0073ba;
     border: 1px solid #000000;
@@ -185,10 +186,12 @@ st.markdown("""
     align-items: center;
     transition: all 0.2s ease;
 }
+
 .stRadio > div > label:hover {
     background-color: #dce6f3;
     transform: translateY(-2px);
 }
+
 .stRadio > div [data-testid="stMarkdownContainer"] p {
     margin: 0;
     font-weight: 500;
@@ -204,7 +207,21 @@ nivel = st.sidebar.radio(
     key="nivel_sel"
 )
 
-# Mapeia para o DataFrame correto
+# Para melhorar o título "Número de Matrículas por:"
+st.sidebar.markdown(
+    '<p style="color:#FFFFFF;font-weight:600;font-size:1.1rem;margin-top:1.2rem">'
+    'Número de Matrículas por:</p>',
+    unsafe_allow_html=True
+)
+
+# radio sem rótulo
+nivel = st.sidebar.radio(
+    "",                            # rótulo vazio
+    ["Escolas", "Municípios", "Pernambuco"],
+    label_visibility="collapsed"   # esconde o label vazio
+)
+
+# Selecionar o DataFrame baseado no nível
 df_base = {
     "Escolas": escolas_df,
     "Municípios": municipio_df,
@@ -215,100 +232,316 @@ if df_base.empty:
     st.stop()
 
 # ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
+
+COMBINED_CSS = """
+/* Estilo para os cabeçalhos das colunas */
+.column-header {
+    height: 50px !important;  /* Altura fixa para todos os cabeçalhos */
+    display: flex !important;
+    align-items: center !important;  /* Centraliza verticalmente */
+    justify-content: center !important;  /* Centraliza horizontalmente */
+    padding: 5px !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+}
+
+/* Estilo para os filtros de coluna */
+[data-testid="stDataFrame"] + div [data-baseweb="input"] {
+    height: 40px !important;  /* Altura fixa para todos os filtros */
+}
+
+/* Certificando-se que o container dos filtros também tenha altura consistente */
+[data-testid="stDataFrame"] + div [data-testid="column"] {
+    min-height: 40px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+}
+
+/* Input interno do filtro */
+[data-testid="stDataFrame"] + div [data-baseweb="input"] input {
+    height: 100% !important;
+}
+/* Diminuir o recuo do texto na sidebar */
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
+    padding-left: 0.5rem !important;  /* Reduz o padding à esquerda */
+}
+
+/* Ajustar os botões de download para evitar quebra de linha */
+section[data-testid="stSidebar"] .stDownloadButton > button,
+section[data-testid="stSidebar"] .stButton > button {
+    white-space: nowrap;              /* Evita quebra de linha */
+    width: 100%;                      /* Ocupa toda a largura da coluna */
+    padding: 0.3rem 0.5rem;           /* Reduz o padding lateral */
+    font-size: 0.9rem;                /* Reduz um pouco o tamanho da fonte */
+}
+
+/* Mais espaço para a área dos botões de download */
+section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
+    padding: 0 0.3rem;                /* Reduz o espaço lateral nas colunas */
+}
+/* Estilos gerais para a sidebar */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
+}
+
+/* Título principal da sidebar */
+section[data-testid="stSidebar"] h1 {
+    font-size: 1.8rem !important;
+    margin-bottom: 1.2rem !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* Informação de RAM - movida para cima e estilizada */
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p:has(svg) {
+    position: absolute !important;
+    top: 0.8rem !important;
+    right: 1rem !important;
+    font-size: 0.8rem !important;
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    padding: 0.3rem 0.6rem !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+}
+
+/* Título "Número de Matrículas por:" */
+section[data-testid="stSidebar"] p[style*="color:#000000"] {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin: 1.2rem 0 0.8rem 0 !important;
+    padding-left: 0.3rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Botões rádio uniformes */
+section[data-testid="stSidebar"] .stRadio > div > label {
+    height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0.4rem 0 !important;
+    background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
+    border: 1px solid rgba(0, 0, 0, 0.3) !important;
+    border-radius: 5px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Estilo para hover nos botões */
+section[data-testid="stSidebar"] .stRadio > div > label:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+    background: linear-gradient(to bottom, #0090e0, #0073b3) !important;
+}
+
+/* Estilo para botão selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) {
+    background: linear-gradient(to bottom, #005c99, #004b7d) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(0) !important;
+    border: 1px solid rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Configurações avançadas - estilo consistente */
+section[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background: rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.3) !important;
+    border-radius: 5px !important;
+    margin: 1.5rem 0 !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    padding: 0.8rem 1rem !important;
+    font-weight: 500 !important;
+}
+
+/* Estilo para a seção de Download */
+section[data-testid="stSidebar"] h3 {
+    font-size: 1.2rem !important;
+    margin: 1.5rem 0 0.8rem 0 !important;
+    padding-left: 0.3rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding-bottom: 0.4rem !important;
+}
+
+/* Botões de download */
+section[data-testid="stSidebar"] .stButton > button,
+section[data-testid="stSidebar"] .stDownloadButton > button {
+    height: 2.5rem !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    background: #333333 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 5px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s ease !important;
+    font-weight: 500 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover,
+section[data-testid="stSidebar"] .stDownloadButton > button:hover {
+    background: #555555 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Espaçamento nas colunas dos botões de download */
+section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
+    padding: 0 0.3rem !important;
+}
+"""
+st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
+
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
+
+    # 1ª LINHA - Ajuste na proporção para o lado direito ter menos espaço
     c_left, c_right = st.columns([0.5, 0.7], gap="large")
 
+    # Lado esquerdo permanece o mesmo
     with c_left:
-        st.markdown('<div class="filter-title" style="height:32px">Ano(s)</div>', unsafe_allow_html=True)
+        # Ano(s) - com espaço vertical mínimo
+        st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
         ano_sel = st.multiselect("Ano(s)", anos_disp, default=anos_disp,
                                  key="ano_sel", label_visibility="collapsed")
-        st.markdown('<div class="filter-title" style="margin-top:-12px;height:32px">Rede(s)</div>', unsafe_allow_html=True)
+
+        # Rede(s) - com margem negativa para aproximar da caixa anterior
+        st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Rede(s)</div>',
+                    unsafe_allow_html=True)
         redes_disp = sorted(df_base["Rede"].dropna().unique())
         rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel", label_visibility="collapsed")
 
+    # Lado direito - Ajuste para posicionar Etapa mais à esquerda
     with c_right:
-        c_r1, c_r2 = st.columns([0.9,1])
-        with c_r1:
-            st.markdown('<div class="filter-title" style="height:32px">Etapa</div>', unsafe_allow_html=True)
+        # Use uma coluna com proporção menor para mover Etapa para a esquerda
+        c_right_col1, c_right_col2 = st.columns([0.9, 1])  # Mais espaço para Etapa, menos espaço vazio
+
+        with c_right_col1:
+            # Etapa com mínimo de espaço vertical
+            st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>', unsafe_allow_html=True)
             etapas_disp = sorted(df_base["Etapa"].unique())
             etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
 
+            # Para Subetapa
             if etapa_sel:
-                st.markdown('<div class="filter-title" style="margin-top:-12px;height:32px">Subetapa</div>', unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
+                    unsafe_allow_html=True)
+
+                # Opções reais daquela(s) etapa(s)
                 sub_real = sorted(df_base.loc[
                                       df_base["Etapa"].isin(etapa_sel) & df_base["Subetapa"].ne(""),
                                       "Subetapa"
                                   ].unique())
+
+                # Um único "total" agregado, se houver seleção de etapa
                 sub_disp = (["Total - Todas as Subetapas"] if etapa_sel else []) + sub_real
+
                 sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
             else:
                 sub_sel = []
 
+            # Para Séries - CORRIGIDA A INDENTAÇÃO DESTE BLOCO
             if etapa_sel and sub_sel:
-                st.markdown('<div class="filter-title" style="margin-top:-12px;height:32px">Série</div>', unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
+                    unsafe_allow_html=True)
+
+                # Séries normais
                 serie_real = sorted(df_base.loc[
                                         df_base["Etapa"].isin(etapa_sel) &
-                                        df_base["Subetapa"].isin([s for s in sub_sel if not s.startswith("Total")]) &
+                                        df_base["Subetapa"].isin(
+                                            [s for s in sub_sel if not s.startswith("Total")]) &
                                         df_base["Série"].ne(""),
                                         "Série"
                                     ].unique())
+
+                # Se escolheu QUALQUER subetapa, sempre ofereça o "total"
                 serie_disp = (["Total - Todas as Séries"] if sub_sel else []) + serie_real
-                serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel", label_visibility="collapsed")
+
+                serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
+                                           label_visibility="collapsed")
             else:
                 serie_sel = []
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    # CORRIGIDO: fechamento do container deve estar fora do bloco c_right_col1
+    st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
 # ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
+# Função de filtro simplificada
 def filtrar(df, anos, redes, etapas, subetapas, series):
     m = df["Ano"].isin(anos)
     if redes: m &= df["Rede"].isin(redes)
     if etapas: m &= df["Etapa"].isin(etapas)
+
+    # --- SUBETAPA -------------------------------------------------
     if subetapas:
-        if "Total - Todas as Subetapas" not in subetapas:
+        if "Total - Todas as Subetapas" in subetapas:
+            pass  # já cobre tudo da etapa escolhida
+        else:
             m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total")])
+
+    # --- SÉRIE ----------------------------------------------------
     if series:
-        if "Total - Todas as Séries" not in series:
+        if "Total - Todas as Séries" in series:
+            pass  # já cobre todas as séries da subetapa
+        else:
             m &= df["Série"].isin([s for s in series if not s.startswith("Total")])
+
     return df.loc[m]
 
-# gera df_filtrado
+# 7‑B • CHAMA O FILTRO COM AS ESCOLHAS ATUAIS • gera df_filtrado
 df_filtrado = filtrar(
     df_base,
-    tuple(ano_sel), tuple(rede_sel),
-    tuple(etapa_sel), tuple(sub_sel), tuple(serie_sel),
+    tuple(ano_sel),
+    tuple(rede_sel),
+    tuple(etapa_sel),
+    tuple(sub_sel),
+    tuple(serie_sel),
 )
+
+# se não houver linhas depois do filtro, pare logo aqui
 if df_filtrado.empty:
     st.warning("Não há dados após os filtros."); st.stop()
 
-# ─── 9. ALTURA DA TABELA (slider) ─────────────────────────────────
+# ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
 with st.sidebar.expander("Configurações avançadas da tabela", False):
+    # Adicionar um estilo personalizado para o texto do slider
     st.markdown("""
     <style>
+    /* Seletor mais específico para o texto do slider */
     [data-testid="stExpander"] [data-testid="stSlider"] > div:first-child {
-        color: #000000 !important; font-weight: 500 !important;
+        color: #000000 !important;
+        font-weight: 500 !important;
     }
     </style>
     """, unsafe_allow_html=True)
+
     altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
 
-# ─── 10. TABELA COM FILTROS INTEGRADOS ─────────────────────────────
-vis_cols = ["Ano","Etapa","Subetapa","Série"]
+# ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
+
+# 1. Colunas visíveis
+vis_cols = ["Ano", "Etapa", "Subetapa", "Série"]
 if nivel == "Escola":
-    vis_cols += ["Cód. da Escola","Nome da Escola","Cód. Município","Nome do Município","Rede"]
+    vis_cols += ["Cód. da Escola", "Nome da Escola",
+                 "Cód. Município", "Nome do Município", "Rede"]
 elif nivel == "Município":
-    vis_cols += ["Cód. Município","Nome do Município","Rede"]
+    vis_cols += ["Cód. Município", "Nome do Município", "Rede"]
 else:
     vis_cols += ["Rede"]
-vis_cols.append("Número de Matrículas")
+vis_cols.append("Número de Matrículas")      # sempre por último
 
+# 2. DataFrame base da tabela
 df_tabela = df_filtrado[vis_cols]
 if df_tabela.empty:
     st.warning("Não há dados para exibir."); st.stop()
 
-# centraliza última coluna
+# 3. CSS para centralizar coluna numérica
 st.markdown("""
 <style>
 [data-testid="stDataFrame"] table tbody tr td:last-child,
@@ -318,19 +551,22 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# cabeçalhos
+# 4. Cabeçalhos
 col_headers = st.columns(len(vis_cols))
 for col, slot in zip(vis_cols, col_headers):
     with slot:
         extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
-        st.markdown(f"<div class='column-header'{extra}>{beautify(col)}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='column-header'{extra}>{beautify(col)}</div>",
+                    unsafe_allow_html=True)
 
-# filtros de coluna
+# 5. Filtros de coluna
 col_filters = st.columns(len(vis_cols))
 filter_values = {}
 for col, slot in zip(vis_cols, col_filters):
     with slot:
-        filter_values[col] = st.text_input("Filtro", key=f"filter_{col}", label_visibility="collapsed")
+        filter_values[col] = st.text_input("Filtro",
+                                           key=f"filter_{col}",
+                                           label_visibility="collapsed")
 
 mask = pd.Series(True, index=df_tabela.index)
 for col, val in filter_values.items():
@@ -347,55 +583,95 @@ for col, val in filter_values.items():
 
 df_texto = df_tabela[mask]
 
-# paginação
-dpage = Paginator(len(df_texto), page_size=st.session_state.get("page_size",25), current=st.session_state.get("current_page",1))
-df_page = dpage.slice(df_texto)
+# 6. Paginação -------------------------------------------------------
+page_size = st.session_state.get("page_size", 25)
+pag       = Paginator(len(df_texto), page_size=page_size,
+                      current=st.session_state.get("current_page", 1))
+df_page   = pag.slice(df_texto)
 
-# formatação numérica
-for c in df_page.filter(like="Número de").columns:
-    df_page[c] = df_page[c].apply(aplicar_padrao_numerico_brasileiro)
+# 7. Formatação numérica (sem warnings)
+df_show = df_page.copy()
+for c in df_show.filter(like="Número de").columns:
+    df_show.loc[:, c] = df_show[c].apply(aplicar_padrao_numerico_brasileiro)
 
-st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index=True)
+st.dataframe(df_show, height=altura_tabela, use_container_width=True,
+             hide_index=True)
 
-# controles de navegação
-b1,b2,b3,b4 = st.columns([1,1,1,2])
+# 8. Controles de navegação ------------------------------------------
+b1, b2, b3, b4 = st.columns([1, 1, 1, 2])
+
 with b1:
-    if st.button("◀", disabled=dpage.current==1):
-        st.session_state["current_page"] = dpage.current-1
+    if st.button("◀", disabled=pag.current == 1):
+        st.session_state["current_page"] = pag.current - 1
         st.rerun()
+
 with b2:
-    if st.button("▶", disabled=dpage.current==dpage.total_pages):
-        st.session_state["current_page"] = dpage.current+1
+    if st.button("▶", disabled=pag.current == pag.total_pages):
+        st.session_state["current_page"] = pag.current + 1
         st.rerun()
+
 with b3:
-    new_ps = st.selectbox("Itens",[10,25,50,100], index=[10,25,50,100].index(st.session_state.get("page_size",25)), label_visibility="collapsed")
-    if new_ps != st.session_state.get("page_size",25):
-        st.session_state["page_size"] = new_ps
+    new_ps = st.selectbox("Itens", [10, 25, 50, 100],
+                          index=[10, 25, 50, 100].index(page_size),
+                          label_visibility="collapsed")
+    if new_ps != page_size:
+        st.session_state["page_size"]   = new_ps
         st.session_state["current_page"] = 1
         st.rerun()
-with b4:
-    st.markdown(f"**Página {dpage.current}/{dpage.total_pages} · {format_number_br(len(df_texto))} registros**")
 
-# ─── 11. DOWNLOADS ──────────────────────────────────────────────────
-def gerar_csv(): st.session_state["csv_bytes"] = df_texto.to_csv(index=False).encode("utf-8")
+with b4:
+    st.markdown(
+        f"**Página {pag.current}/{pag.total_pages} · "
+        f"{format_number_br(len(df_texto))} registros**"
+    )
+
+
+# ─── 11. DOWNLOADS (on‑click) ───────────────────────────────────────
+def gerar_csv():
+    # Usar df_texto que já contém os dados filtrados
+    st.session_state["csv_bytes"] = df_texto.to_csv(index=False).encode("utf-8")
+
 def gerar_xlsx():
+    # Usar df_texto que já contém os dados filtrados
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as w:
         df_texto.to_excel(w, index=False, sheet_name="Dados")
     st.session_state["xlsx_bytes"] = buf.getvalue()
 
+# Adicionar um título para os botões de download
 st.sidebar.markdown("### Download")
-col1,col2 = st.sidebar.columns(2)
+
+# Criar duas colunas na sidebar para os botões
+col1, col2 = st.sidebar.columns(2)
+
+# Colocar o botão CSV na primeira coluna
 with col1:
-    st.download_button("Em CSV", data=df_texto.to_csv(index=False).encode("utf-8"), key="csv_dl", mime="text/csv", file_name="dados.csv", on_click=gerar_csv)
+    st.download_button(
+        "Em CSV",
+        data=df_texto.to_csv(index=False).encode("utf-8"),
+        key="csv_dl",
+        mime="text/csv",
+        file_name="dados.csv",
+        on_click=gerar_csv
+    )
+
+# Colocar o botão Excel na segunda coluna
 with col2:
-    st.download_button("Em Excel", data=st.session_state.get("xlsx_bytes", io.BytesIO().getvalue()), key="xlsx_dl", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", file_name="dados.xlsx", on_click=gerar_xlsx)
+    st.download_button(
+        "Em Excel",
+        data=io.BytesIO().getvalue() if "xlsx_bytes" not in st.session_state else st.session_state["xlsx_bytes"],
+        key="xlsx_dl",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        file_name="dados.xlsx",
+        on_click=gerar_xlsx
+    )
 
 # ─── 12. RODAPÉ ─────────────────────────────────────────────────────
 st.markdown("---")
-st.caption("© Dashboard Educacional – atualização: Mar 2025")
+st.caption("© Dashboard Educacional – atualização: Mar 2025")
 delta = time.time() - st.session_state.get("tempo_inicio", time.time())
 st.caption(f"Tempo de processamento: {delta:.2f}s")
 st.session_state["tempo_inicio"] = time.time()
+# ====================================================================
 from datetime import datetime
 st.caption(f"Build: {datetime.utcnow():%Y-%m-%d %H:%M:%S} UTC")
