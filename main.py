@@ -427,23 +427,31 @@ with st.container():
             else:
                 sub_sel = []
 
-            # Para Séries - CORRIGIDA A INDENTAÇÃO DESTE BLOCO
+            # Para Séries
             if etapa_sel and sub_sel:
                 st.markdown(
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
                     unsafe_allow_html=True)
 
-                # Séries normais
-                serie_real = sorted(df_base.loc[
-                                        df_base["Etapa"].isin(etapa_sel) &
-                                        df_base["Subetapa"].isin(
-                                            [s for s in sub_sel if not s.startswith("Total")]) &
-                                        df_base["Série"].ne(""),
-                                        "Série"
-                                    ].unique())
+                # Se "Total - Todas as Subetapas" foi selecionado, não devemos filtrar por subetapa real
+                if "Total - Todas as Subetapas" in sub_sel:
+                    # Mostra todas as séries da etapa selecionada
+                    serie_real = sorted(df_base.loc[
+                                            df_base["Etapa"].isin(etapa_sel) &
+                                            df_base["Série"].ne(""),
+                                            "Série"
+                                        ].unique())
+                else:
+                    # Séries específicas das subetapas selecionadas
+                    serie_real = sorted(df_base.loc[
+                                            df_base["Etapa"].isin(etapa_sel) &
+                                            df_base["Subetapa"].isin(sub_sel) &
+                                            df_base["Série"].ne(""),
+                                            "Série"
+                                        ].unique())
 
-                # Se escolheu QUALQUER subetapa, sempre ofereça o "total"
-                serie_disp = (["Total - Todas as Séries"] if sub_sel else []) + serie_real
+                # Adiciona opção de total se houver séries disponíveis
+                serie_disp = (["Total - Todas as Séries"] if serie_real else []) + serie_real
 
                 serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
                                            label_visibility="collapsed")
