@@ -24,6 +24,14 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
+st.set_page_config(
+    page_title="Dashboard PNE",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 # ─── 3. ESTILO GLOBAL ──────────────────────────────────────────────
 CORES = {
     "primaria":  "#6b8190", "secundaria":"#d53e4f", "terciaria": "#0073ba",
