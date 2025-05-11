@@ -416,7 +416,7 @@ with st.container():
         st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Rede(s)</div>',
                     unsafe_allow_html=True)
         redes_disp = sorted(df_base["Rede"].dropna().unique())
-        default_redes = ["Pública", "Privada"]  # 🔥 Valores exatos como estão no DataFrame
+        default_redes = ["Pública e Privada"]  # 🔥 Valores exatos como estão no DataFrame
         rede_sel = st.multiselect("", redes_disp, default=default_redes, key="rede_sel", label_visibility="collapsed")
 
     # Lado direito - Ajuste para posicionar Etapa mais à esquerda
