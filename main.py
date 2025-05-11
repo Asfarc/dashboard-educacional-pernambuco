@@ -202,7 +202,7 @@ def carregar_dados(modalidade: str):
                   .astype("category")
             )
         else:
-            df["Série"] = pd.Categorical([""] * len(df))
+            df["Série"] = pd.Categorical([""] * len(df), categories=[""])
     else:
         # esquema antigo
         def _split(s: str):
