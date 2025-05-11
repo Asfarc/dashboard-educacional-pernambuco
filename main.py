@@ -28,264 +28,193 @@ CORES = {
 
 CSS_COMPLETO = """
 <style>
-/* ─── RESET E VARIAVEIS ──────────────────────────────────────────── */
+/* ─── RESET GLOBAL E VARIÁVEIS ───────────────────────────────────── */
+/* Zera margens, padding e força box-sizing para todos os elementos */
 * {
-    writing-mode: horizontal-tb !important;
-    text-orientation: mixed !important;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;                 
+  padding: 0;                
+  box-sizing: border-box;     /* Inclui padding/border dentro da largura */
+  writing-mode: horizontal-tb !important; /* Força texto horizontal */
+  text-orientation: mixed !important;     /* Orientação normal do texto */
 }
 
+/* Declaração de cores e variáveis de tema */
 :root {
-    --sb-bg: #6b8190;
-    --radio-bg: #0073ba;
-    --btn-hover: #fc4e2a;
+  --sb-bg: #6b8190;    /* Cor de fundo da sidebar */
+  --radio-bg: #0073ba; /* Background de itens de rádio */
+  --btn-hover: #fc4e2a;/* Cor ao passar o mouse em botões */
 }
 
-/* ─── AJUSTES GERAIS DA SIDEBAR ───────────────────────────────────── */
-/* Configurações da sidebar */
+/* ─── SIDEBAR ────────────────────────────────────────────────────── */
+/* Ajusta largura fixa e gradiente de fundo da barra lateral */
 section[data-testid="stSidebar"] {
-    min-width: 300px !important;
-    width: 300px !important;      /* LARGURA DO SIDEBAR */
-    background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
-}
-/* Container principal da sidebar */
-section[data-testid="stSidebar"] > div:first-child {
-    padding-top: 0 !important;
-    margin-top: -50px !important;  /* Compensa espaço residual */
+  width: 300px !important;
+  background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
 }
 
-/* Título "Modalidade" */
-section[data-testid="stSidebar"] h1 {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Remove espaços em elementos internos */
-section[data-testid="stSidebar"] .stRadio,
-section[data-testid="stSidebar"] .stButton {
-    margin-top: -20px !important;
-}
-
-/* ─── CONTEUDO PRINCIPAL ─────────────────────────────────────────── */
-section.main .block-container {
-    padding-top: 0.5rem !important;
-}
-
-div.panel-filtros {
-    margin: -10px 0 !important;
-    padding: 0 !important;
-}
-
-/* Ajuste dos títulos */
-div.filter-title {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Forçar texto horizontal em TODOS os elementos da sidebar */
+/* Garante que todo elemento interno da sidebar respeite texto horizontal */
 section[data-testid="stSidebar"] * {
-    writing-mode: horizontal-tb !important;
-    text-orientation: mixed !important;
-    transform: none !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  transform: none !important; /* Anula eventuais rotações */
 }
 
-/* Título principal da sidebar */
+/* ─ Títulos H1 e H3 na sidebar ───────────────────────────────────── */
+/* Título principal (H1) */
 section[data-testid="stSidebar"] h1 {
-    color: #FFFFFF !important;
-    font-size: 1.8rem !important;
-    margin-bottom: 1.2rem !important;
-    border-top: 2px solid #ffdfba !important;
-    padding-bottom: 0.5rem !important;
+  color: #FFF !important;           /* Branco */
+  font-size: 1.8rem !important;     /* Tamanho grande */
+  border-top: 2px solid #ffdfba !important; /* Linha acima */
+  padding-bottom: 0.5rem !important;
+  margin-bottom: 1.2rem !important; /* Espaço abaixo */
 }
 
-/* Títulos secundários */
+/* Subtítulos (H3) */
 section[data-testid="stSidebar"] h3 {
-    color: #FFFFFF !important;
-    font-size: 1.5rem !important;
-    margin: 1.5rem 0 0.8rem 0 !important;
-    padding-left: 0.3rem !important;
-    border-top: 2px solid #ffdfba !important;
-    padding-bottom: 0.4rem !important;
+  color: #FFF !important;
+  font-size: 1.5rem !important;
+  border-top: 2px solid #ffdfba !important;
+  padding-left: 0.3rem !important;  /* Recua texto para alinhar */
+  padding-bottom: 0.4rem !important;
+  margin: 1.5rem 0 0.8rem !important; /* Espaço acima e abaixo */
 }
 
-/* Todos os parágrafos na sidebar */
+/* Parágrafos de texto dentro da sidebar */
 section[data-testid="stSidebar"] p {
-    color: #FFFFFF !important;
-    writing-mode: horizontal-tb !important;
+  color: #FFF !important;
+  line-height: 1.4 !important; /* Facilita leitura */
 }
-/* ─── COMPONENTES ────────────────────────────────────────────────── */
-/* Radio buttons - container principal */
+
+/* ─── BOTÕES E CONTROLES ────────────────────────────────────────── */
+/* Botões padrão e botões de download */
+section[data-testid="stSidebar"] .stButton > button,
+section[data-testid="stSidebar"] .stDownloadButton > button {
+  background: #333 !important;      /* Fundo escuro */
+  color: #FFF !important;           /* Texto branco */
+  border: none !important;          
+  border-radius: 5px !important;    /* Cantos arredondados */
+  height: 2.5rem !important;        /* Altura fixa */
+  width: 100% !important;           /* Ocupa toda largura */
+  transition: background 0.2s ease; /* Transição suave */
+}
+
+/* Rádio: container geral e etiquetas */
 section[data-testid="stSidebar"] .stRadio > div {
-    padding: 0;
-    margin: 0;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* Labels das opções */
+/* Cada etiqueta de opção de rádio */
 section[data-testid="stSidebar"] .stRadio > div > label {
-    height: auto !important;
-    display: flex !important;
-    align-items: center !important;
-    padding: 0.5rem 0.8rem !important;
-    margin: 0.2rem 0 !important;
-    background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
-    border: 1px solid rgba(0, 0, 0, 0.3) !important;
-    border-radius: 5px !important;
-    transition: all 0.2s ease !important;
+  display: flex !important;               /* Layout flex para alinhamento */
+  align-items: center !important;
+  padding: 0.5rem 0.8rem !important;      
+  margin: 0.2rem 0 !important;            
+  background: var(--radio-bg) !important; /* Usa variável definida */
+  border: 1px solid rgba(0,0,0,0.3) !important;
+  border-radius: 5px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
 }
 
-/* ---------- [ESTILOS NOVOS] Destaque do item selecionado ---------- */
-/* Label inteiro quando selecionado */
-section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) {
-    background: #08306b !important;
-    border: 2px solid #ffdfba !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-    transform: scale(1.02) !important;
-}
-
-/* Texto da opção selecionada */
-section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) p {
-    font-weight: 600 !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
-}
-
-/* Bolinha interna mais vibrante */
-section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::after {
-    background: #ffdfba !important;
-    box-shadow: 0 0 8px rgba(255,223,186,0.5) !important;
-}
-
-/* Esconde o input nativo */
+/* ─── ESTADO SELECIONADO DO RÁDIO ───────────────────────────────── */
+/* Esconde o input nativo do rádio */
 section[data-testid="stSidebar"] .stRadio input[type="radio"] {
-    opacity: 0 !important;
-    position: absolute !important;
-    width: 0 !important;
-    height: 0 !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
 }
 
-/* Container customizado da bolinha */
-section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
-    position: relative !important;
-    width: 20px !important;
-    height: 20px !important;
-    margin-right: 12px !important;
-    flex-shrink: 0 !important;
-}
-
-/* Círculo externo */
+/* Bolinha externa do rádio (antes de selecionar) */
 section[data-testid="stSidebar"] .stRadio > div > label > div:first-child::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 18px;
-    height: 18px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    transition: all 0.2s ease;
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px; height: 18px;
+  border: 2px solid #FFF;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
 /* Bolinha interna (selecionada) */
 section[data-testid="stSidebar"] .stRadio > div > label > div:first-child::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    width: 10px;
-    height: 10px;
-    background: #ffdfba;
-    border-radius: 50%;
-    transition: transform 0.2s ease;
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0); /* Começa invisível */
+  width: 10px; height: 10px;
+  background: #ffdfba;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
 }
 
-/* Estado selecionado - versão corrigida */
+/* Quando o rádio está marcado */
 section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::before {
-    border-color: #ffdfba !important;
+  border-color: #ffdfba !important;
 }
-
 section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::after {
-    transform: translate(-50%, -50%) scale(1) !important;
+  transform: translate(-50%, -50%) scale(1) !important;
+  box-shadow: 0 0 8px rgba(255,223,186,0.5) !important;
 }
 
-/* Texto da opção */
-section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
-    flex: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    text-align: left !important;
-    font-size: 0.9rem !important;
-    white-space: normal !important;
-    line-height: 1.3 !important;
+/* Destaque em todo o label quando selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) {
+  background: #08306b !important;
+  border: 2px solid #ffdfba !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  transform: scale(1.02) !important;
+}
+section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) p {
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
 }
 
-/* Parágrafo interno */
-section[data-testid="stSidebar"] .stRadio > div > label p {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.4 !important;
-    color: #FFFFFF !important;
-}
-
-/* Botões de download */
-section[data-testid="stSidebar"] .stButton > button,
-section[data-testid="stSidebar"] .stDownloadButton > button {
-    height: 2.5rem !important;
-    width: 100% !important;
-    white-space: nowrap !important;
-    background: #333333 !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 5px !important;
-    font-weight: 500 !important;
-}
-
-/* Cabeçalhos das colunas */
-.column-header {
-    background: #ffdfba;
-    text-align: center;
-    font-weight: bold;
-    height: 50px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 5px !important;
-    margin-bottom: 8px !important;
-}
-
-/* Expander */
+/* ─── EXPANDER DA SIDEBAR ────────────────────────────────────────── */
 section[data-testid="stSidebar"] [data-testid="stExpander"] {
-    background: rgba(0, 0, 0, 0.15) !important;
-    border: 1px solid rgba(0, 0, 0, 0.3) !important;
-    border-radius: 5px !important;
-    margin: 1.5rem 0 !important;
-}
-/* Ajustar padding da tabela: */
-
-[data-testid="stDataFrame"] th, 
-[data-testid="stDataFrame"] td {
-    padding: 4px 8px !important;
-}
-/* Remove margem superior do container principal */
-section.main .block-container {
-    padding-top: 0 !important;
+  background: rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(0,0,0,0.3) !important;
+  border-radius: 5px !important;
+  margin: 1.5rem 0 !important;
 }
 
-/* Ajusta o painel de filtros */
+/* ─── CONTEÚDO PRINCIPAL ─────────────────────────────────────────── */
+/* Remove padding extra no container principal e no painel de filtros */
+section.main .block-container,
 div.panel-filtros {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
-/* Ajusta títulos dos filtros */
+/* Títulos de cada filtro interno (Anno, Rede, etc.) */
 div.filter-title {
-    margin: 0 !important;
-    padding: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ─── TABELA DE DADOS ────────────────────────────────────────────── */
+/* Cabeçalhos acima da tabela (HTML custom) */
+.column-header {
+  background: #ffdfba;              /* Fundo amarelo claro */
+  text-align: center;              
+  font-weight: bold;                
+  height: 50px !important;          
+  display: flex !important;         
+  align-items: center !important;   
+  justify-content: center !important;
+  padding: 5px !important;          
+  margin-bottom: 8px !important;    
+}
+
+/* Ajuste de padding nas células do st.dataframe */
+[data-testid="stDataFrame"] th,
+[data-testid="stDataFrame"] td {
+  padding: 4px 8px !important;
 }
 </style>
 """
+
 
 # Aplique o CSS completo uma única vez
 st.markdown(CSS_COMPLETO, unsafe_allow_html=True)
