@@ -86,54 +86,67 @@ MODALIDADES = {
     "EJA - Educação de Jovens e Adultos": "EJA - Educação de Jovens e Adultos.parquet",
 }
 
-# Define colunas mínimas por esquema
 COMMON_COLS = ["Ano", "Rede", "Nível de agregação", "Número de Matrículas"]
 NEW_SCHEMA_COLS = COMMON_COLS + ["Etapa agregada", "Nome da Etapa de ensino/Nome do painel de filtro"]
 OLD_SCHEMA_COLS = COMMON_COLS + ["Etapa de Ensino"]
 
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_dados(modalidade: str):
-
+    """
+    Lê apenas as colunas necessárias, ajusta tipos e devolve um dict
+    cujas chaves são:
+      - 'escolas'
+      - 'municípios'
+      - 'pernambuco'
+    exatamente como nivel.lower().
+    """
     path = MODALIDADES[modalidade]
-    # Escolhe colunas conforme presença de coluna 'Etapa agregada'
-    sample = pd.read_parquet(path, engine="pyarrow", columns=[COMMON_COLS[0]])
-    use_cols = NEW_SCHEMA_COLS if "Etapa agregada" in pd.read_parquet(path, engine="pyarrow", columns=["Etapa agregada"]).columns else OLD_SCHEMA_COLS
-    df = pd.read_parquet(path, engine="pyarrow", columns=use_cols)
 
-    # Otimiza tipos
+    # Decide esquema
+    cols_to_read = NEW_SCHEMA_COLS if "Etapa agregada" in pd.read_parquet(
+        path, engine="pyarrow", columns=["Etapa agregada"]
+    ).columns else OLD_SCHEMA_COLS
+
+    df = pd.read_parquet(path, engine="pyarrow", columns=cols_to_read)
+
+    # Otimiza tipos para category
     for c in ["Ano", "Rede", "Nível de agregação"]:
-        if c in df.columns:
+        if c in df:
             df[c] = df[c].astype("category")
 
-    # Normaliza códigos (se existirem)
+    # Normaliza Códigos
     for cod in ["Cód. Município", "Cód. da Escola"]:
-        if cod in df.columns:
-            df[cod] = (pd.to_numeric(df[cod], errors="coerce")
-                          .astype("Int64").astype(str)
-                          .replace("<NA>", ""))
+        if cod in df:
+            df[cod] = (
+                pd.to_numeric(df[cod], errors="coerce")
+                  .astype("Int64")
+                  .astype(str)
+                  .replace("<NA>", "")
+            )
 
-    # Unifica Etapa / Subetapa / Série
-    if "Etapa agregada" in df.columns:
+    # Unifica Etapa/Subetapa/Série
+    if "Etapa agregada" in df:
         df["Etapa"] = df["Etapa agregada"].astype("category")
-        df["Subetapa"] = (df["Nome da Etapa de ensino/Nome do painel de filtro"]
-                             .fillna("Total")
-                             .astype("category"))
+        df["Subetapa"] = (
+            df["Nome da Etapa de ensino/Nome do painel de filtro"]
+              .fillna("Total")
+              .astype("category")
+        )
         df["Série"] = pd.Categorical(
-            df.get("Ano/Série", pd.Series([""]*len(df))).fillna(""),
+            df.get("Ano/Série", pd.Series([""] * len(df))).fillna(""),
             categories=[""]
         )
     else:
         # esquema antigo
-        def _split(s):
-            p = s.split(" - ")
-            return p[0], p[1] if len(p)>1 else "", " - ".join(p[2:]) if len(p)>2 else ""
         tmp = df["Etapa de Ensino"].str.split(" - ", expand=True)
-        df["Etapa"]   = tmp[0].astype("category")
-        df["Subetapa"]= tmp[1].fillna("").astype("category")
-        df["Série"]   = tmp[2].fillna("").astype("category")
+        df["Etapa"]    = tmp[0].astype("category")
+        df["Subetapa"] = tmp[1].fillna("").astype("category")
+        df["Série"]    = tmp[2].fillna("").astype("category")
 
-    # Reduz cardinalidade
+    # padroniza minúsculas para comparação
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
+
+    # Retorna com CHAVES NO PLURAL e sem acento errado
     return {
         "escolas":    df[df["Nível de agregação"] == "escola"],
         "municípios": df[df["Nível de agregação"] == "município"],
@@ -151,15 +164,12 @@ with st.sidebar:
     st.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
     st.markdown("---")
     st.title("Filtros")
-    nivel = st.radio(
-        "", ["Escolas","Municípios","Pernambuco"],
-        index=0, label_visibility="collapsed", key="nivel_sel"
-    )
+    nivel = st.radio("", ["Escolas", "Municípios", "Pernambuco"], key="nivel_sel", label_visibility="collapsed")
 
 dados_por_nivel = carregar_dados(tipo_ensino)
 df_base = dados_por_nivel[nivel.lower()]
 if df_base.empty:
-    st.error("DataFrame vazio para esse nível")
+    st.error(f"Sem dados para {nivel}")
     st.stop()
 
 # ─── 8. PAINEL DE FILTROS ────────────────────────────────────────────
