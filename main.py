@@ -578,27 +578,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 4. Cabeçalhos
-col_headers = st.columns(len(vis_cols))
-for col, slot in zip(vis_cols, col_headers):
-    with slot:
-        # Dicionário de abreviações diretamente aqui
-        abbreviations = {
-            "Número de Matrículas": "Matrículas",
-            "Nome do Município": "Município",
-            "Nome da Escola": "Escola",
-            "Etapa de Ensino": "Etapa",
-            "Cód. Município": "Cód. Mun.",
-            "Cód. da Escola": "Cód. Esc."
-        }
-
-        # Aplicar abreviação se existir
-        header_name = abbreviations.get(col, beautify(col))
-
-        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
-        st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
-                    unsafe_allow_html=True)
-
 # 5. Filtros de coluna
 col_filters = st.columns(len(vis_cols))
 filter_values = {}
@@ -631,11 +610,18 @@ df_page   = pag.slice(df_texto)
 
 # 7. Formatação numérica (sem warnings)
 df_show = df_page.copy()
-for c in df_show.filter(like="Número de").columns:
-    df_show.loc[:, c] = df_show[c].apply(aplicar_padrao_numerico_brasileiro)
 
-st.dataframe(df_show, height=altura_tabela, use_container_width=True,
-             hide_index=True)
+# Identificar colunas numéricas antes de renomear
+colunas_numericas = df_show.filter(like="Número de").columns.tolist()
+
+# Renomear as colunas usando beautify_column_header
+df_show.columns = [beautify_column_header(col) for col in df_show.columns]
+
+# Aplicar formatação às colunas numéricas (agora com nomes beautificados)
+for col in colunas_numericas:
+    col_beautified = beautify_column_header(col)
+    if col_beautified in df_show.columns:
+        df_show.loc[:, col_beautified] = df_show[col_beautified].apply(aplicar_padrao_numerico_brasileiro)
 
 # 8. Controles de navegação ------------------------------------------
 b1, b2, b3, b4 = st.columns([1, 1, 1, 2])
