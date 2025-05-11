@@ -247,7 +247,6 @@ def beautify(col: str) -> str:
 
 
 def beautify_column_header(col: str) -> str:
-    # Função específica para cabeçalhos de coluna com abreviações
     abreviacoes = {
         "Número de Matrículas": "Matrículas",
         "Nome do Município": "Município",
@@ -565,9 +564,14 @@ df_tabela = df_filtrado[vis_cols].copy()
 
 # --- Adicionar coluna UF apenas para Pernambuco ---
 if nivel == "Pernambuco":
+    # 1. Adiciona a coluna "UF" ao DataFrame
     df_tabela["UF"] = "Pernambuco"
-    vis_cols.insert(1, "UF")  # 🔥 Posição correta!
-    df_tabela = df_tabela.rename(columns={"UF": "UF"})
+
+    # 2. Atualiza a lista vis_cols ANTES de reordenar o DataFrame
+    vis_cols.insert(1, "UF")  # Posição 1 (segunda coluna)
+
+    # 3. Reordena as colunas do DataFrame conforme a nova vis_cols
+    df_tabela = df_tabela[vis_cols]  # 🔥 Linha crucial!
 
 if df_tabela.empty:
     st.warning("Não há dados para exibir.")
