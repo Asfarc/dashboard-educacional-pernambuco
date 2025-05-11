@@ -526,21 +526,25 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
 
 # ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 
-# 1. Colunas visíveis
-vis_cols = ["Ano", "Etapa", "Subetapa", "Série"]
-if nivel == "Escola":
-    vis_cols += ["Cód. da Escola", "Nome da Escola",
-                 "Cód. Município", "Nome do Município", "Rede"]
-elif nivel == "Município":
-    vis_cols += ["Cód. Município", "Nome do Município", "Rede"]
-else:
-    vis_cols += ["Rede"]
-vis_cols.append("Número de Matrículas")      # sempre por último
+# 1. Colunas visíveis baseadas no nível de agregação
+vis_cols = ["Ano"]
+
+if nivel == "Escolas":
+    vis_cols += ["Nome do Município", "Nome da Escola"]
+elif nivel == "Municípios":
+    vis_cols += ["Nome do Município"]
+else:  # nivel == "Pernambuco"
+    # Não adiciona colunas extras para estado
+    pass
+
+# Adiciona colunas comuns
+vis_cols += ["Etapa de Ensino", "Subetapa", "Série", "Rede", "Número de Matrículas"]
 
 # 2. DataFrame base da tabela
 df_tabela = df_filtrado[vis_cols]
 if df_tabela.empty:
-    st.warning("Não há dados para exibir."); st.stop()
+    st.warning("Não há dados para exibir.")
+    st.stop()
 
 # 3. CSS para centralizar coluna numérica
 st.markdown("""
@@ -556,8 +560,14 @@ st.markdown("""
 col_headers = st.columns(len(vis_cols))
 for col, slot in zip(vis_cols, col_headers):
     with slot:
+        # Customiza nome do cabeçalho baseado no nível
+        if nivel == "Pernambuco" and col == "Etapa de Ensino":
+            header_name = beautify(col)  # Primeiro elemento é tratado como identificação do estado
+        else:
+            header_name = beautify(col)
+
         extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
-        st.markdown(f"<div class='column-header'{extra}>{beautify(col)}</div>",
+        st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
                     unsafe_allow_html=True)
 
 # 5. Filtros de coluna
