@@ -412,9 +412,11 @@ with st.container():
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
                     unsafe_allow_html=True)
 
-                # Opções reais daquela(s) etapa(s)
+                # Opções reais daquela(s) etapa(s), excluindo "Total"
                 sub_real = sorted(df_base.loc[
-                                      df_base["Etapa"].isin(etapa_sel) & df_base["Subetapa"].ne(""),
+                                      df_base["Etapa"].isin(etapa_sel) &
+                                      df_base["Subetapa"].ne("") &
+                                      df_base["Subetapa"].ne("Total"),  # Exclui "Total"
                                       "Subetapa"
                                   ].unique())
 
