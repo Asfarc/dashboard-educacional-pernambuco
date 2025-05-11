@@ -370,8 +370,10 @@ try:
             'Modalidade</p>', unsafe_allow_html=True
         )
         tipo_ensino = st.radio(
-            "", list(MODALIDADES.keys()), index=0,
-            label_visibility="collapsed"
+            "Selecione a modalidade",  # Label descritivo em vez de string vazia
+            list(MODALIDADES.keys()),
+            index=0,
+            label_visibility="collapsed"  # Você ainda pode esconder visualmente
         )
 
     escolas_df, municipio_df, estado_df = carregar_dados(tipo_ensino)
