@@ -239,7 +239,22 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] {
 [data-testid="stDataFrame"] td {
     padding: 4px 8px !important;
 }
+/* Remove margem superior do container principal */
+section.main .block-container {
+    padding-top: 0 !important;
+}
 
+/* Ajusta o painel de filtros */
+div.panel-filtros {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Ajusta títulos dos filtros */
+div.filter-title {
+    margin: 0 !important;
+    padding: 0 !important;
+}
 </style>
 """
 
