@@ -119,8 +119,9 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
     flex-shrink: 0 !important;
 }
 
-/* ALTERNATIVA: Se accent-color não funcionar, use este pseudo-elemento */
-section[data-testid="stSidebar"] .stRadio > div > label > div:first-child input[type="radio"]:checked::before {
+/* OUTRA ALTERNATIVA: Estilizar o círculo interno quando selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) input[type="radio"] {
+    accent-color: #ffdfba !important;
     background-color: #ffdfba !important;
 }
 
