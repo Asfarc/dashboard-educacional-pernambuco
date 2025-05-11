@@ -841,6 +841,13 @@ if not rede_sel:
     st.warning("Por favor, selecione pelo menos uma rede de ensino.")
     st.stop()
 
+# Detectar se estamos na modalidade EJA para ajustar comportamento
+is_eja_modalidade = tipo_ensino == "EJA - Educação de Jovens e Adultos"
+
+# Adicionar dicas específicas para EJA quando necessário
+if is_eja_modalidade and not etapa_sel and nivel != "Pernambuco":
+    st.info("💡 Na modalidade EJA, selecione uma Etapa para visualizar dados mais detalhados.")
+
 # 7‑B • CHAMA O FILTRO COM AS ESCOLHAS ATUAIS • gera df_filtrado
 df_filtrado = filtrar(
     df_base,
@@ -865,10 +872,25 @@ if num_filtrado > 0:
         f"</span></div>",
         unsafe_allow_html=True
     )
+else:
+    # Mensagem mais informativa quando não há dados na EJA
+    if is_eja_modalidade:
+        # Verifica quais filtros estão ativos para dar dicas mais específicas
+        if etapa_sel and sub_sel and not serie_sel:
+            st.warning(
+                "Não há dados para a combinação de filtros selecionada. Tente selecionar uma Série específica ou escolher 'Total - Todas as Séries'.")
+        elif etapa_sel and sub_sel and serie_sel:
+            st.warning(
+                "Não há dados para esta combinação específica de Etapa, Subetapa e Série. Experimente outras combinações ou remova alguns filtros.")
+        elif etapa_sel and not sub_sel:
+            st.warning(
+                "Não há dados para esta Etapa sem uma Subetapa específica. Selecione uma Subetapa para continuar.")
+        else:
+            st.warning("Não há dados após os filtros aplicados. Por favor, ajuste os critérios de seleção.")
+    else:
+        # Mensagem padrão para outras modalidades
+        st.warning("Não há dados após os filtros aplicados. Por favor, ajuste os critérios de seleção.")
 
-# se não houver linhas depois do filtro, pare logo aqui
-if df_filtrado.empty:
-    st.warning("Não há dados após os filtros aplicados. Por favor, ajuste os critérios de seleção.")
     st.stop()
 
 # ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
