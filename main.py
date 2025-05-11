@@ -1,41 +1,233 @@
-# dashboard_pne.py
-
 # ─── 1. IMPORTS ──────────────────────────────────────────────────────
 import streamlit as st
 import pandas as pd
-import io
-import re
-import time
-import os
-import psutil
+import altair as alt
+import io, re, time
+import base64, os
 from pathlib import Path
+import streamlit.components.v1 as components
+import psutil
 
-# ─── 2. PAGE CONFIG ─────────────────────────────────────────────────
+# ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
     page_title="Dashboard PNE",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-# ─── FIM DA CONFIG ──────────────────────────────────────────────────
 
-# ─── 3. CARREGA E APLICA CSS EXTERNO ────────────────────────────────
+# ─── 3. ESTILO GLOBAL ──────────────────────────────────────────────
+CORES = {
+    "primaria":  "#6b8190", "secundaria":"#d53e4f", "terciaria": "#0073ba",
+    "cinza_claro":"#ffffff","cinza_medio":"#e0e0e0","cinza_escuro":"#333333",
+    "branco":"#ffffff","preto":"#000000","highlight":"#ffdfba",
+    "botao_hover":"#fc4e2a","selecionado":"#08306b",
+    "sb_titulo":"#ffffff","sb_subtitulo":"#ffffff","sb_radio":"#ffffff",
+    "sb_secao":"#ffffff","sb_texto":"#ffffff","sb_slider":"#ffffff",
+}
 
-css_path = Path("static/style.css")
-if css_path.exists():
-    css = css_path.read_text()
-    # Envolve em <style> aqui para o navegador interpretar como CSS
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-else:
-    st.error("static/style.css não encontrado")
+CSS_COMPLETO = """
+<style>
+/* ─── RESET GLOBAL E VARIÁVEIS ───────────────────────────────────── */
+/* Zera margens, padding e força box-sizing para todos os elementos */
+* {
+  margin: 0;                 
+  padding: 0;                
+  box-sizing: border-box;     /* Inclui padding/border dentro da largura */
+  writing-mode: horizontal-tb !important; /* Força texto horizontal */
+  text-orientation: mixed !important;     /* Orientação normal do texto */
+}
 
-# ─── FIM DO CSS ─────────────────────────────────────────────────────
+/* Declaração de cores e variáveis de tema */
+:root {
+  --sb-bg: #6b8190;    /* Cor de fundo da sidebar */
+  --radio-bg: #0073ba; /* Background de itens de rádio */
+  --btn-hover: #fc4e2a;/* Cor ao passar o mouse em botões */
+}
 
-# ─── 4. FUNÇÕES DE UTILIDADE ────────────────────────────────────────
+/* ─── SIDEBAR ────────────────────────────────────────────────────── */
+/* Ajusta largura fixa e gradiente de fundo da barra lateral */
+section[data-testid="stSidebar"] {
+  width: 300px !important;
+  background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
+}
 
-def beautify_header(col: str) -> str:
-    """Unifica beautify e abreviações num único lugar."""
-    abbreviations = {
+/* Garante que todo elemento interno da sidebar respeite texto horizontal */
+section[data-testid="stSidebar"] * {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  transform: none !important; /* Anula eventuais rotações */
+}
+
+/* ─ Títulos H1 e H3 na sidebar ───────────────────────────────────── */
+/* Título principal (H1) */
+section[data-testid="stSidebar"] h1 {
+  color: #FFF !important;           /* Branco */
+  font-size: 1.8rem !important;     /* Tamanho grande */
+  border-top: 2px solid #ffdfba !important; /* Linha acima */
+  padding-bottom: 0.5rem !important;
+  margin-bottom: 1.2rem !important; /* Espaço abaixo */
+}
+
+/* Subtítulos (H3) */
+section[data-testid="stSidebar"] h3 {
+  color: #FFF !important;
+  font-size: 1.5rem !important;
+  border-top: 2px solid #ffdfba !important;
+  padding-left: 0.3rem !important;  /* Recua texto para alinhar */
+  padding-bottom: 0.4rem !important;
+  margin: 1.5rem 0 0.8rem !important; /* Espaço acima e abaixo */
+}
+
+/* Parágrafos de texto dentro da sidebar */
+section[data-testid="stSidebar"] p {
+  color: #FFF !important;
+  line-height: 1.4 !important; /* Facilita leitura */
+}
+
+/* ─── BOTÕES E CONTROLES ────────────────────────────────────────── */
+/* Botões padrão e botões de download */
+section[data-testid="stSidebar"] .stButton > button,
+section[data-testid="stSidebar"] .stDownloadButton > button {
+  background: #333 !important;      /* Fundo escuro */
+  color: #FFF !important;           /* Texto branco */
+  border: none !important;          
+  border-radius: 5px !important;    /* Cantos arredondados */
+  height: 2.5rem !important;        /* Altura fixa */
+  width: 100% !important;           /* Ocupa toda largura */
+  transition: background 0.2s ease; /* Transição suave */
+}
+
+/* Rádio: container geral e etiquetas */
+section[data-testid="stSidebar"] .stRadio > div {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Cada etiqueta de opção de rádio */
+section[data-testid="stSidebar"] .stRadio > div > label {
+  display: flex !important;               /* Layout flex para alinhamento */
+  align-items: center !important;
+  padding: 0.5rem 0.8rem !important;      
+  margin: 0.2rem 0 !important;            
+  background: var(--radio-bg) !important; /* Usa variável definida */
+  border: 1px solid rgba(0,0,0,0.3) !important;
+  border-radius: 5px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+/* ─── ESTADO SELECIONADO DO RÁDIO ───────────────────────────────── */
+/* Esconde o input nativo do rádio */
+section[data-testid="stSidebar"] .stRadio input[type="radio"] {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+}
+
+/* Bolinha externa do rádio (antes de selecionar) */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child::before {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px; height: 18px;
+  border: 2px solid #FFF;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+/* Bolinha interna (selecionada) */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0); /* Começa invisível */
+  width: 10px; height: 10px;
+  background: #ffdfba;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+/* Quando o rádio está marcado */
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::before {
+  border-color: #ffdfba !important;
+}
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::after {
+  transform: translate(-50%, -50%) scale(1) !important;
+  box-shadow: 0 0 8px rgba(255,223,186,0.5) !important;
+}
+
+/* Destaque em todo o label quando selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) {
+  background: #08306b !important;
+  border: 2px solid #ffdfba !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  transform: scale(1.02) !important;
+}
+section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) p {
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* ─── EXPANDER DA SIDEBAR ────────────────────────────────────────── */
+section[data-testid="stSidebar"] [data-testid="stExpander"] {
+  background: rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(0,0,0,0.3) !important;
+  border-radius: 5px !important;
+  margin: 1.5rem 0 !important;
+}
+
+/* ─── CONTEÚDO PRINCIPAL ─────────────────────────────────────────── */
+/* Remove padding extra no container principal e no painel de filtros */
+section.main .block-container,
+div.panel-filtros {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Títulos de cada filtro interno (Anno, Rede, etc.) */
+div.filter-title {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ─── TABELA DE DADOS ────────────────────────────────────────────── */
+/* Cabeçalhos acima da tabela (HTML custom) */
+.column-header {
+  background: #ffdfba;              /* Fundo amarelo claro */
+  text-align: center;              
+  font-weight: bold;                
+  height: 50px !important;          
+  display: flex !important;         
+  align-items: center !important;   
+  justify-content: center !important;
+  padding: 5px !important;          
+  margin-bottom: 8px !important;    
+}
+
+/* Ajuste de padding nas células do st.dataframe */
+[data-testid="stDataFrame"] th,
+[data-testid="stDataFrame"] td {
+  padding: 4px 8px !important;
+}
+</style>
+"""
+
+
+# Aplique o CSS completo uma única vez
+st.markdown(CSS_COMPLETO, unsafe_allow_html=True)
+
+
+# ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
+def beautify(col: str) -> str:
+
+    return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
+
+
+def beautify_column_header(col: str) -> str:
+    abreviacoes = {
         "Número de Matrículas": "Matrículas",
         "Nome do Município": "Município",
         "Nome da Escola": "Escola",
@@ -44,294 +236,511 @@ def beautify_header(col: str) -> str:
         "Cód. da Escola": "Cód. Esc.",
         "UF": "UF"
     }
-    if col in abbreviations:
-        return abbreviations[col]
-    parts = col.replace("\n", " ").lower().split()
-    return " ".join(p.capitalize() for p in parts)
 
-def format_num_br(x):
-    """Formata inteiros e decimais no padrão brasileiro."""
-    if pd.isna(x):
-        return "-"
-    try:
-        n = float(x)
-    except:
-        return str(x)
-    # se for inteiro
-    if n.is_integer():
-        return f"{int(n):,}".replace(",", ".")
-    s = f"{n:,.2f}".split(".")
-    return f"{s[0].replace(',', '.')},{s[1]}"
+    # Se a coluna está no dicionário, usar a abreviação
+    if col in abreviacoes:
+        return abreviacoes[col]
 
-# ─── 5. PAGINAÇÃO SIMPLIFICADA ───────────────────────────────────────
+    # Caso contrário, usar o comportamento da beautify original
+    return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
+
+def aplicar_padrao_numerico_brasileiro(num):
+    if pd.isna(num): return "-"
+    n = float(num)
+    if n.is_integer(): return f"{int(n):,}".replace(",",".")
+    inteiro, frac = str(f"{n:,.2f}").split('.')
+    return f"{inteiro.replace(',', '.')},{frac}"
+def format_number_br(num):
+    try: return f"{int(num):,}".replace(",",".")
+    except: return str(num)
+
+# ─── 4‑B. PAGINAÇÃO ────────────────────────────────────────────────
 class Paginator:
-    def __init__(self, total, page_size=0, current=1):
-        """
-        page_size = 0 significa 'mostrar tudo'.
-        """
-        self.total = total
-        self.page_size = total if page_size in (0, None) else page_size
+    def __init__(self, total, page_size=25, current=1):
+        # Limita o page_size a 10.000 se for maior
+        self.page_size = min(page_size, 10000)  # 🔥 Linha nova
         self.total_pages = max(1, (total - 1) // self.page_size + 1)
         self.current = max(1, min(current, self.total_pages))
         self.start = (self.current - 1) * self.page_size
         self.end = min(self.start + self.page_size, total)
 
-    def slice(self, df):
-        return df.iloc[self.start : self.end]
+    def slice(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df.iloc[self.start:self.end]
 
-# ─── 6. CONSTS E DADOS ──────────────────────────────────────────────
+# ─── 5. CARGA DO PARQUET ────────────────────────────────────────────
 MODALIDADES = {
     "Ensino Regular":                     "Ensino Regular.parquet",
     "Educação Profissional":              "Educação Profissional.parquet",
     "EJA - Educação de Jovens e Adultos": "EJA - Educação de Jovens e Adultos.parquet",
 }
 
-COMMON_COLS = ["Ano", "Rede", "Nível de agregação", "Número de Matrículas"]
-NEW_SCHEMA_COLS = COMMON_COLS + ["Etapa agregada", "Nome da Etapa de ensino/Nome do painel de filtro"]
-OLD_SCHEMA_COLS = COMMON_COLS + ["Etapa de Ensino"]
-
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_dados(modalidade: str):
-    """
-    Lê apenas as colunas necessárias, ajusta tipos e devolve um dict
-    cujas chaves são:
-      - 'escolas'
-      - 'municípios'
-      - 'pernambuco'
-    exatamente como nivel.lower().
-    """
-    path = MODALIDADES[modalidade]
+    # Seleciona arquivo e carrega
+    caminho = MODALIDADES[modalidade]
+    df = pd.read_parquet(caminho, engine="pyarrow")
 
-    # Decide esquema
-    cols_to_read = NEW_SCHEMA_COLS if "Etapa agregada" in pd.read_parquet(
-        path, engine="pyarrow", columns=["Etapa agregada"]
-    ).columns else OLD_SCHEMA_COLS
-
-    df = pd.read_parquet(path, engine="pyarrow", columns=cols_to_read)
-
-    # Otimiza tipos para category
-    for c in ["Ano", "Rede", "Nível de agregação"]:
-        if c in df:
-            df[c] = df[c].astype("category")
-
-    # Normaliza Códigos
+    # Normaliza códigos
     for cod in ["Cód. Município", "Cód. da Escola"]:
-        if cod in df:
-            df[cod] = (
-                pd.to_numeric(df[cod], errors="coerce")
-                  .astype("Int64")
-                  .astype(str)
-                  .replace("<NA>", "")
-            )
+        if cod in df.columns:
+            df[cod] = (pd.to_numeric(df[cod], errors="coerce")
+                          .astype("Int64").astype(str)
+                          .replace("<NA>", ""))
 
-    # Unifica Etapa/Subetapa/Série
-    if "Etapa agregada" in df:
+    # Converte ano e matrículas
+    df["Ano"] = df["Ano"].astype(str)
+    df["Número de Matrículas"] = pd.to_numeric(
+        df["Número de Matrículas"], errors="coerce"
+    )
+
+    # Unifica colunas: Etapa / Subetapa / Série
+    if "Etapa agregada" in df.columns:
         df["Etapa"] = df["Etapa agregada"].astype("category")
         df["Subetapa"] = (
             df["Nome da Etapa de ensino/Nome do painel de filtro"]
               .fillna("Total")
               .astype("category")
         )
-        df["Série"] = pd.Categorical(
-            df.get("Ano/Série", pd.Series([""] * len(df))).fillna(""),
-            categories=[""]
-        )
+        if "Ano/Série" in df.columns:
+            df["Série"] = (
+                df["Ano/Série"]
+                  .fillna("")
+                  .astype("category")
+            )
+        else:
+            df["Série"] = pd.Categorical([""] * len(df), categories=[""])
     else:
         # esquema antigo
-        tmp = df["Etapa de Ensino"].str.split(" - ", expand=True)
-        df["Etapa"]    = tmp[0].astype("category")
-        df["Subetapa"] = tmp[1].fillna("").astype("category")
-        df["Série"]    = tmp[2].fillna("").astype("category")
+        def _split(s: str):
+            p = s.split(" - ")
+            etapa = p[0]
+            sub   = p[1] if len(p) > 1 else ""
+            serie = " - ".join(p[2:]) if len(p) > 2 else ""
+            return etapa, sub, serie
 
-    # padroniza minúsculas para comparação
+        df[["Etapa", "Subetapa", "Série"]] = (
+            df["Etapa de Ensino"]
+              .apply(lambda x: pd.Series(_split(x)))
+        )
+        for c in ["Etapa", "Subetapa", "Série"]:
+            df[c] = df[c].astype("category")
+
+    # Comuns
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
+    df["Rede"] = df["Rede"].astype("category")
 
-    # Retorna com CHAVES NO PLURAL e sem acento errado
-    return {
-        "escolas":    df[df["Nível de agregação"] == "escola"],
-        "municípios": df[df["Nível de agregação"] == "município"],
-        "pernambuco": df[df["Nível de agregação"] == "estado"],
-    }
-
-# ─── 7. SIDEBAR – Escolha de modalidade e nível ──────────────────────
-with st.sidebar:
-    st.markdown("## Modalidade", unsafe_allow_html=True)
-    tipo_ensino = st.radio(
-        "", list(MODALIDADES.keys()),
-        index=0, label_visibility="collapsed"
+    # Retorna views
+    return (
+        df[df["Nível de agregação"].eq("escola")],
+        df[df["Nível de agregação"].eq("município")],
+        df[df["Nível de agregação"].eq("estado")],
     )
-    ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
-    st.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
-    st.markdown("---")
-    st.title("Filtros")
-    nivel = st.radio("", ["Escolas", "Municípios", "Pernambuco"], key="nivel_sel", label_visibility="collapsed")
 
-dados_por_nivel = carregar_dados(tipo_ensino)
-df_base = dados_por_nivel[nivel.lower()]
-if df_base.empty:
-    st.error(f"Sem dados para {nivel}")
+# ----- seleção de modalidade e chamada protegida ---------------------
+try:
+    with st.sidebar:
+        st.markdown(
+            '<p style="color:#FFFFFF;font-weight:600;font-size:1.8rem;margin-top:0.5rem">'
+            'Modalidade</p>', unsafe_allow_html=True
+        )
+        tipo_ensino = st.radio(
+            "Selecione a modalidade",  # Label descritivo em vez de string vazia
+            list(MODALIDADES.keys()),
+            index=0,
+            label_visibility="collapsed"  # Você ainda pode esconder visualmente
+        )
+
+    escolas_df, municipio_df, estado_df = carregar_dados(tipo_ensino)
+except Exception as e:
+    st.error(f"Erro ao carregar '{tipo_ensino}': {e}")
     st.stop()
 
-# ─── 8. PAINEL DE FILTROS ────────────────────────────────────────────
+# uso de memória
+ram_mb=psutil.Process(os.getpid()).memory_info().rss/1024**2
+st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
+
+# ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
+st.sidebar.title("Filtros")
+nivel = st.sidebar.radio(
+    "",
+    ["Escolas", "Municípios", "Pernambuco"],
+    label_visibility="collapsed",
+    key="nivel_sel"
+)
+
+# Selecionar o DataFrame baseado no nível
+df_base = {
+    "Escolas": escolas_df,
+    "Municípios": municipio_df,
+    "Pernambuco": estado_df
+}[nivel]
+
+if df_base.empty:
+    st.error("DataFrame vazio")
+    st.stop()
+
+# ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
 with st.container():
-    st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
-    c1, c2 = st.columns([0.5, 0.7], gap="large")
-    # Ano e Rede
-    with c1:
-        st.markdown('<div class="filter-title">Ano(s)</div>', unsafe_allow_html=True)
-        anos = sorted(df_base["Ano"].unique(), reverse=True)
-        ano_sel = st.multiselect("", anos, default=[anos[0]] if anos else [], key="ano_sel", label_visibility="collapsed")
+    st.markdown('<div class="panel-filtros" style="margin-top:-30px">', unsafe_allow_html=True)
 
-        st.markdown('<div class="filter-title">Rede(s)</div>', unsafe_allow_html=True)
-        redes = sorted(df_base["Rede"].dropna().unique())
-        rede_sel = st.multiselect("", redes, default=redes, key="rede_sel", label_visibility="collapsed")
+    # 1ª LINHA - Ajuste na proporção para o lado direito ter menos espaço
+    c_left, c_right = st.columns([0.5, 0.7], gap="large")
 
-    # Etapa / Subetapa / Série
-    with c2:
-        st.markdown('<div class="filter-title">Etapa</div>', unsafe_allow_html=True)
-        etapas = sorted(df_base["Etapa"].unique())
-        etapa_sel = st.multiselect("", etapas, default=etapas, key="etapa_sel", label_visibility="collapsed")
+    # Lado esquerdo permanece o mesmo
+    with c_left:
+        # Ano(s) - com espaço vertical mínimo
+        st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Ano(s)</div>', unsafe_allow_html=True)
+        anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
+        default_anos = ["2024"] if "2024" in anos_disp else []
+        ano_sel = st.multiselect("Ano(s)", anos_disp, default=default_anos,
+                                 key="ano_sel", label_visibility="collapsed")
 
-        st.markdown('<div class="filter-title">Subetapa</div>', unsafe_allow_html=True)
-        subs = sorted(df_base.loc[df_base["Etapa"].isin(etapa_sel), "Subetapa"].unique())
-        sub_disp = ["Total"] + [s for s in subs if s and s!="Total"]
-        sub_sel = st.multiselect("", sub_disp, default=["Total"], key="sub_sel", label_visibility="collapsed")
+        # Rede(s) - com margem negativa para aproximar da caixa anterior
+        st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Rede(s)</div>',
+                    unsafe_allow_html=True)
+        redes_disp = sorted(df_base["Rede"].dropna().unique())
+        default_redes = ["Pública e Privada"]  # 🔥 Valores exatos como estão no DataFrame
+        rede_sel = st.multiselect("", redes_disp, default=default_redes, key="rede_sel", label_visibility="collapsed")
 
-        st.markdown('<div class="filter-title">Série</div>', unsafe_allow_html=True)
-        if "Total" in sub_sel:
-            serie_sel = []
-        else:
-            series = sorted(df_base.loc[df_base["Subetapa"].isin(sub_sel), "Série"].unique())
-            serie_sel = st.multiselect("", series, default=series, key="serie_sel", label_visibility="collapsed")
+    # Lado direito - Ajuste para posicionar Etapa mais à esquerda
+    with c_right:
+        # Use uma coluna com proporção menor para mover Etapa para a esquerda
+        c_right_col1, c_right_col2 = st.columns([0.9, 1])  # Mais espaço para Etapa, menos espaço vazio
 
-    st.markdown('</div>', unsafe_allow_html=True)
-# ─── FIM DO PAINEL ──────────────────────────────────────────────────
+        with c_right_col1:
+            # Etapa com mínimo de espaço vertical
+            st.markdown(
+                '<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>',
+                unsafe_allow_html=True)
+            etapas_disp = sorted(df_base["Etapa"].unique())
 
-# ─── 9. FUNÇÃO DE FILTRO VETORIZADO ─────────────────────────────────
+            # Definir padrão para Educação Infantil
+            default_etapas = ["Educação Infantil"] if "Educação Infantil" in etapas_disp else []
+
+            etapa_sel = st.multiselect(
+                "",
+                etapas_disp,
+                default=default_etapas,  # 🔥 USAR A VARIÁVEL CRIADA
+                key="etapa_sel",
+                label_visibility="collapsed"
+            )
+
+            # Para Subetapa
+            if etapa_sel:
+                st.markdown(
+                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
+                    unsafe_allow_html=True)
+
+                # Opções reais daquela(s) etapa(s), excluindo "Total"
+                sub_real = sorted(df_base.loc[
+                                      df_base["Etapa"].isin(etapa_sel) &
+                                      df_base["Subetapa"].ne("") &
+                                      df_base["Subetapa"].ne("Total"),  # Exclui "Total"
+                                      "Subetapa"
+                                  ].unique())
+
+                # Um único "total" agregado, se houver seleção de etapa
+                sub_disp = (["Total - Todas as Subetapas"] if etapa_sel else []) + sub_real
+
+                sub_sel = st.multiselect("", sub_disp, default=[], key="sub_sel", label_visibility="collapsed")
+            else:
+                sub_sel = []
+
+            # Para Séries
+            if etapa_sel and sub_sel:
+                st.markdown(
+                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
+                    unsafe_allow_html=True)
+
+                # Se "Total - Todas as Subetapas" foi selecionado
+                if "Total - Todas as Subetapas" in sub_sel:
+                    # Não mostra opções de série quando Total está selecionado
+                    serie_sel = []
+                else:
+                    # Séries específicas das subetapas selecionadas, EXCLUINDO os totais
+                    serie_real = sorted(df_base.loc[
+                                            df_base["Etapa"].isin(etapa_sel) &
+                                            df_base["Subetapa"].isin(sub_sel) &
+                                            df_base["Série"].ne("") &
+                                            ~df_base["Série"].str.startswith("Total -", na=False),  # Exclui totais
+                                            "Série"
+                                        ].unique())
+
+                    # Adiciona "Total - Todas as Séries" apenas se houver séries específicas
+                    serie_disp = ["Total - Todas as Séries"] + serie_real if serie_real else []
+
+                    serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
+                                               label_visibility="collapsed")
+            else:
+                serie_sel = []
+
+    # CORRIGIDO: fechamento do container deve estar fora do bloco c_right_col1
+    st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
+
+# ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
+# Função de filtro simplificada
 def filtrar(df, anos, redes, etapas, subetapas, series):
-    masks = []
-    masks.append(df["Ano"].isin(anos))
-
-    if redes:
-        masks.append(df["Rede"].isin(redes))
+    m = df["Ano"].isin(anos)
+    if redes: m &= df["Rede"].isin(redes)
 
     if etapas:
-        mask_e = df["Etapa"].isin(etapas)
+        m &= df["Etapa"].isin(etapas)
+
+        # Se uma etapa foi selecionada mas nenhuma subetapa específica
         if not subetapas:
-            mask_e &= df["Subetapa"]=="Total"
-        masks.append(mask_e)
+            m &= df["Subetapa"] == "Total"
 
-    if subetapas and "Total" not in subetapas:
-        masks.append(df["Subetapa"].isin(subetapas))
-    elif subetapas and "Total" in subetapas:
-        masks.append(df["Subetapa"]=="Total")
+    # --- SUBETAPA -------------------------------------------------
+    if subetapas:
+        if "Total - Todas as Subetapas" in subetapas:
+            m &= df["Subetapa"] == "Total"
+        else:
+            m &= df["Subetapa"].isin(subetapas)
 
+    # --- SÉRIE ----------------------------------------------------
     if series:
-        masks.append(df["Série"].isin(series))
+        if "Total - Todas as Séries" in series:
+            # Quando "Total - Todas as Séries" é selecionado com subetapas específicas
+            # Mostra o total daquela subetapa específica
+            if subetapas and "Total - Todas as Subetapas" not in subetapas:
+                # Para cada subetapa selecionada, mostra seu total
+                serie_totals = [f"Total - {sub}" for sub in subetapas]
+                m &= df["Série"].isin(serie_totals)
+            else:
+                # Se não há subetapa específica, mostra série vazia ou totais gerais
+                m &= df["Série"].eq("")
+        else:
+            m &= df["Série"].isin(series)
 
-    # Combina todas as máscaras
-    from functools import reduce
-    import operator
-    mask = reduce(operator.and_, masks, pd.Series(True, index=df.index))
-    return df.loc[mask]
+    return df.loc[m]
 
-df_filtrado = filtrar(df_base, ano_sel, rede_sel, etapa_sel, sub_sel, serie_sel)
+# 7‑B • CHAMA O FILTRO COM AS ESCOLHAS ATUAIS • gera df_filtrado
+df_filtrado = filtrar(
+    df_base,
+    tuple(ano_sel),
+    tuple(rede_sel),
+    tuple(etapa_sel),
+    tuple(sub_sel),
+    tuple(serie_sel),
+)
+
+# se não houver linhas depois do filtro, pare logo aqui
 if df_filtrado.empty:
-    st.warning("Não há dados após os filtros.")
+    st.warning("Não há dados após os filtros."); st.stop()
+
+# ─── 9. ALTURA DA TABELA (slider) ───────────────────────────────────────
+with st.sidebar.expander("Configurações avançadas da tabela", False):
+    # Adicionar um estilo personalizado para o texto do slider
+    st.markdown("""
+    <style>
+    /* Seletor mais específico para o texto do slider */
+    [data-testid="stExpander"] [data-testid="stSlider"] > div:first-child {
+        color: #000000 !important;
+        font-weight: 500 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
+
+# ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
+
+# 1. Colunas visíveis baseadas no nível de agregação
+vis_cols = ["Ano"]
+
+if nivel == "Escolas":
+    vis_cols += ["Nome do Município", "Nome da Escola"]
+elif nivel == "Municípios":
+    vis_cols += ["Nome do Município"]
+
+# Adiciona colunas comuns
+vis_cols += ["Etapa de Ensino", "Rede", "Número de Matrículas"]
+
+# 2. DataFrame base da tabela
+df_tabela = df_filtrado[vis_cols].copy()
+
+# --- Adicionar coluna UF apenas para Pernambuco ---
+if nivel == "Pernambuco":
+    # 1. Adiciona a coluna "UF" ao DataFrame
+    df_tabela["UF"] = "Pernambuco"
+
+    # 2. Atualiza a lista vis_cols ANTES de reordenar o DataFrame
+    vis_cols.insert(1, "UF")  # Posição 1 (segunda coluna)
+
+    # 3. Reordena as colunas do DataFrame conforme a nova vis_cols
+    df_tabela = df_tabela[vis_cols]  # 🔥 Linha crucial!
+
+if df_tabela.empty:
+    st.warning("Não há dados para exibir.")
     st.stop()
 
-# ─── 10. CONTROLES AVANÇADOS (altura da tabela) ──────────────────────
-with st.sidebar.expander("Configurações tabela", False):
-    altura_tabela = st.slider("Altura (px)", 200, 1000, 600, 50)
-
-# ─── 11. PREPARA TABELA PARA EXIBIÇÃO ────────────────────────────────
-vis = ["Ano"]
-if nivel=="Escolas":      vis += ["Nome do Município","Nome da Escola"]
-elif nivel=="Municípios": vis += ["Nome do Município"]
-vis += ["Etapa de Ensino","Rede","Número de Matrículas"]
-
-df_tab = df_filtrado[vis].copy()
-if nivel=="Pernambuco":
-    df_tab.insert(1,"UF","Pernambuco")
-
-# cabeçalhos
+# 3. CSS para centralizar coluna numérica
 st.markdown("""
 <style>
-[data-testid="stDataFrame"] th, td { padding:4px 8px !important; }
-[data-testid="stDataFrame"] td:last-child, th:last-child { text-align:center !important; }
+[data-testid="stDataFrame"] table tbody tr td:last-child,
+[data-testid="stDataFrame"] table thead tr th:last-child {
+    text-align:center !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# linha de cabeçalhos customizados
-cols = df_tab.columns.tolist()
-hcols = st.columns(len(cols))
-for name, col in zip(cols, hcols):
-    with col:
-        st.markdown(f"<div class='column-header'>{beautify_header(name)}</div>", unsafe_allow_html=True)
+# 4. Cabeçalhos dos Filtros de texto
+col_headers = st.columns(len(vis_cols))
+for col, slot in zip(vis_cols, col_headers):
+    with slot:
+        # Use beautify_column_header em vez de beautify para os cabeçalhos
+        header_name = beautify_column_header(col)
 
-# filtros por coluna
-vals = {}
-fcols = st.columns(len(cols))
-for name, col in zip(cols, fcols):
-    with col:
-        vals[name] = st.text_input("", key=f"f_{name}", label_visibility="collapsed")
+        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
+        st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
+                    unsafe_allow_html=True)
 
-mask = pd.Series(True, index=df_tab.index)
-for c, v in vals.items():
-    if v:
-        s = df_tab[c]
-        if pd.api.types.is_numeric_dtype(s):
-            mask &= s == float(v.replace(",",".")) if re.fullmatch(r"-?\d+(\.\d+)?", v) else s.astype(str).str.contains(v, case=False)
+# 5. Filtros de coluna
+col_filters = st.columns(len(vis_cols))
+filter_values = {}
+for col, slot in zip(vis_cols, col_filters):
+    with slot:
+        filter_values[col] = st.text_input("Filtro",
+                                           key=f"filter_{col}",
+                                           label_visibility="collapsed")
+
+mask = pd.Series(True, index=df_tabela.index)
+for col, val in filter_values.items():
+    if val.strip():
+        s = df_tabela[col]
+        if col.startswith("Número de") or pd.api.types.is_numeric_dtype(s):
+            v = val.replace(",", ".")
+            if re.fullmatch(r"-?\d+(\.\d+)?", v):
+                mask &= s == float(v)
+            else:
+                mask &= s.astype(str).str.contains(val, case=False)
         else:
-            mask &= s.astype(str).str.contains(v, case=False)
-df_tab2 = df_tab.loc[mask]
+            mask &= s.astype(str).str.contains(val, case=False)
 
-# paginação
-ps = st.session_state.get("page_size", 0)
-pg = Paginator(len(df_tab2), page_size=ps, current=st.session_state.get("current_page",1))
-df_page = pg.slice(df_tab2)
+df_texto = df_tabela[mask]
 
-# formatação numérica
-for col in [c for c in df_page.columns if "Número de" in c]:
-    df_page[col] = df_page[col].apply(format_num_br)
+# 6. Paginação -------------------------------------------------------
+page_size = st.session_state.get("page_size", 10000)
+pag       = Paginator(len(df_texto), page_size=page_size,
+                      current=st.session_state.get("current_page", 1))
+df_page   = pag.slice(df_texto)
 
-# exibe
-st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index=True)
+# 7. Formatação numérica (sem warnings)
+df_show = df_page.copy()
 
-# navegação
-c1,c2,c3,c4 = st.columns([1,1,1,2])
-with c1:
-    if st.button("◀", disabled=pg.current==1):
-        st.session_state["current_page"] = pg.current-1; st.rerun()
-with c2:
-    if st.button("▶", disabled=pg.current==pg.total_pages):
-        st.session_state["current_page"] = pg.current+1; st.rerun()
-with c3:
-    opts = [10,25,50,100,0]
-    sel = st.selectbox("Itens", opts, index=opts.index(ps), format_func=lambda x: "Todos" if x==0 else str(x), label_visibility="collapsed")
-    if sel!=ps:
-        st.session_state["page_size"]=sel; st.session_state["current_page"]=1; st.rerun()
-with c4:
-    st.markdown(f"**Página {pg.current}/{pg.total_pages} · {len(df_tab2):,} linhas**")
+# Identificar colunas numéricas antes de renomear
+colunas_numericas = df_show.filter(like="Número de").columns.tolist()
 
-# ─── 12. BOTÕES DE DOWNLOAD ─────────────────────────────────────────
-st.sidebar.markdown("### Download")
-c1, c2 = st.sidebar.columns(2)
-with c1:
-    st.download_button("CSV", data=df_tab2.to_csv(index=False).encode("utf-8"),
-                       file_name="dados.csv", mime="text/csv")
-with c2:
+# Renomear as colunas para os cabeçalhos beautificados
+df_show.columns = [beautify_column_header(col) for col in df_show.columns]
+
+# Aplicar formatação às colunas numéricas renomeadas
+for col in colunas_numericas:
+    col_beautificada = beautify_column_header(col)
+    if col_beautificada in df_show.columns:
+        df_show[col_beautificada] = df_show[col_beautificada].apply(aplicar_padrao_numerico_brasileiro)
+
+# Configurar largura das colunas proporcionalmente
+num_colunas = len(df_show.columns)
+largura_base = 150  # Ajuste este valor conforme necessário
+config_colunas = {
+    col: {"width": f"{largura_base}px"} for col in df_show.columns
+}
+
+st.dataframe(
+    df_show,
+    column_config=config_colunas,
+    height=altura_tabela,
+    use_container_width=True,  # 🔥 Garante que a tabela use toda a largura
+    hide_index=True
+)
+
+# 8. Controles de navegação ------------------------------------------
+b1, b2, b3, b4 = st.columns([1, 1, 1, 2])
+
+with b1:
+    if st.button("◀", disabled=pag.current == 1):
+        st.session_state["current_page"] = pag.current - 1
+        st.rerun()
+
+with b2:
+    if st.button("▶", disabled=pag.current == pag.total_pages):
+        st.session_state["current_page"] = pag.current + 1
+        st.rerun()
+
+with b3:
+    # Opções de paginação com "Mostrar todos"
+    page_options = [10, 25, 50, 100, 10000]  # 🔥 10000 = Mostrar todos
+
+    # Função para formatar o rótulo
+    def format_page_size(opt):
+        return "Mostrar todos" if opt == 10000 else str(opt)
+
+    new_ps = st.selectbox(
+        "Itens",
+        options=page_options,
+        index=page_options.index(10000),  # 🔥 Define "Mostrar todos" como padrão
+        format_func=format_page_size,
+        label_visibility="collapsed"
+    )
+
+    if new_ps != page_size:
+        st.session_state["page_size"] = new_ps
+        st.session_state["current_page"] = 1
+        st.rerun()
+
+with b4:
+    st.markdown(
+        f"**Página {pag.current}/{pag.total_pages} · "
+        f"{format_number_br(len(df_texto))} linhas**"
+    )
+
+# ─── 11. DOWNLOADS (on‑click) ───────────────────────────────────────
+def gerar_csv():
+    # Usar df_texto que já contém os dados filtrados
+    st.session_state["csv_bytes"] = df_texto.to_csv(index=False).encode("utf-8")
+
+def gerar_xlsx():
+    # Usar df_texto que já contém os dados filtrados
     buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
-        df_tab2.to_excel(writer, index=False, sheet_name="Dados")
-    st.download_button("Excel", data=buf.getvalue(),
-                       file_name="dados.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    with pd.ExcelWriter(buf, engine="xlsxwriter") as w:
+        df_texto.to_excel(w, index=False, sheet_name="Dados")
+    st.session_state["xlsx_bytes"] = buf.getvalue()
 
-# ─── 13. RODAPÉ ─────────────────────────────────────────────────────
+# Adicionar um título para os botões de download
+st.sidebar.markdown("### Download")
+
+# Criar duas colunas na sidebar para os botões
+col1, col2 = st.sidebar.columns(2)
+
+# Colocar o botão CSV na primeira coluna
+with col1:
+    st.download_button(
+        "Em CSV",
+        data=df_texto.to_csv(index=False).encode("utf-8"),
+        key="csv_dl",
+        mime="text/csv",
+        file_name="dados.csv",
+        on_click=gerar_csv
+    )
+
+# Colocar o botão Excel na segunda coluna
+with col2:
+    st.download_button(
+        "Em Excel",
+        data=io.BytesIO().getvalue() if "xlsx_bytes" not in st.session_state else st.session_state["xlsx_bytes"],
+        key="xlsx_dl",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        file_name="dados.xlsx",
+        on_click=gerar_xlsx
+    )
+
+# ─── 12. RODAPÉ ─────────────────────────────────────────────────────
 st.markdown("---")
+st.caption("© Dashboard Educacional – atualização: Mar 2025")
 delta = time.time() - st.session_state.get("tempo_inicio", time.time())
-st.caption(f"Processamento: {delta:.2f}s")
+st.caption(f"Tempo de processamento: {delta:.2f}s")
 st.session_state["tempo_inicio"] = time.time()
+# ====================================================================
 from datetime import datetime
-st.caption(f"Build: {datetime.utcnow():%Y-%m-%d %H:%M:%S} UTC")
+st.caption(f"Build: {datetime.utcnow():%Y-%m-%d %H:%M:%S} UTC")
