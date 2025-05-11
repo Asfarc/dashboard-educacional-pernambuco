@@ -444,7 +444,7 @@ if df_base.empty:
 
 # ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
 with st.container():
-    st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
+    st.markdown('<div class="panel-filtros" style="margin-top:-30px">', unsafe_allow_html=True)
 
     # 1ª LINHA - Ajuste na proporção para o lado direito ter menos espaço
     c_left, c_right = st.columns([0.5, 0.7], gap="large")
