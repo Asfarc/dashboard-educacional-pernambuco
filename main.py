@@ -79,18 +79,6 @@ div.panel-filtros {
 }
 
 
-
-section[data-testid="stSidebar"] > div {
-    position: relative;
-    z-index: 1;
-    padding: 0rem 0rem !important;
-}
-
-/* Ajuste do container principal */
-section.main .block-container {
-    padding-top: 0.5rem !important;
-}
-
 /* Ajuste do painel de filtros */
 div.panel-filtros {
     margin-top: -2rem !important;  # Compensa espaçamento residual
