@@ -86,16 +86,18 @@ section[data-testid="stSidebar"] p {
     writing-mode: horizontal-tb !important;
 }
 
-/* Radio buttons */
+/* Radio buttons - container */
 section[data-testid="stSidebar"] .stRadio > div {
-    padding: 10px 0;
+    padding: 0;
+    margin: 0;
 }
 
+/* Radio buttons - cada opção */
 section[data-testid="stSidebar"] .stRadio > div > label {
     height: 3rem !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important; /* Alinhamento à esquerda */
     width: 100% !important;
     margin: 0.4rem 0 !important;
     background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
@@ -103,7 +105,38 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     border-radius: 5px !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     transition: all 0.2s ease !important;
+    padding: 0 0.8rem !important; /* Padding horizontal uniforme */
+    white-space: nowrap !important; /* Evita quebra de linha */
+    overflow: hidden !important;
+}
+
+/* Radio button input (bolinha) */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 0.5rem !important; /* Espaço uniforme após a bolinha */
+    flex-shrink: 0 !important; /* Evita que a bolinha diminua */
+}
+
+/* Radio button texto */
+section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    text-align: left !important;
+    font-size: 0.9rem !important; /* Tamanho uniforme do texto */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important; /* Adiciona "..." se o texto for muito longo */
+}
+
+/* Radio button texto - parágrafo interno */
+section[data-testid="stSidebar"] .stRadio > div > label p {
+    margin: 0 !important;
     padding: 0 !important;
+    line-height: 1.2 !important;
+    color: #FFFFFF !important;
 }
 
 section[data-testid="stSidebar"] .stRadio > div > label:hover {
