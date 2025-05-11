@@ -51,7 +51,7 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] > div {
     position: relative;
     z-index: 1;
-    padding: 2rem 1rem;
+    padding: 0.5rem 1rem !important;
 }
 
 /* Forçar texto horizontal em TODOS os elementos da sidebar */
@@ -719,9 +719,8 @@ with b3:
 with b4:
     st.markdown(
         f"**Página {pag.current}/{pag.total_pages} · "
-        f"{format_number_br(len(df_texto))} registros**"
+        f"{format_number_br(len(df_texto))} linhas**"
     )
-
 
 # ─── 11. DOWNLOADS (on‑click) ───────────────────────────────────────
 def gerar_csv():
