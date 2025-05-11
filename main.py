@@ -248,7 +248,7 @@ def beautify(col: str) -> str:
 
 def beautify_column_header(col: str) -> str:
     # Função específica para cabeçalhos de coluna com abreviações
-    abbreviations = {
+    abreviacoes = {
         "Número de Matrículas": "Matrículas",
         "Nome do Município": "Município",
         "Nome da Escola": "Escola",
@@ -259,8 +259,8 @@ def beautify_column_header(col: str) -> str:
     }
 
     # Se a coluna está no dicionário, usar a abreviação
-    if col in abbreviations:
-        return abbreviations[col]
+    if col in abreviacoes:
+        return abreviacoes[col]
 
     # Caso contrário, usar o comportamento da beautify original
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
@@ -565,8 +565,10 @@ df_tabela = df_filtrado[vis_cols].copy()
 
 # --- Adicionar coluna UF apenas para Pernambuco ---
 if nivel == "Pernambuco":
-    df_tabela["UF"] = "Pernambuco"  # Cria a coluna
-    vis_cols.append("UF")  # Atualiza a lista de colunas visíveis
+    df_tabela["UF"] = "Pernambuco"
+
+    # Inserir "UF" na posição 1 (logo após "Ano")
+    vis_cols.insert(1, "UF")  # 🔥 Posição correta!
 
 if df_tabela.empty:
     st.warning("Não há dados para exibir.")
