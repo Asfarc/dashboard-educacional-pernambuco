@@ -153,10 +153,11 @@ def format_number_br(num):
 class Paginator:
     def __init__(self, total, page_size=25, current=1):
         self.page_size = page_size
-        self.total_pages = max(1, (total-1)//page_size + 1)
+        self.total_pages = max(1, (total - 1) // page_size + 1)
         self.current = max(1, min(current, self.total_pages))
-        self.start = (self.current-1)*page_size
+        self.start = (self.current - 1) * page_size
         self.end = self.start + page_size
+
     def slice(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.iloc[self.start:self.end]
 
