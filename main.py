@@ -51,17 +51,12 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] > div {
     position: relative;
     z-index: 1;
-    padding: 0.5rem 1rem !important;
+    padding: 0rem 0rem !important;
 }
 
 /* Ajuste do container principal */
 section.main .block-container {
     padding-top: 0.5rem !important;
-}
-
-/* Ajuste da sidebar */
-section[data-testid="stSidebar"] > div {
-    padding: 0.5rem 1rem !important;  # Reduz o padding superior
 }
 
 /* Ajuste do painel de filtros */
