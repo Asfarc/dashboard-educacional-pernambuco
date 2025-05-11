@@ -62,15 +62,14 @@ section[data-testid="stSidebar"] .stButton {
     margin-top: -20px !important;
 }
 
-/* ─── AJUSTES DO CONTEÚDO PRINCIPAL ──────────────────────────────── */
-/* Container principal da página */
+/* ─── CONTEUDO PRINCIPAL ─────────────────────────────────────────── */
 section.main .block-container {
-    padding-top: 1rem !important;
+    padding-top: 0.5rem !important;
 }
 
-/* Painel de filtros */
 div.panel-filtros {
-    margin-top: -30px !important;
+    margin: -10px 0 !important;
+    padding: 0 !important;
 }
 
 /* Configurações da sidebar */
