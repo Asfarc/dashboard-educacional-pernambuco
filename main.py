@@ -41,6 +41,36 @@ CSS_COMPLETO = """
     --btn-hover: #fc4e2a;
 }
 
+/* ─── AJUSTES GERAIS DA SIDEBAR ───────────────────────────────────── */
+/* Container principal da sidebar */
+section[data-testid="stSidebar"] > div:first-child {
+    padding-top: 0 !important;
+    margin-top: -50px !important;  /* Compensa espaço residual */
+}
+
+/* Título "Modalidade" */
+section[data-testid="stSidebar"] h1 {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Remove espaços em elementos internos */
+section[data-testid="stSidebar"] .stRadio,
+section[data-testid="stSidebar"] .stButton {
+    margin-top: -20px !important;
+}
+
+/* ─── AJUSTES DO CONTEÚDO PRINCIPAL ──────────────────────────────── */
+/* Container principal da página */
+section.main .block-container {
+    padding-top: 1rem !important;
+}
+
+/* Painel de filtros */
+div.panel-filtros {
+    margin-top: -30px !important;
+}
+
 /* Configurações da sidebar */
 section[data-testid="stSidebar"] {
     min-width: 300px !important;
