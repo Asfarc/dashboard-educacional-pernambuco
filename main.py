@@ -161,6 +161,13 @@ st.sidebar.title("Filtros")
 
 # CSS COMBINED já com as correções
 COMBINED_CSS = """
+/* Reset importante para evitar texto vertical */
+section[data-testid="stSidebar"] * {
+    writing-mode: horizontal-tb !important;
+    text-orientation: initial !important;
+    transform: none !important;
+}
+
 /* Estilo para os cabeçalhos das colunas */
 .column-header {
     height: 50px !important;
@@ -216,7 +223,7 @@ section[data-testid="stSidebar"] {
 
 /* CORRIGIDO: Título principal da sidebar em BRANCO */
 section[data-testid="stSidebar"] h1 {
-    color: #FFFFFF !important;  /* Agora está branco */
+    color: #FFFFFF !important;
     font-size: 1.8rem !important;
     margin-bottom: 1.2rem !important;
     border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
@@ -225,9 +232,6 @@ section[data-testid="stSidebar"] h1 {
 
 /* Informação de RAM - movida para cima e estilizada */
 section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p:has(svg) {
-    position: absolute !important;
-    top: 0.8rem !important;
-    right: 1rem !important;
     font-size: 0.8rem !important;
     background-color: rgba(0, 0, 0, 0.2) !important;
     padding: 0.3rem 0.6rem !important;
@@ -241,7 +245,7 @@ section[data-testid="stSidebar"] p[style*="color:#FFFFFF"] {
     font-weight: 600 !important;
     margin: 1.2rem 0 0.8rem 0 !important;
     padding-left: 0.3rem !important;
-    color: #FFFFFF !important;  /* Garantir que fique branco */
+    color: #FFFFFF !important;
 }
 
 /* CORRIGIDO: Botões rádio uniformes com texto centralizado */
@@ -257,7 +261,7 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     border-radius: 5px !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     transition: all 0.2s ease !important;
-    padding: 0 !important;  /* Remove padding interno para melhor centralização */
+    padding: 0 !important;
 }
 
 /* CORRIGIDO: Centralizar texto dentro das caixas azuis */
@@ -273,6 +277,7 @@ section[data-testid="stSidebar"] .stRadio > div > label p {
     margin: 0 !important;
     text-align: center !important;
     color: #FFFFFF !important;
+    writing-mode: horizontal-tb !important;
 }
 
 /* Estilo para hover nos botões */
@@ -305,7 +310,7 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] summary {
 
 /* Estilo para a seção de Download */
 section[data-testid="stSidebar"] h3 {
-    color: #FFFFFF !important;  /* Download em branco também */
+    color: #FFFFFF !important;
     font-size: 1.2rem !important;
     margin: 1.5rem 0 0.8rem 0 !important;
     padding-left: 0.3rem !important;
