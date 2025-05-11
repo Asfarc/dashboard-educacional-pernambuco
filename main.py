@@ -92,7 +92,7 @@ section[data-testid="stSidebar"] .stRadio > div {
     margin: 0;
 }
 
-/* Radio buttons - cada opção */
+/* Radio buttons - cada opção (label principal) */
 section[data-testid="stSidebar"] .stRadio > div > label {
     height: 3rem !important;
     display: flex !important;
@@ -110,28 +110,55 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     overflow: hidden !important;
 }
 
-/* Radio button input (bolinha) */
+/* Container da bolinha (div que envolve o input) */
 section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     margin-right: 0.5rem !important;
     flex-shrink: 0 !important;
+    width: 20px !important; /* Novo */
+    height: 20px !important; /* Novo */
 }
 
-/* Bolinha do radio selecionado */
+/* Input radio personalizado - Correção da dupla renderização */
+section[data-testid="stSidebar"] .stRadio input[type="radio"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border: 2px solid #fff !important;
+    border-radius: 50% !important;
+    margin: 0 8px 0 0 !important;
+    position: relative !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Bolinha interna usando pseudo-elemento */
+section[data-testid="stSidebar"] .stRadio input[type="radio"]::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.2s ease;
+}
+
+/* Estado selecionado corrigido */
 section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked {
-    accent-color: #ffdfba !important;
     border-color: #ffdfba !important;
+    background-color: transparent !important;
 }
 
-/* Versão alternativa para navegadores mais antigos */
-section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked::before {
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked::after {
     background-color: #ffdfba !important;
-    transform: scale(0.5) !important;
+    transform: scale(0.6) !important;
 }
 
-/* Radio button texto */
+/* Texto da opção */
 section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
     flex: 1 !important;
     display: flex !important;
@@ -143,26 +170,12 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
     text-overflow: ellipsis !important;
 }
 
-/* Radio button texto - parágrafo interno */
+/* Parágrafo interno */
 section[data-testid="stSidebar"] .stRadio > div > label p {
     margin: 0 !important;
     padding: 0 !important;
     line-height: 1.2 !important;
     color: #FFFFFF !important;
-}
-
-/* Botão selecionado - fundo diferente */
-section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) {
-    background: linear-gradient(to bottom, #005c99, #004b7d) !important;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-    transform: translateY(0) !important;
-    border: 1px solid rgba(0, 0, 0, 0.5) !important;
-}
-
-section[data-testid="stSidebar"] .stRadio > div > label:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
-    background: linear-gradient(to bottom, #0090e0, #0073b3) !important;
 }
 
 /* Botões de download */
