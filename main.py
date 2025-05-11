@@ -433,25 +433,29 @@ with st.container():
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
                     unsafe_allow_html=True)
 
-                # Se "Total - Todas as Subetapas" foi selecionado, não devemos filtrar por subetapa real
+                # Se "Total - Todas as Subetapas" foi selecionado
                 if "Total - Todas as Subetapas" in sub_sel:
-                    # Mostra todas as séries da etapa selecionada
+                    # Mostra apenas os totais agregados (que começam com "Total -")
                     serie_real = sorted(df_base.loc[
                                             df_base["Etapa"].isin(etapa_sel) &
-                                            df_base["Série"].ne(""),
+                                            df_base["Série"].str.startswith("Total -", na=False),
                                             "Série"
                                         ].unique())
                 else:
-                    # Séries específicas das subetapas selecionadas
+                    # Séries específicas das subetapas selecionadas (exclui totais)
                     serie_real = sorted(df_base.loc[
                                             df_base["Etapa"].isin(etapa_sel) &
                                             df_base["Subetapa"].isin(sub_sel) &
-                                            df_base["Série"].ne(""),
+                                            df_base["Série"].ne("") &
+                                            ~df_base["Série"].str.startswith("Total -", na=False),
                                             "Série"
                                         ].unique())
 
-                # Adiciona opção de total se houver séries disponíveis
-                serie_disp = (["Total - Todas as Séries"] if serie_real else []) + serie_real
+                # Adiciona opção de total apenas se houver séries não-totais
+                if serie_real and not all(s.startswith("Total -") for s in serie_real):
+                    serie_disp = ["Total - Todas as Séries"] + serie_real
+                else:
+                    serie_disp = serie_real
 
                 serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
                                            label_visibility="collapsed")
