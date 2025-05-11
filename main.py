@@ -119,10 +119,16 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
     flex-shrink: 0 !important;
 }
 
-/* OUTRA ALTERNATIVA: Estilizar o círculo interno quando selecionado */
-section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) input[type="radio"] {
+/* Bolinha do radio selecionado */
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked {
     accent-color: #ffdfba !important;
+    border-color: #ffdfba !important;
+}
+
+/* Versão alternativa para navegadores mais antigos */
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked::before {
     background-color: #ffdfba !important;
+    transform: scale(0.5) !important;
 }
 
 /* Radio button texto */
