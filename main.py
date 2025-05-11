@@ -694,11 +694,11 @@ with st.container():
     st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
 
-# ─── 8. FUNÇÃO DE FILTRO (sem cache) ────────────────────────────────
+# ─── 8. FUNÇÃO DE FILTRO AJUSTADA PARA EJA ────────────────────────────────
 def filtrar(df, anos, redes, etapas, subetapas, series):
     """
     Filtra o DataFrame com base nas seleções do usuário.
-    Adaptado para lidar com a estrutura específica da EJA.
+    Especialmente adaptado para a estrutura hierárquica da EJA.
 
     Args:
         df: DataFrame a ser filtrado
@@ -723,22 +723,29 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
     if redes:
         m &= df["Rede"].isin(redes)
 
+    # Detectar se estamos na modalidade EJA
+    is_eja = "Modalidade" in df.columns and "EJA - Educação de Jovens e Adultos" in df["Modalidade"].unique()
+
     # --- FILTRO DE ETAPA -------------------------------------------
     if etapas:
-        # Verificar se estamos na modalidade EJA
-        is_eja = "Educação de Jovens e Adultos (EJA)" in df["Etapa de Ensino"].unique()
-
         if is_eja:
-            # Para EJA, verificamos se a etapa contém a palavra EJA
-            etapa_mask = pd.Series(False, index=df.index)
-            for etapa in etapas:
-                etapa_mask |= df["Etapa de Ensino"].str.contains(etapa, case=False)
-            m &= etapa_mask
+            # Para EJA, usamos uma abordagem diferente
+            if "Educação de Jovens e Adultos (EJA)" in etapas:
+                # Se selecionou a etapa principal "Educação de Jovens e Adultos (EJA)"
+                if not subetapas:
+                    # Quando só a etapa principal está selecionada, mostramos todas as linhas
+                    # que contenham "Educação de Jovens e Adultos (EJA)" em "Etapa de Ensino"
+                    m &= df["Etapa de Ensino"].str.contains("Educação de Jovens e Adultos", na=False)
 
-            # Se não há subetapas selecionadas, incluímos todas as linhas da etapa
-            if not subetapas:
-                # Não aplicamos filtro adicional aqui para EJA
-                pass
+                    # Se estivermos vendo "Total - EJA" (nível mais agregado), usamos a Etapa Agregada
+                    if "Etapa Agregada" in df.columns and "Total - EJA" in df["Etapa Agregada"].unique():
+                        m &= df["Etapa Agregada"] == "Total - EJA"
+            else:
+                # Comportamento para outras etapas na EJA
+                etapa_mask = pd.Series(False, index=df.index)
+                for etapa in etapas:
+                    etapa_mask |= df["Etapa de Ensino"].str.contains(etapa, case=False)
+                m &= etapa_mask
         else:
             # Para outras modalidades, usamos o comportamento padrão
             m &= df["Etapa"].isin(etapas)
@@ -747,50 +754,105 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
 
     # --- FILTRO DE SUBETAPA ----------------------------------------
     if subetapas:
-        if "Total - Todas as Subetapas" in subetapas:
-            # Para EJA, verificamos se estamos na modalidade EJA
-            if "Etapa Agregada" in df.columns and "Educação de Jovens e Adultos (EJA)" in ' '.join(etapas):
-                # Identificar padrões específicos da EJA
-                if "Total - EJA" in df["Etapa Agregada"].unique():
-                    # Para Total - EJA, incluímos todas as linhas que contêm "Total"
-                    m &= df["Etapa Agregada"].str.contains("Total", na=False)
+        if is_eja:
+            if "Total - Todas as Subetapas" in subetapas:
+                # Para "Total", mostramos os totais de acordo com a etapa selecionada
+                if "Educação de Jovens e Adultos (EJA)" in etapas:
+                    # Ver todo o EJA - usamos "Total - EJA" em Etapa Agregada
+                    m &= df["Etapa Agregada"] == "Total - EJA"
                 else:
-                    # Caso não encontre Total - EJA, tenta localizar "Total" em qualquer coluna de subetapa
-                    subetapa_col = "Nome da Etapa de ensino/Nome do painel de filtro" if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns else "Subetapa"
-                    if subetapa_col in df.columns:
-                        m &= df[subetapa_col].fillna("").str.contains("Total", na=False)
+                    # Não aplicamos filtro adicional quando não há etapa específica
+                    pass
             else:
-                # Comportamento padrão para não-EJA
-                m &= df["Subetapa"] == "Total"
-        else:
-            # Para subetapas específicas (não Total)
-            if "Etapa Agregada" in df.columns and "Educação de Jovens e Adultos (EJA)" in ' '.join(etapas):
-                # Para EJA, mapeamos os valores de subetapas para os padrões no DataFrame
+                # Para subetapas específicas da EJA
                 subetapa_mask = pd.Series(False, index=df.index)
+
                 for sub in subetapas:
-                    # Mapeamento para Ensino Fundamental
                     if sub == "Ensino Fundamental":
-                        subetapa_mask |= df["Etapa Agregada"] == "Ensino Fundamental"
-                    # Mapeamento para Ensino Médio
+                        # Procurar em "Etapa de Ensino" e em "Etapa Agregada"
+                        subetapa_mask |= (
+                                (df["Etapa Agregada"] == "Ensino Fundamental") |
+                                (df["Etapa de Ensino"].str.contains("Ensino Fundamental", na=False))
+                        )
+
+                        # Verificar se existe "Total - EJA Ensino Fundamental" para mostrar o total
+                        if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns:
+                            # Se não há Série selecionada, mostrar o total da subetapa
+                            if not series:
+                                subetapa_mask &= (
+                                    df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna("").str.contains(
+                                        "Total - EJA Ensino Fundamental", na=False)
+                                )
+
                     elif sub == "Ensino Médio":
-                        subetapa_mask |= df["Etapa Agregada"] == "Ensino Médio"
-                    else:
-                        # Tentativa genérica para outras subetapas
-                        subetapa_mask |= df["Etapa Agregada"].str.contains(sub, na=False)
+                        # Procurar em "Etapa de Ensino" e em "Etapa Agregada"
+                        subetapa_mask |= (
+                                (df["Etapa Agregada"] == "Ensino Médio") |
+                                (df["Etapa de Ensino"].str.contains("Ensino Médio", na=False))
+                        )
+
+                        # Verificar se existe "Total - EJA Ensino Médio" para mostrar o total
+                        if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns:
+                            # Se não há Série selecionada, mostrar o total da subetapa
+                            if not series:
+                                subetapa_mask &= (
+                                    df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna("").str.contains(
+                                        "Total - EJA Ensino Médio", na=False)
+                                )
+
                 m &= subetapa_mask
+        else:
+            # Comportamento padrão para não-EJA
+            if "Total - Todas as Subetapas" in subetapas:
+                m &= df["Subetapa"] == "Total"
             else:
-                # Comportamento padrão para não-EJA
                 m &= df["Subetapa"].isin(subetapas)
 
     # --- FILTRO DE SÉRIE -------------------------------------------
     if series:
-        if "Total - Todas as Séries" in series:
-            # Para EJA, verificamos se estamos na modalidade EJA
-            if "Educação de Jovens e Adultos (EJA)" in ' '.join(etapas):
-                # Para EJA com Total - Todas as Séries, não aplicamos filtro adicional
-                pass
+        if is_eja:
+            if "Total - Todas as Séries" in series:
+                # Para "Total - Todas as Séries" na EJA
+                if "Ensino Fundamental" in subetapas:
+                    # Procurar o total do Ensino Fundamental na EJA
+                    m &= df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna("").str.contains(
+                        "Total - EJA Ensino Fundamental", na=False)
+                elif "Ensino Médio" in subetapas:
+                    # Procurar o total do Ensino Médio na EJA
+                    m &= df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna("").str.contains(
+                        "Total - EJA Ensino Médio", na=False)
             else:
-                # Comportamento padrão para não-EJA
+                # Para séries específicas na EJA
+                serie_mask = pd.Series(False, index=df.index)
+
+                for serie in series:
+                    # Verificar cada tipo de série específica
+                    if serie == "Anos Iniciais":
+                        serie_mask |= df["Etapa de Ensino"].str.contains("Anos Iniciais", na=False)
+                        # Verificar também no "Nome da Etapa de ensino/Nome do painel de filtro"
+                        if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns:
+                            serie_mask |= df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna(
+                                "").str.contains("Anos Iniciais", na=False)
+
+                    elif serie == "Anos Finais":
+                        serie_mask |= df["Etapa de Ensino"].str.contains("Anos Finais", na=False)
+                        # Verificar também no "Nome da Etapa de ensino/Nome do painel de filtro"
+                        if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns:
+                            serie_mask |= df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna(
+                                "").str.contains("Anos Finais", na=False)
+
+                    elif "Curso FIC" in serie:
+                        # Para cursos FIC, verificamos tanto no EF quanto no EM
+                        serie_mask |= df["Etapa de Ensino"].str.contains("Curso FIC", na=False)
+                        # Verificar também no "Nome da Etapa de ensino/Nome do painel de filtro"
+                        if "Nome da Etapa de ensino/Nome do painel de filtro" in df.columns:
+                            serie_mask |= df["Nome da Etapa de ensino/Nome do painel de filtro"].fillna(
+                                "").str.contains("FIC", na=False)
+
+                m &= serie_mask
+        else:
+            # Comportamento padrão para não-EJA
+            if "Total - Todas as Séries" in series:
                 if subetapas and "Total - Todas as Subetapas" not in subetapas:
                     # Para cada subetapa selecionada, mostra seu total
                     serie_totals = [f"Total - {sub}" for sub in subetapas]
@@ -798,37 +860,21 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
                 else:
                     # Se não há subetapa específica, mostra série vazia ou totais gerais
                     m &= df["Série"].eq("")
-        else:
-            # Para séries específicas
-            if "Educação de Jovens e Adultos (EJA)" in ' '.join(etapas):
-                # Para EJA, mapeamos os valores de série para os padrões no DataFrame
-                serie_mask = pd.Series(False, index=df.index)
-                for serie in series:
-                    # Mapeamento para Anos Iniciais
-                    if serie == "Anos Iniciais":
-                        serie_mask |= df["Etapa de Ensino"].str.contains("Anos Iniciais", na=False)
-                    # Mapeamento para Anos Finais
-                    elif serie == "Anos Finais":
-                        serie_mask |= df["Etapa de Ensino"].str.contains("Anos Finais", na=False)
-                    # Mapeamento para Curso FIC
-                    elif "FIC" in serie:
-                        serie_mask |= df["Etapa de Ensino"].str.contains("FIC", na=False)
-                    # Mapeamento para Curso Técnico
-                    elif "Técnico" in serie:
-                        serie_mask |= df["Etapa de Ensino"].str.contains("Técnico", na=False)
-                    # Mapeamento para Sem componente
-                    elif "Sem componente" in serie:
-                        serie_mask |= df["Etapa de Ensino"].str.contains("Sem componente", na=False)
-                    else:
-                        # Tentativa genérica para outras séries
-                        serie_mask |= df["Etapa de Ensino"].str.contains(serie, na=False)
-                m &= serie_mask
             else:
-                # Comportamento padrão para não-EJA
+                # Para séries específicas no padrão
                 m &= df["Série"].isin(series)
 
     # Aplicar a máscara final e retornar o resultado
-    return df.loc[m]
+    result = df.loc[m]
+
+    # Para debugging se necessário
+    # if is_eja and len(result) == 0:
+    #     st.write(f"Filtros: Etapas={etapas}, Subetapas={subetapas}, Series={series}")
+    #     st.write(f"Colunas disponíveis: {df.columns.tolist()}")
+    #     st.write(f"Valores únicos em Etapa Agregada: {df['Etapa Agregada'].unique().tolist()}")
+    #     st.write(f"Valores únicos em Nome da Etapa: {df['Nome da Etapa de ensino/Nome do painel de filtro'].dropna().unique().tolist()}")
+
+    return result
 
 
 # ─── VERIFICAÇÃO DE FILTROS ───────────────────────────────────────
@@ -880,11 +926,20 @@ else:
             st.warning(
                 "Não há dados para a combinação de filtros selecionada. Tente selecionar uma Série específica ou escolher 'Total - Todas as Séries'.")
         elif etapa_sel and sub_sel and serie_sel:
-            st.warning(
-                "Não há dados para esta combinação específica de Etapa, Subetapa e Série. Experimente outras combinações ou remova alguns filtros.")
+            st.warning("""
+            Não há dados para esta combinação específica de Etapa, Subetapa e Série. 
+            Na modalidade EJA, a hierarquia correta é:
+            - Etapa: "Educação de Jovens e Adultos (EJA)"
+            - Subetapa: "Ensino Fundamental" ou "Ensino Médio"
+            - Série: Selecione uma das opções específicas como "Anos Iniciais", "Anos Finais", etc.
+            """)
         elif etapa_sel and not sub_sel:
-            st.warning(
-                "Não há dados para esta Etapa sem uma Subetapa específica. Selecione uma Subetapa para continuar.")
+            st.warning("""
+            Para visualizar dados da EJA, selecione:
+            1. Etapa: "Educação de Jovens e Adultos (EJA)"
+            2. Subetapa: Escolha "Ensino Fundamental" ou "Ensino Médio"
+            3. Série (opcional): Escolha uma opção específica para filtrar ainda mais
+            """)
         else:
             st.warning("Não há dados após os filtros aplicados. Por favor, ajuste os critérios de seleção.")
     else:
