@@ -256,10 +256,11 @@ section[data-testid="stSidebar"] .stDownloadButton > button {
 }
 
 /* Expander */
-[data-testid="stExpander"] {
+section[data-testid="stSidebar"] [data-testid="stExpander"] {
     background: rgba(0, 0, 0, 0.15) !important;
     border: 1px solid rgba(0, 0, 0, 0.3) !important;
-    margin: 1rem 0 !important;
+    border-radius: 5px !important;
+    margin: 1.5rem 0 !important;
 }
 /* Ajustar padding da tabela: */
 
