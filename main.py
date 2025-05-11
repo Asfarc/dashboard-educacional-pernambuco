@@ -435,19 +435,19 @@ with st.container():
 
                 # Se "Total - Todas as Subetapas" foi selecionado
                 if "Total - Todas as Subetapas" in sub_sel:
-                    # Não mostra nenhuma opção de série quando Total - Todas as Subetapas está selecionado
-                    # Pois já estamos vendo o total geral
+                    # Não mostra opções de série quando Total está selecionado
                     serie_sel = []
                 else:
-                    # Séries específicas das subetapas selecionadas
+                    # Séries específicas das subetapas selecionadas, EXCLUINDO os totais
                     serie_real = sorted(df_base.loc[
                                             df_base["Etapa"].isin(etapa_sel) &
                                             df_base["Subetapa"].isin(sub_sel) &
-                                            df_base["Série"].ne(""),
+                                            df_base["Série"].ne("") &
+                                            ~df_base["Série"].str.startswith("Total -", na=False),  # Exclui totais
                                             "Série"
                                         ].unique())
 
-                    # Adiciona "Total - Todas as Séries" apenas quando há séries específicas
+                    # Adiciona "Total - Todas as Séries" apenas se houver séries específicas
                     serie_disp = ["Total - Todas as Séries"] + serie_real if serie_real else []
 
                     serie_sel = st.multiselect("", serie_disp, default=[], key="serie_sel",
@@ -476,14 +476,22 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
         if "Total - Todas as Subetapas" in subetapas:
             m &= df["Subetapa"] == "Total"
         else:
-            m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total -")])
+            m &= df["Subetapa"].isin(subetapas)
 
     # --- SÉRIE ----------------------------------------------------
     if series:
         if "Total - Todas as Séries" in series:
-            pass
+            # Quando "Total - Todas as Séries" é selecionado com subetapas específicas
+            # Mostra o total daquela subetapa específica
+            if subetapas and "Total - Todas as Subetapas" not in subetapas:
+                # Para cada subetapa selecionada, mostra seu total
+                serie_totals = [f"Total - {sub}" for sub in subetapas]
+                m &= df["Série"].isin(serie_totals)
+            else:
+                # Se não há subetapa específica, mostra série vazia ou totais gerais
+                m &= df["Série"].eq("")
         else:
-            m &= df["Série"].isin([s for s in series if not s.startswith("Total -")])
+            m &= df["Série"].isin(series)
 
     return df.loc[m]
 
