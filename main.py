@@ -78,7 +78,6 @@ div.panel-filtros {
     padding: 0 !important;
 }
 
-
 /* Ajuste dos títulos */
 div.filter-title {
     margin: 0 !important;
@@ -116,7 +115,7 @@ section[data-testid="stSidebar"] p {
     color: #FFFFFF !important;
     writing-mode: horizontal-tb !important;
 }
-
+/* ─── COMPONENTES ────────────────────────────────────────────────── */
 /* Radio buttons - container principal */
 section[data-testid="stSidebar"] .stRadio > div {
     padding: 0;
@@ -129,12 +128,11 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     display: flex !important;
     align-items: center !important;
     padding: 0.5rem 0.8rem !important;
-    margin: 0.4rem 0 !important;
+    margin: 0.2rem 0 !important;
     background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
     border: 1px solid rgba(0, 0, 0, 0.3) !important;
     border-radius: 5px !important;
     transition: all 0.2s ease !important;
-    cursor: pointer !important;
 }
 
 /* ---------- [ESTILOS NOVOS] Destaque do item selecionado ---------- */
