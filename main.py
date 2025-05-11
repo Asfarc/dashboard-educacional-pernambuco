@@ -74,7 +74,6 @@ class Paginator:
     def slice(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.iloc[self.start:self.end]
 
-
 # ─── 5. CARGA DO PARQUET ────────────────────────────────────────────
 MODALIDADES = {
     "Ensino Regular":                     "Ensino Regular.parquet",
@@ -168,78 +167,14 @@ st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
 
-# Adicionar estilo para melhorar a aparência dos botões rádio
-st.markdown("""
-<style>
-/* Estilo para os botões rádio de nível */
-.stRadio > div {
-    padding: 10px 0;
-}
-
-.stRadio > div > label {
-    background-color: #0073ba;
-    border: 1px solid #000000;
-    border-radius: 6px;
-    padding: 10px;
-    margin: 5px 0;
-    display: flex;
-    align-items: center;
-    transition: all 0.2s ease;
-}
-
-.stRadio > div > label:hover {
-    background-color: #dce6f3;
-    transform: translateY(-2px);
-}
-
-.stRadio > div [data-testid="stMarkdownContainer"] p {
-    margin: 0;
-    font-weight: 500;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Radio sem rótulo para escolha de nível
-nivel = st.sidebar.radio(
-    "",
-    ["Escolas", "Municípios", "Pernambuco"],
-    label_visibility="collapsed",
-    key="nivel_sel"
-)
-
-# Para melhorar o título "Número de Matrículas por:"
-st.sidebar.markdown(
-    '<p style="color:#FFFFFF;font-weight:600;font-size:1.1rem;margin-top:1.2rem">'
-    'Número de Matrículas por:</p>',
-    unsafe_allow_html=True
-)
-
-# radio sem rótulo
-nivel = st.sidebar.radio(
-    "",                            # rótulo vazio
-    ["Escolas", "Municípios", "Pernambuco"],
-    label_visibility="collapsed"   # esconde o label vazio
-)
-
-# Selecionar o DataFrame baseado no nível
-df_base = {
-    "Escolas": escolas_df,
-    "Municípios": municipio_df,
-    "Pernambuco": estado_df
-}[nivel]
-if df_base.empty:
-    st.error("DataFrame vazio")
-    st.stop()
-
-# ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
-
+# CSS COMBINED já com as correções
 COMBINED_CSS = """
 /* Estilo para os cabeçalhos das colunas */
 .column-header {
-    height: 50px !important;  /* Altura fixa para todos os cabeçalhos */
+    height: 50px !important;
     display: flex !important;
-    align-items: center !important;  /* Centraliza verticalmente */
-    justify-content: center !important;  /* Centraliza horizontalmente */
+    align-items: center !important;
+    justify-content: center !important;
     padding: 5px !important;
     margin-bottom: 8px !important;
     text-align: center !important;
@@ -247,7 +182,7 @@ COMBINED_CSS = """
 
 /* Estilo para os filtros de coluna */
 [data-testid="stDataFrame"] + div [data-baseweb="input"] {
-    height: 40px !important;  /* Altura fixa para todos os filtros */
+    height: 40px !important;
 }
 
 /* Certificando-se que o container dos filtros também tenha altura consistente */
@@ -262,31 +197,34 @@ COMBINED_CSS = """
 [data-testid="stDataFrame"] + div [data-baseweb="input"] input {
     height: 100% !important;
 }
+
 /* Diminuir o recuo do texto na sidebar */
 section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
-    padding-left: 0.5rem !important;  /* Reduz o padding à esquerda */
+    padding-left: 0.5rem !important;
 }
 
 /* Ajustar os botões de download para evitar quebra de linha */
 section[data-testid="stSidebar"] .stDownloadButton > button,
 section[data-testid="stSidebar"] .stButton > button {
-    white-space: nowrap;              /* Evita quebra de linha */
-    width: 100%;                      /* Ocupa toda a largura da coluna */
-    padding: 0.3rem 0.5rem;           /* Reduz o padding lateral */
-    font-size: 0.9rem;                /* Reduz um pouco o tamanho da fonte */
+    white-space: nowrap;
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
 }
 
 /* Mais espaço para a área dos botões de download */
 section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
-    padding: 0 0.3rem;                /* Reduz o espaço lateral nas colunas */
+    padding: 0 0.3rem;
 }
+
 /* Estilos gerais para a sidebar */
 section[data-testid="stSidebar"] {
     background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
 }
 
-/* Título principal da sidebar */
+/* CORRIGIDO: Título principal da sidebar em BRANCO */
 section[data-testid="stSidebar"] h1 {
+    color: #FFFFFF !important;  /* Agora está branco */
     font-size: 1.8rem !important;
     margin-bottom: 1.2rem !important;
     border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
@@ -305,16 +243,16 @@ section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p:has(svg) 
     margin: 0 !important;
 }
 
-/* Título "Número de Matrículas por:" */
-section[data-testid="stSidebar"] p[style*="color:#000000"] {
+/* CORRIGIDO: Título "Número de Matrículas por:" em BRANCO */
+section[data-testid="stSidebar"] p[style*="color:#FFFFFF"] {
     font-size: 1.1rem !important;
     font-weight: 600 !important;
     margin: 1.2rem 0 0.8rem 0 !important;
     padding-left: 0.3rem !important;
-    color: rgba(255, 255, 255, 0.9) !important;
+    color: #FFFFFF !important;  /* Garantir que fique branco */
 }
 
-/* Botões rádio uniformes */
+/* CORRIGIDO: Botões rádio uniformes com texto centralizado */
 section[data-testid="stSidebar"] .stRadio > div > label {
     height: 3rem !important;
     display: flex !important;
@@ -327,6 +265,22 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     border-radius: 5px !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     transition: all 0.2s ease !important;
+    padding: 0 !important;  /* Remove padding interno para melhor centralização */
+}
+
+/* CORRIGIDO: Centralizar texto dentro das caixas azuis */
+section[data-testid="stSidebar"] .stRadio > div > label > div {
+    width: 100% !important;
+    text-align: center !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+section[data-testid="stSidebar"] .stRadio > div > label p {
+    margin: 0 !important;
+    text-align: center !important;
+    color: #FFFFFF !important;
 }
 
 /* Estilo para hover nos botões */
@@ -359,6 +313,7 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] summary {
 
 /* Estilo para a seção de Download */
 section[data-testid="stSidebar"] h3 {
+    color: #FFFFFF !important;  /* Download em branco também */
     font-size: 1.2rem !important;
     margin: 1.5rem 0 0.8rem 0 !important;
     padding-left: 0.3rem !important;
@@ -393,8 +348,36 @@ section[data-testid="stSidebar"] h3 + div [data-testid="column"] {
     padding: 0 0.3rem !important;
 }
 """
+
 st.markdown(f"<style>{COMBINED_CSS}</style>", unsafe_allow_html=True)
 
+# CORRIGIDO: Título "Número de Matrículas por:" após "Filtros"
+st.sidebar.markdown(
+    '<p style="color:#FFFFFF;font-weight:600;font-size:1.1rem;margin-top:1.2rem">'
+    'Número de Matrículas por:</p>',
+    unsafe_allow_html=True
+)
+
+# CORRIGIDO: Radio sem duplicação
+nivel = st.sidebar.radio(
+    "",
+    ["Escolas", "Municípios", "Pernambuco"],
+    label_visibility="collapsed",
+    key="nivel_sel"
+)
+
+# Selecionar o DataFrame baseado no nível
+df_base = {
+    "Escolas": escolas_df,
+    "Municípios": municipio_df,
+    "Pernambuco": estado_df
+}[nivel]
+
+if df_base.empty:
+    st.error("DataFrame vazio")
+    st.stop()
+
+# ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
 with st.container():
     st.markdown('<div class="panel-filtros">', unsafe_allow_html=True)
 
