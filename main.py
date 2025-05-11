@@ -284,11 +284,12 @@ def format_number_br(num):
 # ─── 4‑B. PAGINAÇÃO ────────────────────────────────────────────────
 class Paginator:
     def __init__(self, total, page_size=25, current=1):
-        self.page_size = page_size
-        self.total_pages = max(1, (total - 1) // page_size + 1)
+        # Limita o page_size a 10.000 se for maior
+        self.page_size = min(page_size, 10000)  # 🔥 Linha nova
+        self.total_pages = max(1, (total - 1) // self.page_size + 1)
         self.current = max(1, min(current, self.total_pages))
-        self.start = (self.current - 1) * page_size
-        self.end = self.start + page_size
+        self.start = (self.current - 1) * self.page_size
+        self.end = min(self.start + self.page_size, total)
 
     def slice(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.iloc[self.start:self.end]
@@ -683,11 +684,25 @@ with b2:
         st.rerun()
 
 with b3:
-    new_ps = st.selectbox("Itens", [10, 25, 50, 100],
-                          index=[10, 25, 50, 100].index(page_size),
-                          label_visibility="collapsed")
+    # Opções de paginação com "Mostrar todos"
+    page_options = [10, 25, 50, 100, 10000]  # 🔥 10000 = Mostrar todos
+
+
+    # Função para formatar o rótulo
+    def format_page_size(opt):
+        return "Mostrar todos (até 10.000)" if opt == 10000 else str(opt)
+
+
+    new_ps = st.selectbox(
+        "Itens",
+        options=page_options,
+        index=page_options.index(page_size) if page_size in page_options else 0,
+        format_func=format_page_size,  # 🔥 Formata o rótulo
+        label_visibility="collapsed"
+    )
+
     if new_ps != page_size:
-        st.session_state["page_size"]   = new_ps
+        st.session_state["page_size"] = new_ps
         st.session_state["current_page"] = 1
         st.rerun()
 
