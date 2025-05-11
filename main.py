@@ -97,7 +97,7 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     height: 3rem !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: flex-start !important; /* Alinhamento à esquerda */
+    justify-content: flex-start !important;
     width: 100% !important;
     margin: 0.4rem 0 !important;
     background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
@@ -105,8 +105,8 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     border-radius: 5px !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     transition: all 0.2s ease !important;
-    padding: 0 0.8rem !important; /* Padding horizontal uniforme */
-    white-space: nowrap !important; /* Evita quebra de linha */
+    padding: 0 0.8rem !important;
+    white-space: nowrap !important;
     overflow: hidden !important;
 }
 
@@ -115,8 +115,13 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    margin-right: 0.5rem !important; /* Espaço uniforme após a bolinha */
-    flex-shrink: 0 !important; /* Evita que a bolinha diminua */
+    margin-right: 0.5rem !important;
+    flex-shrink: 0 !important;
+}
+
+/* NOVO: Cor da bolinha do radio button selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child input[type="radio"]:checked {
+    accent-color: #ffdfba !important;
 }
 
 /* Radio button texto */
@@ -125,10 +130,10 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
     display: flex !important;
     align-items: center !important;
     text-align: left !important;
-    font-size: 0.9rem !important; /* Tamanho uniforme do texto */
+    font-size: 0.9rem !important;
     white-space: nowrap !important;
     overflow: hidden !important;
-    text-overflow: ellipsis !important; /* Adiciona "..." se o texto for muito longo */
+    text-overflow: ellipsis !important;
 }
 
 /* Radio button texto - parágrafo interno */
@@ -137,6 +142,14 @@ section[data-testid="stSidebar"] .stRadio > div > label p {
     padding: 0 !important;
     line-height: 1.2 !important;
     color: #FFFFFF !important;
+}
+
+/* Botão selecionado - fundo diferente */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) {
+    background: linear-gradient(to bottom, #005c99, #004b7d) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(0) !important;
+    border: 1px solid rgba(0, 0, 0, 0.5) !important;
 }
 
 section[data-testid="stSidebar"] .stRadio > div > label:hover {
