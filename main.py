@@ -233,6 +233,13 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] {
     border-radius: 5px !important;
     margin: 1.5rem 0 !important;
 }
+/* Ajustar padding da tabela: */
+
+[data-testid="stDataFrame"] th, 
+[data-testid="stDataFrame"] td {
+    padding: 4px 8px !important;
+}
+
 </style>
 """
 
@@ -645,10 +652,18 @@ for col in colunas_numericas:
     if col_beautificada in df_show.columns:
         df_show[col_beautificada] = df_show[col_beautificada].apply(aplicar_padrao_numerico_brasileiro)
 
+# Configurar largura das colunas proporcionalmente
+num_colunas = len(df_show.columns)
+largura_base = 150  # Ajuste este valor conforme necessário
+config_colunas = {
+    col: {"width": f"{largura_base}px"} for col in df_show.columns
+}
+
 st.dataframe(
     df_show,
+    column_config=config_colunas,
     height=altura_tabela,
-    use_container_width=True,
+    use_container_width=True,  # 🔥 Garante que a tabela use toda a largura
     hide_index=True
 )
 
