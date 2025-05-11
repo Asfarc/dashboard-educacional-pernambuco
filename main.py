@@ -576,11 +576,8 @@ st.markdown("""
 col_headers = st.columns(len(vis_cols))
 for col, slot in zip(vis_cols, col_headers):
     with slot:
-        # Customiza nome do cabeçalho baseado no nível
-        if nivel == "Pernambuco" and col == "Etapa de Ensino":
-            header_name = beautify(col)  # Primeiro elemento é tratado como identificação do estado
-        else:
-            header_name = beautify(col)
+        # Use beautify_column_header em vez de beautify para os cabeçalhos
+        header_name = beautify_column_header(col)
 
         extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
         st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
