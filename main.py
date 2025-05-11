@@ -43,8 +43,8 @@ CSS_COMPLETO = """
 
 /* Configurações da sidebar */
 section[data-testid="stSidebar"] {
-    min-width: 260px !important;
-    width: 260px !important;
+    min-width: 300px !important;  /* ← Novo valor */
+    width: 350px !important;      /* ← Novo valor */
     background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
 }
 
@@ -86,76 +86,99 @@ section[data-testid="stSidebar"] p {
     writing-mode: horizontal-tb !important;
 }
 
-/* Radio buttons - container */
+/* Radio buttons - container principal */
 section[data-testid="stSidebar"] .stRadio > div {
     padding: 0;
     margin: 0;
 }
 
-/* Radio buttons - cada opção (label principal) */
+/* Labels das opções */
 section[data-testid="stSidebar"] .stRadio > div > label {
     height: 3rem !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: flex-start !important;
-    width: 100% !important;
+    padding: 0 0.8rem !important;
     margin: 0.4rem 0 !important;
     background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
     border: 1px solid rgba(0, 0, 0, 0.3) !important;
     border-radius: 5px !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     transition: all 0.2s ease !important;
-    padding: 0 0.8rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-}
-
-/* Container da bolinha (div que envolve o input) */
-section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin-right: 0.5rem !important;
-    flex-shrink: 0 !important;
-    width: 20px !important; /* Novo */
-    height: 20px !important; /* Novo */
-}
-
-/* Input radio personalizado - Correção da dupla renderização */
-section[data-testid="stSidebar"] .stRadio input[type="radio"] {
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    width: 18px !important;
-    height: 18px !important;
-    border: 2px solid #fff !important;
-    border-radius: 50% !important;
-    margin: 0 8px 0 0 !important;
-    position: relative !important;
     cursor: pointer !important;
-    transition: all 0.2s ease !important;
 }
 
-/* Bolinha interna usando pseudo-elemento */
-section[data-testid="stSidebar"] .stRadio input[type="radio"]::after {
+/* ---------- [ESTILOS NOVOS] Destaque do item selecionado ---------- */
+/* Label inteiro quando selecionado */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) {
+    background: #08306b !important;
+    border: 2px solid #ffdfba !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    transform: scale(1.02) !important;
+}
+
+/* Texto da opção selecionada */
+section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) p {
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* Bolinha interna mais vibrante */
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::after {
+    background: #ffdfba !important;
+    box-shadow: 0 0 8px rgba(255,223,186,0.5) !important;
+}
+
+/* Esconde o input nativo */
+section[data-testid="stSidebar"] .stRadio input[type="radio"] {
+    opacity: 0 !important;
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Container customizado da bolinha */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
+    position: relative !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin-right: 12px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Círculo externo */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child::before {
     content: "";
-    display: block;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid #fff;
     border-radius: 50%;
-    transform: scale(0);
+    transition: all 0.2s ease;
+}
+
+/* Bolinha interna (selecionada) */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 10px;
+    height: 10px;
+    background: #ffdfba;
+    border-radius: 50%;
     transition: transform 0.2s ease;
 }
 
-/* Estado selecionado corrigido */
-section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked {
+/* Estado selecionado - versão corrigida */
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::before {
     border-color: #ffdfba !important;
-    background-color: transparent !important;
 }
 
-section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked::after {
-    background-color: #ffdfba !important;
-    transform: scale(0.6) !important;
+section[data-testid="stSidebar"] .stRadio input[type="radio"]:checked + div:first-child::after {
+    transform: translate(-50%, -50%) scale(1) !important;
 }
 
 /* Texto da opção */
@@ -165,9 +188,12 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
     align-items: center !important;
     text-align: left !important;
     font-size: 0.9rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    /* REMOVA estas linhas ↓ */
+    /* white-space: nowrap !important; */
+    /* overflow: hidden !important; */
+    /* text-overflow: ellipsis !important; */
+    white-space: normal !important;
+    line-height: 1.1 !important;
 }
 
 /* Parágrafo interno */
