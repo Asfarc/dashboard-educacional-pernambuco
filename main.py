@@ -94,10 +94,10 @@ section[data-testid="stSidebar"] .stRadio > div {
 
 /* Labels das opções */
 section[data-testid="stSidebar"] .stRadio > div > label {
-    height: 3rem !important;
+    height: auto !important;
     display: flex !important;
     align-items: center !important;
-    padding: 0 0.8rem !important;
+    padding: 0.5rem 0.8rem !important;
     margin: 0.4rem 0 !important;
     background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
     border: 1px solid rgba(0, 0, 0, 0.3) !important;
@@ -188,12 +188,8 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
     align-items: center !important;
     text-align: left !important;
     font-size: 0.9rem !important;
-    /* REMOVA estas linhas ↓ */
-    /* white-space: nowrap !important; */
-    /* overflow: hidden !important; */
-    /* text-overflow: ellipsis !important; */
     white-space: normal !important;
-    line-height: 1.1 !important;
+    line-height: 1.3 !important;
 }
 
 /* Parágrafo interno */
