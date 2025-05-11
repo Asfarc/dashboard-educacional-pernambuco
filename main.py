@@ -66,17 +66,17 @@ section[data-testid="stSidebar"] h1 {
     color: #FFFFFF !important;
     font-size: 1.8rem !important;
     margin-bottom: 1.2rem !important;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
+    border-top: 2px solid #ffdfba !important;
     padding-bottom: 0.5rem !important;
 }
 
 /* Títulos secundários */
 section[data-testid="stSidebar"] h3 {
     color: #FFFFFF !important;
-    font-size: 1.2rem !important;
+    font-size: 1.5rem !important;
     margin: 1.5rem 0 0.8rem 0 !important;
     padding-left: 0.3rem !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-top: 2px solid #ffdfba !important;
     padding-bottom: 0.4rem !important;
 }
 
@@ -196,7 +196,7 @@ section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
 section[data-testid="stSidebar"] .stRadio > div > label p {
     margin: 0 !important;
     padding: 0 !important;
-    line-height: 1.2 !important;
+    line-height: 1.4 !important;
     color: #FFFFFF !important;
 }
 
@@ -337,8 +337,8 @@ def carregar_dados(modalidade: str):
 try:
     with st.sidebar:
         st.markdown(
-            '<p style="color:#FFFFFF;font-weight:600;font-size:1.1rem;margin-top:0.5rem">'
-            'Modalidade:</p>', unsafe_allow_html=True
+            '<p style="color:#FFFFFF;font-weight:600;font-size:1.8rem;margin-top:0.5rem">'
+            'Modalidade</p>', unsafe_allow_html=True
         )
         tipo_ensino = st.radio(
             "", list(MODALIDADES.keys()), index=0,
@@ -356,8 +356,6 @@ st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
 
 # ─── 6. SIDEBAR – nível de agregação ────────────────────────────────
 st.sidebar.title("Filtros")
-
-# CORRIGIDO: Radio sem duplicação
 nivel = st.sidebar.radio(
     "",
     ["Escolas", "Municípios", "Pernambuco"],
@@ -463,16 +461,20 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
     # --- SUBETAPA -------------------------------------------------
     if subetapas:
         if "Total - Todas as Subetapas" in subetapas:
-            pass  # já cobre tudo da etapa escolhida
+            # Quando "Total - Todas as Subetapas" é selecionado, devemos mostrar apenas "Total"
+            m &= df["Subetapa"] == "Total"
         else:
-            m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total")])
+            # Filtrar apenas as subetapas selecionadas (excluindo o texto "Total - Todas as Subetapas")
+            m &= df["Subetapa"].isin([s for s in subetapas if not s.startswith("Total -")])
 
     # --- SÉRIE ----------------------------------------------------
     if series:
         if "Total - Todas as Séries" in series:
-            pass  # já cobre todas as séries da subetapa
+            # Manter o filtro vazio para séries não especificadas
+            # ou se necessário, filtrar para valores vazios
+            pass
         else:
-            m &= df["Série"].isin([s for s in series if not s.startswith("Total")])
+            m &= df["Série"].isin([s for s in series if not s.startswith("Total -")])
 
     return df.loc[m]
 
