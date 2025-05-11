@@ -408,14 +408,16 @@ with st.container():
         # Ano(s) - com espaço vertical mínimo
         st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Ano(s)</div>', unsafe_allow_html=True)
         anos_disp = sorted(df_base["Ano"].unique(), reverse=True)
-        ano_sel = st.multiselect("Ano(s)", anos_disp, default=anos_disp,
+        default_anos = ["2024"] if "2024" in anos_disp else []
+        ano_sel = st.multiselect("Ano(s)", anos_disp, default=default_anos,
                                  key="ano_sel", label_visibility="collapsed")
 
         # Rede(s) - com margem negativa para aproximar da caixa anterior
         st.markdown('<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Rede(s)</div>',
                     unsafe_allow_html=True)
         redes_disp = sorted(df_base["Rede"].dropna().unique())
-        rede_sel = st.multiselect("", redes_disp, default=redes_disp, key="rede_sel", label_visibility="collapsed")
+        default_redes = ["Pública", "Privada"]  # 🔥 Valores exatos como estão no DataFrame
+        rede_sel = st.multiselect("", redes_disp, default=default_redes, key="rede_sel", label_visibility="collapsed")
 
     # Lado direito - Ajuste para posicionar Etapa mais à esquerda
     with c_right:
