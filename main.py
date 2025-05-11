@@ -229,17 +229,13 @@ section[data-testid="stSidebar"] .stRadio > div > label p {
     color: #FFFFFF !important;
 }
 
-/* Botões de download */
-section[data-testid="stSidebar"] .stButton > button,
-section[data-testid="stSidebar"] .stDownloadButton > button {
+/* Botões */
+section[data-testid="stSidebar"] .stButton > button {
     height: 2.5rem !important;
     width: 100% !important;
-    white-space: nowrap !important;
     background: #333333 !important;
     color: white !important;
-    border: none !important;
     border-radius: 5px !important;
-    font-weight: 500 !important;
 }
 
 /* Cabeçalhos das colunas */
