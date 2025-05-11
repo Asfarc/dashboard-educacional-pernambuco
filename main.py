@@ -254,7 +254,8 @@ def beautify_column_header(col: str) -> str:
         "Nome da Escola": "Escola",
         "Etapa de Ensino": "Etapa",
         "Cód. Município": "Cód. Mun.",
-        "Cód. da Escola": "Cód. Esc."
+        "Cód. da Escola": "Cód. Esc.",
+        "UF": "UF"
     }
 
     # Se a coluna está no dicionário, usar a abreviação
@@ -555,15 +556,18 @@ if nivel == "Escolas":
     vis_cols += ["Nome do Município", "Nome da Escola"]
 elif nivel == "Municípios":
     vis_cols += ["Nome do Município"]
-else:  # nivel == "Pernambuco"
-    # Não adiciona colunas extras para estado
-    pass
 
 # Adiciona colunas comuns
 vis_cols += ["Etapa de Ensino", "Subetapa", "Série", "Rede", "Número de Matrículas"]
 
 # 2. DataFrame base da tabela
-df_tabela = df_filtrado[vis_cols]
+df_tabela = df_filtrado[vis_cols].copy()
+
+# --- Adicionar coluna UF apenas para Pernambuco ---
+if nivel == "Pernambuco":
+    df_tabela["UF"] = "Pernambuco"  # Cria a coluna
+    vis_cols.append("UF")  # Atualiza a lista de colunas visíveis
+
 if df_tabela.empty:
     st.warning("Não há dados para exibir.")
     st.stop()
@@ -577,6 +581,17 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+# 4. Cabeçalhos dos Filtros de texto
+col_headers = st.columns(len(vis_cols))
+for col, slot in zip(vis_cols, col_headers):
+    with slot:
+        # Use beautify_column_header em vez de beautify para os cabeçalhos
+        header_name = beautify_column_header(col)
+
+        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
+        st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
+                    unsafe_allow_html=True)
 
 # 5. Filtros de coluna
 col_filters = st.columns(len(vis_cols))
@@ -614,14 +629,21 @@ df_show = df_page.copy()
 # Identificar colunas numéricas antes de renomear
 colunas_numericas = df_show.filter(like="Número de").columns.tolist()
 
-# Renomear as colunas usando beautify_column_header
+# Renomear as colunas para os cabeçalhos beautificados
 df_show.columns = [beautify_column_header(col) for col in df_show.columns]
 
-# Aplicar formatação às colunas numéricas (agora com nomes beautificados)
+# Aplicar formatação às colunas numéricas renomeadas
 for col in colunas_numericas:
-    col_beautified = beautify_column_header(col)
-    if col_beautified in df_show.columns:
-        df_show.loc[:, col_beautified] = df_show[col_beautified].apply(aplicar_padrao_numerico_brasileiro)
+    col_beautificada = beautify_column_header(col)
+    if col_beautificada in df_show.columns:
+        df_show[col_beautificada] = df_show[col_beautificada].apply(aplicar_padrao_numerico_brasileiro)
+
+st.dataframe(
+    df_show,
+    height=altura_tabela,
+    use_container_width=True,
+    hide_index=True
+)
 
 # 8. Controles de navegação ------------------------------------------
 b1, b2, b3, b4 = st.columns([1, 1, 1, 2])
