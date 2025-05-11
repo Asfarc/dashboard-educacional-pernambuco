@@ -54,6 +54,27 @@ section[data-testid="stSidebar"] > div {
     padding: 0.5rem 1rem !important;
 }
 
+/* Ajuste do container principal */
+section.main .block-container {
+    padding-top: 0.5rem !important;
+}
+
+/* Ajuste da sidebar */
+section[data-testid="stSidebar"] > div {
+    padding: 0.5rem 1rem !important;  # Reduz o padding superior
+}
+
+/* Ajuste do painel de filtros */
+div.panel-filtros {
+    margin-top: -2rem !important;  # Compensa espaçamento residual
+}
+
+/* Ajuste dos títulos */
+div.filter-title {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 /* Forçar texto horizontal em TODOS os elementos da sidebar */
 section[data-testid="stSidebar"] * {
     writing-mode: horizontal-tb !important;
