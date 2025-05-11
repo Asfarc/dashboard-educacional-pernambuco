@@ -436,10 +436,21 @@ with st.container():
 
         with c_right_col1:
             # Etapa com mínimo de espaço vertical
-            st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>',
+                unsafe_allow_html=True)
             etapas_disp = sorted(df_base["Etapa"].unique())
-            default_etapas = ["Educação Infantil"]
-            etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
+
+            # Definir padrão para Educação Infantil
+            default_etapas = ["Educação Infantil"] if "Educação Infantil" in etapas_disp else []
+
+            etapa_sel = st.multiselect(
+                "",
+                etapas_disp,
+                default=default_etapas,  # 🔥 USAR A VARIÁVEL CRIADA
+                key="etapa_sel",
+                label_visibility="collapsed"
+            )
 
             # Para Subetapa
             if etapa_sel:
@@ -636,7 +647,7 @@ for col, val in filter_values.items():
 df_texto = df_tabela[mask]
 
 # 6. Paginação -------------------------------------------------------
-page_size = st.session_state.get("page_size", 25)
+page_size = st.session_state.get("page_size", 10000)
 pag       = Paginator(len(df_texto), page_size=page_size,
                       current=st.session_state.get("current_page", 1))
 df_page   = pag.slice(df_texto)
@@ -688,17 +699,15 @@ with b3:
     # Opções de paginação com "Mostrar todos"
     page_options = [10, 25, 50, 100, 10000]  # 🔥 10000 = Mostrar todos
 
-
     # Função para formatar o rótulo
     def format_page_size(opt):
-        return "Mostrar todos (até 10.000)" if opt == 10000 else str(opt)
-
+        return "Mostrar todos" if opt == 10000 else str(opt)
 
     new_ps = st.selectbox(
         "Itens",
         options=page_options,
-        index=page_options.index(page_size) if page_size in page_options else 0,
-        format_func=format_page_size,  # 🔥 Formata o rótulo
+        index=page_options.index(10000),  # 🔥 Define "Mostrar todos" como padrão
+        format_func=format_page_size,
         label_visibility="collapsed"
     )
 
