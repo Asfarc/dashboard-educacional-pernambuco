@@ -43,31 +43,23 @@ CSS_COMPLETO = """
     --btn-hover: #fc4e2a;
 }
 
-/* ─── SIDEBAR ────────────────────────────────────────────────────── */
-section[data-testid="stSidebar"] {
-    min-width: 300px !important;
-    width: 300px !important;
-    background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
+/* ─── AJUSTES GERAIS DA SIDEBAR ───────────────────────────────────── */
+/* Container principal da sidebar */
+section[data-testid="stSidebar"] > div:first-child {
+    padding-top: 0 !important;
+    margin-top: -50px !important;  /* Compensa espaço residual */
 }
 
-section[data-testid="stSidebar"] > div {
-    padding: 0.5rem 1rem !important;
-    margin-top: -20px !important;
-}
-
+/* Título "Modalidade" */
 section[data-testid="stSidebar"] h1 {
-    color: #FFFFFF !important;
-    font-size: 1.8rem !important;
-    margin: 0 0 1rem 0 !important;
-    padding: 0.5rem 0 !important;
-    border-top: 2px solid #ffdfba;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
-section[data-testid="stSidebar"] h3 {
-    color: #FFFFFF !important;
-    font-size: 1.5rem !important;
-    margin: 1rem 0 0.5rem 0 !important;
-    padding: 0.3rem 0 !important;
+/* Remove espaços em elementos internos */
+section[data-testid="stSidebar"] .stRadio,
+section[data-testid="stSidebar"] .stButton {
+    margin-top: -20px !important;
 }
 
 /* ─── AJUSTES DO CONTEÚDO PRINCIPAL ──────────────────────────────── */
