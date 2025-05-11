@@ -16,7 +16,6 @@ from pathlib import Path
 import streamlit.components.v1 as components
 import psutil
 
-
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
     page_title="Dashboard PNE",
@@ -24,92 +23,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-
-# ─── 2‑B. MÚSICA DE FUNDO ───────────────────────────────────────────
-def _musica_de_fundo(arquivo_mp3: str, volume: float = 0.25, flag: str = "musica_atual"):
-    musica_atual = st.session_state.get(flag, "")
-    if musica_atual == arquivo_mp3:
-        return
-    if musica_atual:
-        components.html(
-            """
-            <script>
-                const oldAudio = document.getElementById('bg-music');
-                if (oldAudio) { oldAudio.pause(); oldAudio.remove(); }
-                const oldBtn = document.querySelector('button[data-music-btn="true"]');
-                if (oldBtn) { oldBtn.remove(); }
-            </script>
-            """, height=0, width=0
-        )
-    caminhos = [
-        arquivo_mp3,
-        f"static/{arquivo_mp3}",
-        Path(__file__).parent / "static" / arquivo_mp3
-    ]
-    arquivo_encontrado = False
-    for c in caminhos:
-        if os.path.exists(c):
-            mp3_bytes = Path(c).read_bytes()
-            arquivo_encontrado = True
-            st.session_state["ultimo_caminho_usado"] = str(c)
-            break
-    if not arquivo_encontrado:
-        st.sidebar.warning(f"Áudio não encontrado: {arquivo_mp3}")
-        st.session_state[flag] = ""
-        return
-    b64 = base64.b64encode(mp3_bytes).decode()
-    components.html(
-        f"""
-        <audio id="bg-music" loop>
-            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-        </audio>
-        <script>
-          const audio = document.getElementById('bg-music');
-          audio.volume = {volume};
-          audio.play().catch(() => {{
-              const btn = document.createElement('button');
-              btn.textContent = "▶️ Tocar música";
-              btn.setAttribute('data-music-btn', 'true');
-              btn.style = `
-                  position:fixed; bottom:20px; left:20px; z-index:10000;
-                  padding:8px 16px; font-size:16px; cursor:pointer;
-              `;
-              btn.onclick = () => {{ audio.play(); btn.remove(); }};
-              document.body.appendChild(btn);
-          }});
-        </script>
-        """, height=0, width=0
-    )
-    st.session_state[flag] = arquivo_mp3
-
-def tocar_musica_sidebar():
-    musicas = {
-        "Sol da Minha Vida": "static/01 ROBERTA MIRANDA SOL DA MINHA VIDA.mp3",
-        "Vá Com Deus": "static/02 ROBERTA MIRANDA VA COM DEUS.mp3",
-        "O Meu Amor Chorou": "static/07 O Meu Amor Chorou.mp3",
-        "Vou-me embora": "static/12 Vou-Me Embora.mp3",
-    }
-    with st.sidebar:
-        st.markdown("### 🎵 Música")
-        ativar = st.checkbox("Ativar música", value=True)
-        if not ativar:
-            components.html(
-                """
-                <script>
-                    const audio = document.getElementById('bg-music');
-                    if (audio) audio.pause();
-                </script>
-                """, height=0, width=0
-            )
-            return
-        musica_sel = st.selectbox("Selecionar música:", list(musicas.keys()))
-        if "ultimo_caminho_usado" in st.session_state:
-            st.caption(f"Caminho: {st.session_state['ultimo_caminho_usado']}")
-    if ativar:
-        _musica_de_fundo(musicas[musica_sel])
-
-tocar_musica_sidebar()
 
 # ─── 3. ESTILO GLOBAL ──────────────────────────────────────────────
 CORES = {
