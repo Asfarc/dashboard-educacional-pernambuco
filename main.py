@@ -435,8 +435,8 @@ with st.container():
 
                 # Se "Total - Todas as Subetapas" foi selecionado
                 if "Total - Todas as Subetapas" in sub_sel:
-                    # Mostra uma mensagem ou deixa vazio
-                    st.info("Série não aplicável quando 'Total - Todas as Subetapas' está selecionado")
+                    # Não mostra nenhuma opção de série quando Total - Todas as Subetapas está selecionado
+                    # Pois já estamos vendo o total geral
                     serie_sel = []
                 else:
                     # Séries específicas das subetapas selecionadas
