@@ -239,9 +239,15 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] {
 # Aplique o CSS completo uma única vez
 st.markdown(CSS_COMPLETO, unsafe_allow_html=True)
 
+
 # ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
 def beautify(col: str) -> str:
-    # Dicionário de abreviações
+    # Comportamento original, sem abreviações
+    return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
+
+
+def beautify_column_header(col: str) -> str:
+    # Função específica para cabeçalhos de coluna com abreviações
     abbreviations = {
         "Número de Matrículas": "Matrículas",
         "Nome do Município": "Município",
@@ -255,7 +261,7 @@ def beautify(col: str) -> str:
     if col in abbreviations:
         return abbreviations[col]
 
-    # Caso contrário, usar o comportamento original
+    # Caso contrário, usar o comportamento da beautify original
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
 
 def aplicar_padrao_numerico_brasileiro(num):
