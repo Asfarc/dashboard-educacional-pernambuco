@@ -242,9 +242,11 @@ section[data-testid="stSidebar"] .stDownloadButton > button {
     font-weight: 500 !important;
 }
 
-/* Cabeçalhos */
+/* Cabeçalhos das colunas */
 .column-header {
     background: #ffdfba;
+    text-align: center;
+    font-weight: bold;
     height: 50px !important;
     display: flex !important;
     align-items: center !important;
