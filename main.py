@@ -1,11 +1,3 @@
-# =============================  main.py  =============================
-# Dashboard • Matrículas (formato longo) – versão otimizada
-# --------------------------------------------------------------------
-#  ► Painel: Ano(s) | Etapa | Subetapa | Série | Rede(s)
-#  ► Filtros em cascata (Etapa → Subetapa → Série)
-#  ► DataFrame paginado + filtros por coluna
-# --------------------------------------------------------------------
-
 # ─── 1. IMPORTS ──────────────────────────────────────────────────────
 import streamlit as st
 import pandas as pd
@@ -15,14 +7,6 @@ import base64, os
 from pathlib import Path
 import streamlit.components.v1 as components
 import psutil
-
-# ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
-st.set_page_config(
-    page_title="Dashboard PNE",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
