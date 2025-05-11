@@ -79,11 +79,6 @@ div.panel-filtros {
 }
 
 
-/* Ajuste do painel de filtros */
-div.panel-filtros {
-    margin-top: -2rem !important;  # Compensa espaçamento residual
-}
-
 /* Ajuste dos títulos */
 div.filter-title {
     margin: 0 !important;
