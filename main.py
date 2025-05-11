@@ -43,8 +43,8 @@ CSS_COMPLETO = """
 
 /* Configurações da sidebar */
 section[data-testid="stSidebar"] {
-    min-width: 300px !important;  /* ← Novo valor */
-    width: 350px !important;      /* ← Novo valor */
+    min-width: 300px !important;
+    width: 300px !important;      /* LARGURA DO SIDEBAR */
     background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
 }
 
@@ -241,7 +241,23 @@ st.markdown(CSS_COMPLETO, unsafe_allow_html=True)
 
 # ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
 def beautify(col: str) -> str:
+    # Dicionário de abreviações
+    abbreviations = {
+        "Número de Matrículas": "Matrículas",
+        "Nome do Município": "Município",
+        "Nome da Escola": "Escola",
+        "Etapa de Ensino": "Etapa",
+        "Cód. Município": "Cód. Mun.",
+        "Cód. da Escola": "Cód. Esc."
+    }
+
+    # Se a coluna está no dicionário, usar a abreviação
+    if col in abbreviations:
+        return abbreviations[col]
+
+    # Caso contrário, usar o comportamento original
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
+
 def aplicar_padrao_numerico_brasileiro(num):
     if pd.isna(num): return "-"
     n = float(num)
