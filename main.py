@@ -582,8 +582,18 @@ st.markdown("""
 col_headers = st.columns(len(vis_cols))
 for col, slot in zip(vis_cols, col_headers):
     with slot:
-        # Use beautify_column_header em vez de beautify para os cabeçalhos
-        header_name = beautify_column_header(col)
+        # Dicionário de abreviações diretamente aqui
+        abbreviations = {
+            "Número de Matrículas": "Matrículas",
+            "Nome do Município": "Município",
+            "Nome da Escola": "Escola",
+            "Etapa de Ensino": "Etapa",
+            "Cód. Município": "Cód. Mun.",
+            "Cód. da Escola": "Cód. Esc."
+        }
+
+        # Aplicar abreviação se existir
+        header_name = abbreviations.get(col, beautify(col))
 
         extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
         st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
