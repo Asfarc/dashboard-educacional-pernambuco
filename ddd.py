@@ -148,14 +148,6 @@ def tocar_musica_sidebar():
 tocar_musica_sidebar()
 
 # SEÇÃO ÚNICA DE ESTILOS - Todas as configurações visuais em um só lugar
-# ─── 3. ESTILO GLOBAL  ──────────────────────────────────────────────
-
-# ─── 3-A. MAPA DE PARQUETS POR MODALIDADE ────────────────────────
-MODALIDADES = {
-    "Ensino Regular":                        "Ensino Regular.parquet",
-    "Educação Profissional":                 "Educação Profissional.parquet",
-    "EJA - Educação de Jovens e Adultos":    "EJA - Educação de Jovens e Adultos.parquet",
-}
 
 CORES = {
     # principais
@@ -245,7 +237,6 @@ def css_global(c=CORES) -> str:
 # aplicar na página
 st.markdown(css_global(), unsafe_allow_html=True)
 
-
 # ─── 4. FUNÇÕES UTIL ────────────────────────────────────────────────
 def beautify(col: str) -> str:
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
@@ -275,9 +266,16 @@ class Paginator:
         return df.iloc[self.start:self.end]
 
 # ─── 5. CARGA DO PARQUET ────────────────────────────────────────────
-@st.cache_resource(show_spinner="⏳ Carregando dados…")
+
+MODALIDADES = {
+    "Ensino Regular":                        "Ensino Regular.parquet",
+    "Educação Profissional":                 "Educação Profissional.parquet",
+    "EJA - Educação de Jovens e Adultos":    "EJA - Educação de Jovens e Adultos.parquet",
+}
+
+# -----------------------------------------------------------------------------------------
+st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_dados(modalidade: str):
-    # escolhe o parquet certo
     caminho = MODALIDADES[modalidade]
     df = pd.read_parquet(caminho, engine="pyarrow")
 
@@ -333,15 +331,23 @@ def carregar_dados(modalidade: str):
         df[df["Nível de agregação"].eq("estado")],
     )
 
+# ─── 5-A. ESCOLHA DE MODALIDADE NA SIDEBAR ────────────────────────
+with st.sidebar:
+    st.markdown("### Modalidade de Ensino")
+    tipo_ensino = st.radio(
+        label="",
+        options=list(MODALIDADES.keys()),
+        index=0,                       # 0 = Ensino Regular por padrão
+        label_visibility="collapsed"
+    )
 
-# ----- chamada protegida -------------------------------------------
 try:
-    escolas_df, municipio_df, estado_df = carregar_dados()
+    escolas_df, municipio_df, estado_df = carregar_dados(tipo_ensino)
 except Exception as e:
-    st.error(f"Erro ao carregar dados: {e}")
-    st.info("Tente recarregar a página ou contate o administrador.")
+    st.error(f"Erro ao carregar '{tipo_ensino}': {e}")
     st.stop()
 
+# ----- chamada protegida -------------------------------------------
 # E coloque antes do título da sidebar:
 ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
 st.sidebar.markdown(f"💾 RAM usada: **{ram_mb:.0f} MB**")
