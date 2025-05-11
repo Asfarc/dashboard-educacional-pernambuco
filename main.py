@@ -438,6 +438,7 @@ with st.container():
             # Etapa com mínimo de espaço vertical
             st.markdown('<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>', unsafe_allow_html=True)
             etapas_disp = sorted(df_base["Etapa"].unique())
+            default_etapas = ["Educação Infantil"]
             etapa_sel = st.multiselect("", etapas_disp, default=[], key="etapa_sel", label_visibility="collapsed")
 
             # Para Subetapa
