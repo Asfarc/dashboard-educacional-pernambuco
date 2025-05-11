@@ -93,10 +93,7 @@ OLD_SCHEMA_COLS = COMMON_COLS + ["Etapa de Ensino"]
 
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_dados(modalidade: str):
-    """
-    Lê apenas as colunas necessárias e faz cast para category.
-    Retorna dict com dataframes por nível.
-    """
+
     path = MODALIDADES[modalidade]
     # Escolhe colunas conforme presença de coluna 'Etapa agregada'
     sample = pd.read_parquet(path, engine="pyarrow", columns=[COMMON_COLS[0]])
@@ -138,9 +135,9 @@ def carregar_dados(modalidade: str):
     # Reduz cardinalidade
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
     return {
-        "escola":   df[df["Nível de agregação"]=="escola"],
-        "município":df[df["Nível de agregação"]=="município"],
-        "estado":   df[df["Nível de agregação"]=="estado"],
+        "escolas":    df[df["Nível de agregação"] == "escola"],
+        "municípios": df[df["Nível de agregação"] == "município"],
+        "pernambuco": df[df["Nível de agregação"] == "estado"],
     }
 
 # ─── 7. SIDEBAR – Escolha de modalidade e nível ──────────────────────
@@ -159,7 +156,7 @@ with st.sidebar:
         index=0, label_visibility="collapsed", key="nivel_sel"
     )
 
-dados_por_nivel = carregar_dados(tipo_ensino)  # cache garante rápida repetição
+dados_por_nivel = carregar_dados(tipo_ensino)
 df_base = dados_por_nivel[nivel.lower()]
 if df_base.empty:
     st.error("DataFrame vazio para esse nível")
