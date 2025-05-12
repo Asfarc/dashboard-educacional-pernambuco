@@ -692,8 +692,7 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
     """Filtra dados de forma unificada para qualquer modalidade"""
     config = MODALIDADES[modalidade_key]
 
-    # Aplicamos os filtros sequencialmente em vez de usar operadores lógicos
-    # diretamente com categorias
+    # Aplicamos os filtros sequencialmente
     result_df = df.copy()
 
     # Filtros básicos (comuns a todas as modalidades)
@@ -702,27 +701,42 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
     if redes:
         result_df = result_df[result_df["Rede"].isin(redes)]
 
-    # Etapa
-    etapa_sel = filtros.get("etapa", [])
-    if etapa_sel:
-        result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
+    # ─── LÓGICA ESPECÍFICA PARA EJA ────────────────────────────────
+    if modalidade_key == "EJA - Educação de Jovens e Adultos":
+        etapa_sel = filtros.get("etapa", [])
+        subetapa_sel = filtros.get("subetapa", [])
 
-        # Determinar se a etapa selecionada é um total
-        is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
+        # Aplica filtro de etapa
+        if etapa_sel:
+            result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
 
-        # Apenas para Ensino Regular: quando não há subetapa selecionada, mostrar totais
-        if not is_etapa_total and modalidade_key == "Ensino Regular" and not filtros.get("subetapa"):
-            result_df = result_df[result_df["Subetapa"].astype(str).str.contains("Total", na=False)]
+        # Aplica subetapa apenas se não for total
+        if (etapa_sel and
+            not any(e in config.etapa_valores["totais"] for e in etapa_sel) and
+            subetapa_sel):
+            result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
-    # Subetapa (só aplicar se não for etapa total)
-    subetapa_sel = filtros.get("subetapa", [])
-    if subetapa_sel and not is_etapa_total:
-        result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
+    # ─── LÓGICA PARA DEMAIS MODALIDADES ────────────────────────────
+    else:
+        # Etapa
+        etapa_sel = filtros.get("etapa", [])
+        if etapa_sel:
+            result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
+            is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
 
-    # Série - apenas para Ensino Regular e se não for etapa total
-    serie_sel = filtros.get("serie", [])
-    if serie_sel and modalidade_key == "Ensino Regular" and not is_etapa_total:
-        result_df = result_df[result_df["Série"].isin(serie_sel)]
+            # Lógica específica para Ensino Regular
+            if modalidade_key == "Ensino Regular" and not is_etapa_total and not filtros.get("subetapa"):
+                result_df = result_df[result_df["Subetapa"].astype(str).str.contains("Total", na=False)]
+
+        # Subetapa (só aplicar se não for total)
+        subetapa_sel = filtros.get("subetapa", [])
+        if subetapa_sel and etapa_sel and not any(e in config.etapa_valores["totais"] for e in etapa_sel):
+            result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
+
+        # Série - apenas para Ensino Regular
+        serie_sel = filtros.get("serie", [])
+        if serie_sel and modalidade_key == "Ensino Regular" and etapa_sel and not any(e in config.etapa_valores["totais"] for e in etapa_sel):
+            result_df = result_df[result_df["Série"].isin(serie_sel)]
 
     return result_df
 
