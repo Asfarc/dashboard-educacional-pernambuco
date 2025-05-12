@@ -567,7 +567,7 @@ if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível de agregação '{nivel}'.")
     st.stop()
 
-# ─── 7. PAINEL DE FILTROS ───────────────────────────────────────────
+# ─── 7. PAINEL DE FILTROS SIMPLIFICADO ──────────────────────────────
 with st.container():
     st.markdown('<div class="panel-filtros" style="margin-top:-30px">', unsafe_allow_html=True)
 
@@ -606,120 +606,135 @@ with st.container():
             label_visibility="collapsed"
         )
 
-    # Lado direito - Ajuste para posicionar Etapa mais à esquerda
+    # Lado direito - Filtros específicos por modalidade
     with c_right:
-        # Use uma coluna com proporção menor para mover Etapa para a esquerda
         c_right_col1, c_right_col2 = st.columns([0.9, 1])  # Mais espaço para Etapa, menos espaço vazio
 
         with c_right_col1:
-            # Detectar se estamos na modalidade Educação Profissional
+            # Detectar a modalidade atual
+            is_eja_modalidade = tipo_ensino == "EJA - Educação de Jovens e Adultos"
             is_educacao_profissional_modalidade = tipo_ensino == "Educação Profissional"
 
-            # Etapa com mínimo de espaço vertical
+            # ====== ETAPA ======
             st.markdown(
                 '<div class="filter-title" style="margin:0;padding:0;display:flex;align-items:center;height:32px">Etapa</div>',
                 unsafe_allow_html=True)
 
-            # Obter as etapas disponíveis
-            etapas_disp = sorted(df_base["Etapa"].unique() if "Etapa" in df_base.columns else
-                                 (df_base["Etapa Agregada"].unique() if "Etapa Agregada" in df_base.columns else
-                                  df_base["Etapa agregada"].unique() if "Etapa agregada" in df_base.columns else []))
+            # Obter as etapas disponíveis de acordo com a modalidade
+            if is_educacao_profissional_modalidade:
+                # Para Educação Profissional: valores únicos da coluna "Etapa agregada"
+                # Substitui "Total" por "Educação Profissional - Total"
+                etapas_disp = []
+                etapas_orig = sorted(df_base["Etapa agregada"].unique())
 
-            # Modificar o valor "Total" para "Educação Profissional - Total" na modalidade Educação Profissional
-            if is_educacao_profissional_modalidade and "Total" in etapas_disp:
-                # Criar uma nova lista, substituindo "Total" por "Educação Profissional - Total"
-                etapas_disp_modificadas = []
-                for etapa in etapas_disp:
+                for etapa in etapas_orig:
                     if etapa == "Total":
-                        etapas_disp_modificadas.append("Educação Profissional - Total")
+                        etapas_disp.append("Educação Profissional - Total")
                     else:
-                        etapas_disp_modificadas.append(etapa)
+                        etapas_disp.append(etapa)
 
-                # Definir valor padrão
+                # Valor padrão para Educação Profissional
                 default_etapas = [
-                    "Educação Profissional - Total"] if "Educação Profissional - Total" in etapas_disp_modificadas else []
+                    "Educação Profissional - Total"] if "Educação Profissional - Total" in etapas_disp else []
 
-                # Exibir o multiselect com as etapas modificadas
-                etapa_sel = st.multiselect(
-                    "Etapa",
-                    etapas_disp_modificadas,
-                    default=default_etapas,
-                    key="etapa_sel",
-                    label_visibility="collapsed"
-                )
+            elif is_eja_modalidade:
+                # Para EJA: valores da coluna "Etapa Agregada" com prefixo "EJA - "
+                etapas_disp = []
+                etapas_orig = sorted(df_base["Etapa Agregada"].unique())
 
-                # Converter de volta "Educação Profissional - Total" para "Total" para uso interno
-                etapa_sel_original = []
-                for etapa in etapa_sel:
-                    if etapa == "Educação Profissional - Total":
-                        etapa_sel_original.append("Total")
+                for etapa in etapas_orig:
+                    if etapa == "Total - EJA":
+                        etapas_disp.append("EJA - Total")
+                    elif etapa == "Ensino Fundamental":
+                        etapas_disp.append("EJA - Ensino Fundamental")
+                    elif etapa == "Ensino Médio":
+                        etapas_disp.append("EJA - Ensino Médio")
                     else:
-                        etapa_sel_original.append(etapa)
+                        etapas_disp.append(f"EJA - {etapa}")
 
-                # Usar etapa_sel_original para processamento interno
-                etapa_sel = etapa_sel_original
+                # Valor padrão para EJA
+                default_etapas = ["EJA - Total"] if "EJA - Total" in etapas_disp else []
 
             else:
-                # Comportamento padrão para outras modalidades
-                # Definir padrão (pode variar conforme a modalidade)
-                if is_educacao_profissional_modalidade:
-                    default_etapas = ["Educação Profissional"] if "Educação Profissional" in etapas_disp else []
-                elif "EJA - Educação de Jovens e Adultos" in tipo_ensino:
-                    default_etapas = [
-                        "Educação de Jovens e Adultos (EJA)"] if "Educação de Jovens e Adultos (EJA)" in etapas_disp else []
+                # Comportamento padrão para Ensino Regular
+                etapas_disp = sorted(df_base["Etapa"].unique())
+                default_etapas = ["Educação Infantil"] if "Educação Infantil" in etapas_disp else []
+
+            # Multiselect para Etapa
+            etapa_sel_display = st.multiselect(
+                "Etapa",
+                etapas_disp,
+                default=default_etapas,
+                key="etapa_sel_display",
+                label_visibility="collapsed"
+            )
+
+            # Converter os valores de exibição para os valores internos
+            etapa_sel = []
+            for etapa in etapa_sel_display:
+                if etapa == "Educação Profissional - Total":
+                    etapa_sel.append("Total")
+                elif etapa == "EJA - Total":
+                    etapa_sel.append("Total - EJA")
+                elif etapa.startswith("EJA - "):
+                    etapa_sel.append(etapa[5:])  # Remove "EJA - " prefix
                 else:
-                    default_etapas = ["Educação Infantil"] if "Educação Infantil" in etapas_disp else []
+                    etapa_sel.append(etapa)
 
-                etapa_sel = st.multiselect(
-                    "Etapa",
-                    etapas_disp,
-                    default=default_etapas,
-                    key="etapa_sel",
-                    label_visibility="collapsed"
-                )
-
-            # Para Subetapa - só aparece se houver etapa selecionada
-            if etapa_sel:
+            # ====== SUBETAPA ======
+            # Só mostra se alguma etapa estiver selecionada
+            if etapa_sel_display:
                 st.markdown(
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
                     unsafe_allow_html=True)
 
-                # Opções para diferentes modalidades
+                # Determinar opções de subetapa com base na modalidade e etapa selecionada
                 if is_educacao_profissional_modalidade:
                     # Para Educação Profissional
-                    if "Total" in etapa_sel:
-                        # Se "Total" (que aparece como "Educação Profissional - Total" na UI) está selecionado
-                        sub_disp = ["Total - Todas as Subetapas"]
+                    if "Educação Profissional - Total" in etapa_sel_display:
+                        # Se selecionou "Educação Profissional - Total", não mostra subetapas
+                        sub_disp = []
+                        st.text("Não há subetapas disponíveis\npara o total de Educação Profissional.")
                     else:
-                        # Se outra etapa está selecionada
-                        sub_real = []
-                        for etapa in etapa_sel:
-                            # Verificar em "Etapa agregada" para Educação Profissional
-                            if "Etapa agregada" in df_base.columns:
-                                sub_real.extend(
-                                    df_base.loc[
-                                        df_base["Etapa agregada"] == etapa,
-                                        "Nome da Etapa de ensino/Nome do painel de filtro"
-                                    ].unique().tolist()
-                                )
+                        # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
+                        sub_disp = []
+                        for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
+                            # Buscar subetapas correspondentes na coluna "Nome da Etapa de ensino/Nome do painel de filtro"
+                            etapa_mask = df_base["Etapa agregada"] == etapa_internal
+                            subetapas_encontradas = df_base.loc[
+                                etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                        # Filtrar valores únicos e ordenar
-                        sub_real = sorted(list(set([s for s in sub_real if s and "Total -" not in s])))
-                        sub_disp = ["Total - Todas as Subetapas"] + sub_real if sub_real else []
+                            # Filtrar: exclui valores com "Total -"
+                            subetapas_filtradas = [s for s in subetapas_encontradas if not str(s).startswith("Total -")]
+                            sub_disp.extend(subetapas_filtradas)
 
-                elif "EJA - Educação de Jovens e Adultos" in tipo_ensino:
-                    # Comportamento para EJA
-                    if "Educação de Jovens e Adultos (EJA)" in etapa_sel:
-                        # Subetapas para EJA
-                        sub_disp = ["Total - Todas as Subetapas", "Ensino Fundamental", "Ensino Médio"]
+                        # Remover duplicatas e ordenar
+                        sub_disp = sorted(list(set(sub_disp)))
+
+                elif is_eja_modalidade:
+                    # Para EJA
+                    if "EJA - Total" in etapa_sel_display:
+                        # Se selecionou "EJA - Total", não mostra subetapas
+                        sub_disp = []
+                        st.text("Não há subetapas disponíveis\npara o total de EJA.")
                     else:
-                        # Para outras etapas da EJA
-                        sub_real = []
-                        # Lógica específica para EJA...
-                        sub_disp = ["Total - Todas as Subetapas"] + sorted(sub_real) if sub_real else []
+                        # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
+                        sub_disp = []
+                        for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
+                            # Buscar subetapas correspondentes na coluna "Nome da Etapa de ensino/Nome do painel de filtro"
+                            etapa_mask = df_base["Etapa Agregada"] == etapa_internal
+                            subetapas_encontradas = df_base.loc[
+                                etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
+
+                            # Filtrar: exclui valores com "Total -"
+                            subetapas_filtradas = [s for s in subetapas_encontradas if not str(s).startswith("Total -")]
+                            sub_disp.extend(subetapas_filtradas)
+
+                        # Remover duplicatas e ordenar
+                        sub_disp = sorted(list(set(sub_disp)))
 
                 else:
-                    # Comportamento padrão para outras modalidades
+                    # Comportamento padrão para Ensino Regular - MANTIDO COMO ESTÁ
                     sub_real = sorted(df_base.loc[
                                           df_base["Etapa"].isin(etapa_sel) &
                                           df_base["Subetapa"].ne("") &
@@ -728,56 +743,41 @@ with st.container():
                                       ].unique())
                     sub_disp = ["Total - Todas as Subetapas"] + sub_real if sub_real else []
 
-                sub_sel = st.multiselect(
-                    "Subetapa",
-                    sub_disp,
-                    default=[],
-                    key="sub_sel",
-                    label_visibility="collapsed"
-                )
+                # Exibir Multiselect para Subetapa (somente se houver opções)
+                if sub_disp:
+                    sub_sel = st.multiselect(
+                        "Subetapa",
+                        sub_disp,
+                        default=[],
+                        key="sub_sel",
+                        label_visibility="collapsed"
+                    )
+                else:
+                    sub_sel = []
             else:
                 sub_sel = []
 
-            # Para Séries - ajustado para diferentes modalidades
-            if etapa_sel and sub_sel:
+            # ====== SÉRIE (APENAS PARA ENSINO REGULAR) ======
+            # Só mostra série para Ensino Regular e se houver subetapas selecionadas
+            if not is_eja_modalidade and not is_educacao_profissional_modalidade and etapa_sel and sub_sel:
                 st.markdown(
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
                     unsafe_allow_html=True)
 
                 # Se "Total - Todas as Subetapas" foi selecionado
                 if "Total - Todas as Subetapas" in sub_sel:
-                    # Não mostra opções de série quando Total está selecionado
+                    # Não mostra opções de série
                     serie_sel = []
                     st.text("Selecione uma subetapa específica\npara ver as séries disponíveis.")
                 else:
-                    # Lógica para diferentes modalidades
-                    if is_educacao_profissional_modalidade:
-                        # Para Educação Profissional
-                        serie_real = []
-                        for sub in sub_sel:
-                            if "Nome da Etapa de ensino/Nome do painel de filtro" in df_base.columns:
-                                # Encontrar séries baseadas nas subetapas selecionadas
-                                mask = df_base["Nome da Etapa de ensino/Nome do painel de filtro"] == sub
-                                series_encontradas = df_base.loc[mask, "Etapa de Ensino"].unique().tolist()
-                                serie_real.extend(series_encontradas)
-
-                        # Filtrar valores únicos e ordenar
-                        serie_real = sorted(list(set([s for s in serie_real if s and not s.startswith("Total -")])))
-
-                    elif "EJA - Educação de Jovens e Adultos" in tipo_ensino:
-                        # Lógica para EJA...
-                        # [código para EJA similar ao existente]
-                        serie_real = []
-
-                    else:
-                        # Comportamento padrão
-                        serie_real = sorted(df_base.loc[
-                                                df_base["Etapa"].isin(etapa_sel) &
-                                                df_base["Subetapa"].isin(sub_sel) &
-                                                df_base["Série"].ne("") &
-                                                ~df_base["Série"].str.startswith("Total -", na=False),
-                                                "Série"
-                                            ].unique())
+                    # Comportamento padrão para Ensino Regular
+                    serie_real = sorted(df_base.loc[
+                                            df_base["Etapa"].isin(etapa_sel) &
+                                            df_base["Subetapa"].isin(sub_sel) &
+                                            df_base["Série"].ne("") &
+                                            ~df_base["Série"].str.startswith("Total -", na=False),
+                                            "Série"
+                                        ].unique())
 
                     # Adiciona "Total - Todas as Séries" apenas se houver séries específicas
                     serie_disp = ["Total - Todas as Séries"] + serie_real if serie_real else []
@@ -792,39 +792,36 @@ with st.container():
             else:
                 serie_sel = []
 
-    # CORRIGIDO: fechamento do container deve estar fora do bloco c_right_col1
-    st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
-
-    # CORRIGIDO: fechamento do container deve estar fora do bloco c_right_col1
+    # Fechamento do container
     st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
 
-# ─── 8. FUNÇÃO DE FILTRO AJUSTADA PARA TODAS AS MODALIDADES ────────────────────────────────
+# ─── 8. FUNÇÃO DE FILTRO SIMPLIFICADA PARA TODAS AS MODALIDADES ─────────
 def filtrar(df, anos, redes, etapas, subetapas, series):
     """
-    Filtra o DataFrame com base nas seleções do usuário.
-    Versão corrigida para Educação Profissional.
+    Função de filtro simplificada para todas as modalidades.
+    Adaptada para estrutura de dados de Educação Profissional e EJA.
 
     Args:
-        df: DataFrame a ser filtrado
+        df: DataFrame com os dados
         anos: Lista de anos selecionados
         redes: Lista de redes selecionadas
-        etapas: Lista de etapas selecionadas
+        etapas: Lista de etapas selecionadas (valores internos, não de exibição)
         subetapas: Lista de subetapas selecionadas
-        series: Lista de séries selecionadas
+        series: Lista de séries selecionadas (apenas para Ensino Regular)
 
     Returns:
         DataFrame filtrado
     """
-    # Validar entradas para evitar erros
+    # Validar entradas
     if not anos:
         st.warning("Por favor, selecione pelo menos um ano.")
-        return df.head(0)  # Retorna DataFrame vazio
+        return df.head(0)
 
     # Inicializa máscara com a condição de ano
     m = df["Ano"].isin(anos)
 
-    # Filtro de rede, se selecionado
+    # Filtro de rede
     if redes:
         m &= df["Rede"].isin(redes)
 
@@ -832,368 +829,53 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
     is_eja = "Modalidade" in df.columns and "EJA - Educação de Jovens e Adultos" in df["Modalidade"].unique()
     is_educacao_profissional = "Modalidade" in df.columns and "Educação Profissional" in df["Modalidade"].unique()
 
-    # Para debugging
-    # if is_educacao_profissional:
-    #     st.write(f"Etapas selecionadas: {etapas}")
-    #     st.write(f"Subetapas selecionadas: {subetapas}")
-    #     st.write(f"Séries selecionadas: {series}")
-    #     st.write(f"Colunas disponíveis: {df.columns.tolist()}")
-    #     st.write(f"Valores em Etapa agregada: {df['Etapa agregada'].unique().tolist()}")
-    #     st.write(f"Valores em Nome da Etapa: {df['Nome da Etapa de ensino/Nome do painel de filtro'].dropna().unique().tolist()}")
-
-    # --- FILTRO DE ETAPA -------------------------------------------
+    # === FILTRO DE ETAPA ===
     if etapas:
-        # CASO 1: MODALIDADE EJA
-        if is_eja:
-            # [Código existente para EJA]
-            if "Educação de Jovens e Adultos (EJA)" in etapas:
-                if not subetapas:
-                    # Caso especial: apenas "Educação de Jovens e Adultos (EJA)" sem subetapa
-                    # Mostrar a linha com Total - EJA diretamente
-                    m &= (
-                            (df["Etapa de Ensino"] == "Educação de Jovens e Adultos (EJA)") &
-                            (df["Etapa Agregada"] == "Total - EJA")
-                    )
-                # Se há subetapas, o filtro de subetapas tratará esse caso
-            else:
-                # Outros valores de etapa na EJA
-                etapa_mask = pd.Series(False, index=df.index)
-                for etapa in etapas:
-                    etapa_mask |= df["Etapa de Ensino"].str.contains(etapa, case=False)
-                m &= etapa_mask
+        if is_educacao_profissional:
+            # Para Educação Profissional: filtrar pela coluna "Etapa agregada"
+            m &= df["Etapa agregada"].isin(etapas)
 
-        # CASO 2: MODALIDADE EDUCAÇÃO PROFISSIONAL - CORRIGIDO
-        elif is_educacao_profissional:
-            if "Total" in etapas:  # Este "Total" representa "Educação Profissional - Total" na interface
-                if not subetapas:
-                    # Filtrar apenas a linha do total geral da Educação Profissional
-                    m &= (
-                            (df["Etapa de Ensino"] == "Educação Profissional") &
-                            (df["Etapa agregada"] == "Total")
-                    )
-                # Se há subetapas, o filtro de subetapas tratará esse caso
-            else:
-                # Filtrar por etapas específicas
-                etapa_mask = pd.Series(False, index=df.index)
-                for etapa in etapas:
-                    if etapa == "Formação Inicial Continuada (FIC)":
-                        etapa_mask |= (df["Etapa agregada"] == "Formação Inicial Continuada (FIC)")
-                    elif etapa == "Educação profissional técnica de nível médio":
-                        etapa_mask |= (df["Etapa agregada"] == "Educação profissional técnica de nível médio")
-                    else:
-                        # Para outras etapas, tentamos uma correspondência parcial no campo Etapa de Ensino
-                        etapa_mask |= df["Etapa de Ensino"].str.contains(etapa, case=False, na=False)
+        elif is_eja:
+            # Para EJA: filtrar pela coluna "Etapa Agregada"
+            m &= df["Etapa Agregada"].isin(etapas)
 
-                m &= etapa_mask
-
-        # CASO 3: OUTRAS MODALIDADES (comportamento padrão)
         else:
+            # Para Ensino Regular: comportamento padrão
             m &= df["Etapa"].isin(etapas)
             if not subetapas:
                 m &= df["Subetapa"] == "Total"
 
-    # --- FILTRO DE SUBETAPA ----------------------------------------
+    # === FILTRO DE SUBETAPA ===
     if subetapas:
-        # CASO 1: MODALIDADE EJA
-        if is_eja:
-            # [Código existente para EJA]
-            if "Total - Todas as Subetapas" in subetapas:
-                # Para o caso "Total - Todas as Subetapas" na EJA
-                if "Educação de Jovens e Adultos (EJA)" in etapas:
-                    # Quando "Educação de Jovens e Adultos (EJA)" está selecionado
-                    # Mostramos a linha com o total da EJA
-                    m &= (
-                            (df["Etapa de Ensino"] == "Educação de Jovens e Adultos (EJA)") &
-                            (df["Etapa Agregada"] == "Total - EJA")
-                    )
-            else:
-                # Para subetapas específicas na EJA
-                subetapa_mask = pd.Series(False, index=df.index)
-
-                for sub in subetapas:
-                    if sub == "Ensino Fundamental":
-                        if not series:
-                            # Quando apenas "Ensino Fundamental" está selecionado sem série
-                            # Mostrar a linha com Total - EJA Ensino Fundamental
-                            subetapa_mask |= (
-                                    (df[
-                                         "Etapa de Ensino"] == "Educação de Jovens e Adultos (EJA) - Ensino Fundamental") &
-                                    (df["Etapa Agregada"] == "Ensino Fundamental") &
-                                    (df[
-                                         "Nome da Etapa de ensino/Nome do painel de filtro"] == "Total - EJA Ensino Fundamental")
-                            )
-                        else:
-                            # Se há séries selecionadas, incluímos todas as linhas do Ensino Fundamental
-                            # mas o filtro de série refinará ainda mais
-                            subetapa_mask |= (
-                                    df["Etapa de Ensino"].str.contains("Ensino Fundamental") &
-                                    (df["Etapa Agregada"] == "Ensino Fundamental")
-                            )
-
-                    elif sub == "Ensino Médio":
-                        if not series:
-                            # Quando apenas "Ensino Médio" está selecionado sem série
-                            # Mostrar a linha com Total - EJA Ensino Médio
-                            subetapa_mask |= (
-                                    (df["Etapa de Ensino"] == "Educação de Jovens e Adultos (EJA) - Ensino Médio") &
-                                    (df["Etapa Agregada"] == "Ensino Médio") &
-                                    (df[
-                                         "Nome da Etapa de ensino/Nome do painel de filtro"] == "Total - EJA Ensino Médio")
-                            )
-                        else:
-                            # Se há séries selecionadas, incluímos todas as linhas do Ensino Médio
-                            # mas o filtro de série refinará ainda mais
-                            subetapa_mask |= (
-                                    df["Etapa de Ensino"].str.contains("Ensino Médio") &
-                                    (df["Etapa Agregada"] == "Ensino Médio")
-                            )
-
-                m &= subetapa_mask
-
-        # CASO 2: MODALIDADE EDUCAÇÃO PROFISSIONAL
-        elif is_educacao_profissional:
-            if "Total - Todas as Subetapas" in subetapas:
-                # Para o caso "Total - Todas as Subetapas" na Educação Profissional
-                if "Total" in etapas:  # Este "Total" representa "Educação Profissional - Total" na interface
-                    # Mostrar a linha com o total da Educação Profissional
-                    m &= (
-                            (df["Etapa de Ensino"] == "Educação Profissional") &
-                            (df["Etapa agregada"] == "Total")
-                    )
-                elif "Formação Inicial Continuada (FIC)" in etapas:
-                    # Mostrar o total da FIC
-                    m &= (
-                            (df["Etapa agregada"] == "Formação Inicial Continuada (FIC)") &
-                            (df[
-                                 "Nome da Etapa de ensino/Nome do painel de filtro"] == "Total - Formação Inicial Continuada (FIC)")
-                    )
-                elif "Educação profissional técnica de nível médio" in etapas:
-                    # Mostrar o total da Educação profissional técnica
-                    m &= (
-                            (df["Etapa agregada"] == "Educação profissional técnica de nível médio") &
-                            (df[
-                                 "Nome da Etapa de ensino/Nome do painel de filtro"] == "Total - Educação profissional técnica de nível médio")
-                    )
-            else:
-                # Para subetapas específicas na Educação Profissional
-                subetapa_mask = pd.Series(False, index=df.index)
-
-                for sub in subetapas:
-                    # Subetapas específicas na Educação Profissional são tratadas como valores
-                    # na coluna "Nome da Etapa de ensino/Nome do painel de filtro"
-                    subetapa_mask |= (df["Nome da Etapa de ensino/Nome do painel de filtro"] == sub)
-
-                m &= subetapa_mask
-
-        # CASO 3: OUTRAS MODALIDADES
+        if is_educacao_profissional or is_eja:
+            # Para Educação Profissional e EJA: filtrar pela coluna "Nome da Etapa de ensino/Nome do painel de filtro"
+            m &= df["Nome da Etapa de ensino/Nome do painel de filtro"].isin(subetapas)
         else:
-            # Comportamento padrão para outras modalidades
+            # Para Ensino Regular: comportamento padrão
             if "Total - Todas as Subetapas" in subetapas:
                 m &= df["Subetapa"] == "Total"
             else:
                 m &= df["Subetapa"].isin(subetapas)
 
-    # --- FILTRO DE SÉRIE -------------------------------------------
-    if series:
-        # CASO 1: MODALIDADE EJA
-        if is_eja:
-            if "Total - Todas as Séries" in series:
-                # Para "Total - Todas as Séries" na EJA, já tratamos esse caso no filtro de subetapa
-                pass
+    # === FILTRO DE SÉRIE (APENAS PARA ENSINO REGULAR) ===
+    if series and not is_eja and not is_educacao_profissional:
+        # Apenas para Ensino Regular
+        if "Total - Todas as Séries" in series:
+            if subetapas and "Total - Todas as Subetapas" not in subetapas:
+                serie_totals = [f"Total - {sub}" for sub in subetapas]
+                m &= df["Série"].isin(serie_totals)
             else:
-                # Para séries específicas na EJA
-                serie_mask = pd.Series(False, index=df.index)
-
-                for serie in series:
-                    if serie == "Anos Iniciais":
-                        serie_mask |= (
-                                df["Etapa de Ensino"].str.contains("Anos Iniciais") &
-                                (df["Nome da Etapa de ensino/Nome do painel de filtro"] == "EJA - EF - Anos Iniciais")
-                        )
-                    elif serie == "Anos Finais":
-                        serie_mask |= (
-                                df["Etapa de Ensino"].str.contains("Anos Finais") &
-                                (df["Nome da Etapa de ensino/Nome do painel de filtro"] == "EJA - EF - Anos Finais")
-                        )
-                    elif "Curso FIC Integrado na Modalidade EJA de Nível Fundamental" in serie:
-                        serie_mask |= (
-                                df["Etapa de Ensino"].str.contains("Curso FIC") &
-                                df["Etapa de Ensino"].str.contains("Fundamental") &
-                                (df["Nome da Etapa de ensino/Nome do painel de filtro"] == "EJA - EF - FIC")
-                        )
-                    elif "Curso FIC Integrado na Modalidade EJA de Nível Médio" in serie:
-                        serie_mask |= (
-                                df["Etapa de Ensino"].str.contains("Curso FIC") &
-                                df["Etapa de Ensino"].str.contains("Médio") &
-                                (df["Nome da Etapa de ensino/Nome do painel de filtro"] == "EJA - EM - FIC")
-                        )
-                    elif "Curso Técnico Integrado na Modalidade EJA de Nível Médio" in serie:
-                        serie_mask |= (
-                                df["Etapa de Ensino"].str.contains("Curso Técnico") &
-                                (df[
-                                     "Nome da Etapa de ensino/Nome do painel de filtro"] == "EJA - EM - Curso Técnico integrado")
-                        )
-                    elif "Sem componente profissionalizante" in serie:
-                        serie_mask |= (
-                                df["Etapa de Ensino"].str.contains("Sem componente") &
-                                (df["Nome da Etapa de ensino/Nome do painel de filtro"] == "EJA - EM - Não prof.")
-                        )
-
-                m &= serie_mask
-
-        # CASO 2: MODALIDADE EDUCAÇÃO PROFISSIONAL
-        elif is_educacao_profissional:
-            if "Total - Todas as Séries" in series:
-                # Para "Total - Todas as Séries" na Educação Profissional
-                # Já foi tratado no filtro de subetapa
-                pass
-            else:
-                # Para séries específicas na Educação Profissional
-                serie_mask = pd.Series(False, index=df.index)
-
-                for serie in series:
-                    # CORREÇÃO: Usar correspondência direta com a coluna Etapa de Ensino para séries
-                    # pois os valores em "Nome da Etapa de ensino/Nome do painel de filtro" são mais genéricos
-                    serie_mask |= df["Etapa de Ensino"].str.contains(serie, case=False, na=False)
-
-                m &= serie_mask
-
-        # CASO 3: OUTRAS MODALIDADES
+                m &= df["Série"].eq("")
         else:
-            # Comportamento padrão para outras modalidades
-            if "Total - Todas as Séries" in series:
-                if subetapas and "Total - Todas as Subetapas" not in subetapas:
-                    # Para cada subetapa selecionada, mostra seu total
-                    serie_totals = [f"Total - {sub}" for sub in subetapas]
-                    m &= df["Série"].isin(serie_totals)
-                else:
-                    # Se não há subetapa específica, mostra série vazia ou totais gerais
-                    m &= df["Série"].eq("")
-            else:
-                # Para séries específicas no padrão
-                m &= df["Série"].isin(series)
+            m &= df["Série"].isin(series)
 
     # Aplicar a máscara final e retornar o resultado
-    return df.loc[m]
-
-    # Aplicar ordenação consistente para melhor visualização
-    if not result.empty and is_educacao_profissional:
-        # Ordena por Etapa agregada e Nome da Etapa para Educação Profissional
-        sort_cols = []
-        if "Etapa agregada" in result.columns:
-            sort_cols.append("Etapa agregada")
-        if "Nome da Etapa de ensino/Nome do painel de filtro" in result.columns:
-            sort_cols.append("Nome da Etapa de ensino/Nome do painel de filtro")
-        if sort_cols:
-            result = result.sort_values(by=sort_cols)
+    result = df.loc[m]
 
     return result
 
 
-# ─── CÓDIGO PARA CONVERTER VALORES DE SUBETAPA PARA EDUCAÇÃO PROFISSIONAL ────
-def obter_opcoes_subetapa_ed_prof(df, etapa_sel):
-    """
-    Obtém as opções de subetapa para Educação Profissional com base na etapa selecionada.
-
-    Args:
-        df: DataFrame com os dados
-        etapa_sel: Lista de etapas selecionadas
-
-    Returns:
-        Lista de opções de subetapa
-    """
-    sub_disp = ["Total - Todas as Subetapas"]
-
-    if "Total" in etapa_sel:  # Este é o "Educação Profissional - Total" na interface
-        # Não adicionar subetapas específicas quando Total está selecionado
-        return sub_disp
-
-    # Para cada etapa selecionada, encontrar as subetapas correspondentes
-    for etapa in etapa_sel:
-        if etapa == "Formação Inicial Continuada (FIC)":
-            # Obter valores específicos para FIC
-            sub_valores = [
-                "Curso FIC Concomitante",
-                "Curso FIC EJA - EF",
-                "Curso FIC EJA - EM"
-            ]
-            sub_disp.extend([s for s in sub_valores if s not in sub_disp])
-
-        elif etapa == "Educação profissional técnica de nível médio":
-            # Obter valores específicos para Educação profissional técnica
-            sub_valores = [
-                "Curso técnico - Concomitante",
-                "Curso técnico - Subsequente",
-                "Curso técnico integrado na modalidade EJA",
-                "Total - Curso técnico integrado (Todas as séries + Não seriado)",
-                "Total - normal/magistério (Todas as séries)"
-            ]
-            sub_disp.extend([s for s in sub_valores if s not in sub_disp])
-
-    return sub_disp
-
-
-# ─── CÓDIGO PARA CONVERTER VALORES DE SÉRIE PARA EDUCAÇÃO PROFISSIONAL ────
-def obter_opcoes_serie_ed_prof(df, etapa_sel, sub_sel):
-    """
-    Obtém as opções de série para Educação Profissional com base na etapa e subetapa selecionadas.
-
-    Args:
-        df: DataFrame com os dados
-        etapa_sel: Lista de etapas selecionadas
-        sub_sel: Lista de subetapas selecionadas
-
-    Returns:
-        Lista de opções de série
-    """
-    if "Total - Todas as Subetapas" in sub_sel:
-        # Não mostrar séries quando "Total - Todas as Subetapas" está selecionado
-        return []
-
-    serie_disp = ["Total - Todas as Séries"]
-
-    # Mapear subetapas para séries correspondentes
-    for sub in sub_sel:
-        if sub == "Curso FIC Concomitante":
-            # Não há séries específicas para esta subetapa
-            pass
-        elif sub == "Curso FIC EJA - EF":
-            serie_disp.append(
-                "Educação de Jovens e Adultos (EJA) - Ensino Fundamental - Curso FIC Integrado na Modalidade EJA de Nível Fundamental")
-        elif sub == "Curso FIC EJA - EM":
-            serie_disp.append(
-                "Educação de Jovens e Adultos (EJA) - Ensino Médio - Curso FIC Integrado na Modalidade EJA de Nível Médio")
-        elif sub == "Curso técnico - Concomitante":
-            serie_disp.append("Educação Profissional Técnica - Curso Técnico Concomitante")
-        elif sub == "Curso técnico - Subsequente":
-            serie_disp.append("Educação Profissional Técnica - Curso Técnico Subsequente")
-        elif sub == "Curso técnico integrado na modalidade EJA":
-            serie_disp.append(
-                "Educação de Jovens e Adultos (EJA) - Ensino Médio - Curso Técnico Integrado na Modalidade EJA de Nível Médio")
-        elif sub == "Total - Curso técnico integrado (Todas as séries + Não seriado)":
-            serie_disp.extend([
-                "Ensino Médio - Curso Técnico Integrado à Educação Profissional",
-                "Ensino Médio - Curso Técnico Integrado à Educação Profissional - 1º ano/1ª Série",
-                "Ensino Médio - Curso Técnico Integrado à Educação Profissional - 2º ano/2ª Série",
-                "Ensino Médio - Curso Técnico Integrado à Educação Profissional - 3º ano/3ª Série",
-                "Ensino Médio - Curso Técnico Integrado à Educação Profissional - 4º ano/4ª Série",
-                "Ensino Médio - Curso Técnico Integrado à Educação Profissional - Não Seriado"
-            ])
-        elif sub == "Total - normal/magistério (Todas as séries)":
-            serie_disp.extend([
-                "Ensino Médio - Modalidade Normal/Magistério",
-                "Ensino Médio - Modalidade Normal/Magistério - 1º ano/1ª Série",
-                "Ensino Médio - Modalidade Normal/Magistério - 2º ano/2ª Série",
-                "Ensino Médio - Modalidade Normal/Magistério - 3º ano/3ª Série",
-                "Ensino Médio - Modalidade Normal/Magistério - 4º ano/4ª Série"
-            ])
-
-    # Remover duplicatas e ordenar
-    serie_disp = list(dict.fromkeys(serie_disp))
-
-    return serie_disp
-
-# ─── VERIFICAÇÃO DE FILTROS ───────────────────────────────────────
+# ─── VERIFICAÇÃO DE FILTROS SIMPLIFICADA ───────────────────────────
 # Verificar se há pelo menos um filtro selecionado para cada categoria obrigatória
 if not ano_sel:
     st.warning("Por favor, selecione pelo menos um ano.")
@@ -1203,23 +885,24 @@ if not rede_sel:
     st.warning("Por favor, selecione pelo menos uma rede de ensino.")
     st.stop()
 
-# Detectar se estamos em modalidades especiais para ajustar comportamento
+# Detectar modalidades para mensagens específicas
 is_eja_modalidade = tipo_ensino == "EJA - Educação de Jovens e Adultos"
 is_educacao_profissional_modalidade = tipo_ensino == "Educação Profissional"
 
-# 7‑B • CHAMA O FILTRO COM AS ESCOLHAS ATUAIS • gera df_filtrado
+# Filtrar os dados com base nas seleções
 df_filtrado = filtrar(
     df_base,
     tuple(ano_sel),
     tuple(rede_sel),
     tuple(etapa_sel),
     tuple(sub_sel),
-    tuple(serie_sel),
+    tuple(serie_sel) if not is_eja_modalidade and not is_educacao_profissional_modalidade else []
 )
 
-# Adiciona indicador visual da quantidade de dados filtrados
+# Indicador visual de resultados
 num_total = len(df_base)
 num_filtrado = len(df_filtrado)
+
 if num_filtrado > 0:
     percent = (num_filtrado / num_total) * 100
     st.markdown(
@@ -1232,53 +915,22 @@ if num_filtrado > 0:
         unsafe_allow_html=True
     )
 else:
-    # Mensagem mais informativa de acordo com a modalidade
+    # Mensagens específicas por modalidade quando não há dados
     if is_eja_modalidade:
-        # Mensagens específicas para EJA
-        if etapa_sel and etapa_sel[0] == "Educação de Jovens e Adultos (EJA)" and not sub_sel:
-            st.warning("""
-            Para visualizar dados da Educação de Jovens e Adultos (EJA), você pode:
+        st.warning("""
+        Não há dados para esta combinação de filtros. Na modalidade EJA, você pode:
 
-            1. Deixar a Etapa vazia para ver todos os dados da EJA, ou
-            2. Selecionar Educação de Jovens e Adultos (EJA) como Etapa e escolher uma Subetapa (Ensino Fundamental ou Ensino Médio)
-            """)
-        elif etapa_sel and sub_sel and not serie_sel:
-            st.warning("""
-            Não há dados para a combinação de filtros selecionada. Tente selecionar:
-
-            1. Etapa: "Educação de Jovens e Adultos (EJA)"
-            2. Subetapa: "Ensino Fundamental" ou "Ensino Médio"
-            3. Série: Escolha uma opção específica ou "Total - Todas as Séries"
-            """)
-        else:
-            st.warning("Não há dados após os filtros aplicados. Por favor, ajuste os critérios de seleção.")
-
+        1. Selecionar "EJA - Total" para ver o total geral da EJA, ou
+        2. Selecionar "EJA - Ensino Fundamental" ou "EJA - Ensino Médio" e escolher uma subetapa específica
+        """)
     elif is_educacao_profissional_modalidade:
-        # Mensagens específicas para Educação Profissional
-        if etapa_sel and etapa_sel[0] == "Educação Profissional" and not sub_sel:
-            st.warning("""
-            Para visualizar dados da Educação Profissional, você pode:
+        st.warning("""
+        Não há dados para esta combinação de filtros. Na Educação Profissional, você pode:
 
-            1. Deixar a Etapa vazia para ver todos os dados da Educação Profissional, ou
-            2. Selecionar Educação Profissional como Etapa e escolher uma Subetapa ("Formação Inicial Continuada (FIC)" ou "Educação profissional técnica de nível médio")
-            """)
-        elif etapa_sel and sub_sel and not serie_sel:
-            st.warning("""
-            Não há dados para a combinação de filtros selecionada. Tente selecionar:
-
-            1. Etapa: "Educação Profissional"
-            2. Subetapa: "Formação Inicial Continuada (FIC)" ou "Educação profissional técnica de nível médio"
-            3. Série: Escolha uma opção específica ou "Total - Todas as Séries"
-            """)
-        else:
-            st.warning("""
-            Não há dados para esta combinação específica de filtros. Na Educação Profissional, verifique se os valores selecionados correspondem aos disponíveis nos dados:
-
-            - Subetapa "Formação Inicial Continuada (FIC)" com séries como "Curso FIC Concomitante", "Curso FIC EJA - EF", etc.
-            - Subetapa "Educação profissional técnica de nível médio" com séries como "Curso técnico - Concomitante", "Curso técnico - Subsequente", etc.
-            """)
+        1. Selecionar "Educação Profissional - Total" para ver o total geral da Educação Profissional, ou
+        2. Selecionar "Formação Inicial Continuada (FIC)" ou "Educação profissional técnica de nível médio" e escolher uma subetapa específica
+        """)
     else:
-        # Mensagem padrão para outras modalidades
         st.warning("Não há dados após os filtros aplicados. Por favor, ajuste os critérios de seleção.")
 
     st.stop()
