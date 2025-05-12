@@ -567,7 +567,7 @@ if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível de agregação '{nivel}'.")
     st.stop()
 
-# ─── 7. PAINEL DE FILTROS CORRIGIDO (SEM "TOTAL - TODAS AS SUBETAPAS") ──────────────────────────────
+# ─── 7. PAINEL DE FILTROS COMPLETO (MANTENDO TODOS OS VALORES INCLUINDO TOTAIS) ──────────────────────────────
 with st.container():
     st.markdown('<div class="panel-filtros" style="margin-top:-30px">', unsafe_allow_html=True)
 
@@ -704,9 +704,8 @@ with st.container():
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                            # Filtrar: exclui valores com "Total -"
-                            subetapas_filtradas = [s for s in subetapas_encontradas if not str(s).startswith("Total -")]
-                            sub_disp.extend(subetapas_filtradas)
+                            # CORREÇÃO: NÃO filtrar valores com "Total" - incluir todos
+                            sub_disp.extend(subetapas_encontradas)
 
                         # Remover duplicatas e ordenar
                         sub_disp = sorted(list(set(sub_disp)))
@@ -726,9 +725,8 @@ with st.container():
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                            # Filtrar: exclui valores com "Total -"
-                            subetapas_filtradas = [s for s in subetapas_encontradas if not str(s).startswith("Total -")]
-                            sub_disp.extend(subetapas_filtradas)
+                            # CORREÇÃO: NÃO filtrar valores com "Total" - incluir todos
+                            sub_disp.extend(subetapas_encontradas)
 
                         # Remover duplicatas e ordenar
                         sub_disp = sorted(list(set(sub_disp)))
@@ -764,7 +762,7 @@ with st.container():
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
                     unsafe_allow_html=True)
 
-                # Comportamento para Ensino Regular - CORRIGIDO, REMOVENDO "Total - Todas as Séries"
+                # Comportamento para Ensino Regular
                 serie_real = sorted(df_base.loc[
                                         df_base["Etapa"].isin(etapa_sel) &
                                         df_base["Subetapa"].isin(sub_sel) &
@@ -772,8 +770,6 @@ with st.container():
                                         ~df_base["Série"].str.startswith("Total -", na=False),
                                         "Série"
                                     ].unique())
-
-                # Removido a adição de "Total - Todas as Séries"
                 serie_disp = serie_real if serie_real else []
 
                 if serie_disp:
@@ -797,7 +793,8 @@ with st.container():
 # ─── 8. FUNÇÃO DE FILTRO CORRIGIDA ────────────────────────────────
 def filtrar(df, anos, redes, etapas, subetapas, series):
     """
-    Função de filtro corrigida para todas as modalidades, sem opções "Total - Todas".
+    Função de filtro corrigida para todas as modalidades,
+    mantendo todos os valores incluindo os que contêm "Total".
 
     Args:
         df: DataFrame com os dados
@@ -858,9 +855,7 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
             m &= df["Série"].isin(series)
 
     # Aplicar a máscara final e retornar o resultado
-    result = df.loc[m]
-
-    return result
+    return df.loc[m]
 
 
 # ─── VERIFICAÇÃO DE FILTROS CORRIGIDA ───────────────────────────
