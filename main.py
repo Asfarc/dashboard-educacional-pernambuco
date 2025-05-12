@@ -734,14 +734,13 @@ with st.container():
                         sub_disp = sorted(list(set(sub_disp)))
 
                 else:
-                    # Comportamento padrão para Ensino Regular - CORRIGIDO, REMOVENDO "Total - Todas as Subetapas"
+                    # Comportamento padrão para Ensino Regular
                     sub_real = sorted(df_base.loc[
                                           df_base["Etapa"].isin(etapa_sel) &
                                           df_base["Subetapa"].ne("") &
                                           df_base["Subetapa"].ne("Total"),
                                           "Subetapa"
                                       ].unique())
-                    # Removido a adição de "Total - Todas as Subetapas"
                     sub_disp = sub_real if sub_real else []
 
                 # Exibir Multiselect para Subetapa (somente se houver opções)
