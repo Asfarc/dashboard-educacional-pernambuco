@@ -694,7 +694,7 @@ with st.container():
                     if "Educação Profissional - Total" in etapa_sel_display:
                         # Se selecionou "Educação Profissional - Total", não mostra subetapas
                         sub_disp = []
-                        st.text("Não há subetapas disponíveis\npara o total de Educação Profissional.")
+
                     else:
                         # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
                         sub_disp = []
@@ -715,7 +715,7 @@ with st.container():
                     if "EJA - Total" in etapa_sel_display:
                         # Se selecionou "EJA - Total", não mostra subetapas
                         sub_disp = []
-                        st.text("Não há subetapas disponíveis\npara o total de EJA.")
+
                     else:
                         # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
                         sub_disp = []
