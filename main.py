@@ -567,7 +567,7 @@ if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível de agregação '{nivel}'.")
     st.stop()
 
-# ─── 7. PAINEL DE FILTROS COMPLETO (MANTENDO TODOS OS VALORES INCLUINDO TOTAIS) ──────────────────────────────
+# ─── 7. PAINEL DE FILTROS CORRIGIDO ────────────────────────────────
 with st.container():
     st.markdown('<div class="panel-filtros" style="margin-top:-30px">', unsafe_allow_html=True)
 
@@ -694,7 +694,7 @@ with st.container():
                     if "Educação Profissional - Total" in etapa_sel_display:
                         # Se selecionou "Educação Profissional - Total", não mostra subetapas
                         sub_disp = []
-
+                        st.text("Não há subetapas disponíveis\npara o total de Educação Profissional.")
                     else:
                         # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
                         sub_disp = []
@@ -704,18 +704,20 @@ with st.container():
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                            # CORREÇÃO: NÃO filtrar valores com "Total" - incluir todos
-                            sub_disp.extend(subetapas_encontradas)
+                            # CORREÇÃO: Adicionar TODOS os valores, sem filtrar
+                            for subetapa in subetapas_encontradas:
+                                if subetapa not in sub_disp:  # Evitar duplicatas
+                                    sub_disp.append(subetapa)
 
-                        # Remover duplicatas e ordenar
-                        sub_disp = sorted(list(set(sub_disp)))
+                        # Ordenar a lista
+                        sub_disp = sorted(sub_disp)
 
                 elif is_eja_modalidade:
                     # Para EJA
                     if "EJA - Total" in etapa_sel_display:
                         # Se selecionou "EJA - Total", não mostra subetapas
                         sub_disp = []
-
+                        st.text("Não há subetapas disponíveis\npara o total de EJA.")
                     else:
                         # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
                         sub_disp = []
@@ -725,11 +727,13 @@ with st.container():
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                            # CORREÇÃO: NÃO filtrar valores com "Total" - incluir todos
-                            sub_disp.extend(subetapas_encontradas)
+                            # CORREÇÃO: Adicionar TODOS os valores, sem filtrar
+                            for subetapa in subetapas_encontradas:
+                                if subetapa not in sub_disp:  # Evitar duplicatas
+                                    sub_disp.append(subetapa)
 
-                        # Remover duplicatas e ordenar
-                        sub_disp = sorted(list(set(sub_disp)))
+                        # Ordenar a lista
+                        sub_disp = sorted(sub_disp)
 
                 else:
                     # Comportamento padrão para Ensino Regular
