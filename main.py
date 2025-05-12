@@ -846,18 +846,13 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
     st.session_state["page_size"] = page_size
 
 # ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
-# 1. Colunas visíveis baseadas no nível de agregação
 vis_cols = ["Ano"]
 if nivel == "Escolas":
     vis_cols += ["Nome do Município", "Nome da Escola"]
 elif nivel == "Municípios":
     vis_cols += ["Nome do Município"]
 
-# 2. Escolhe qual coluna vai aparecer como "Etapa":
-# — Profissional/EJA: sempre o nome do painel de filtro (subetapa)
-# — Ensino Regular:
-#     • se sub_sel não estiver vazio, mostramos a Subetapa
-#     • senão, mostramos a Etapa agregada
+# escolhe qual coluna exibir como "Etapa"
 if tipo_ensino in ("Educação Profissional", "EJA - Educação de Jovens e Adultos"):
     etapa_col = "Nome da Etapa de ensino/Nome do painel de filtro"
 elif sub_sel:
@@ -865,16 +860,15 @@ elif sub_sel:
 else:
     etapa_col = "Etapa"
 
-# adiciona "Etapa" (dinâmico), Rede e Matrículas
 vis_cols += [etapa_col, "Rede", "Número de Matrículas"]
 
-# 3. Puxa só as colunas selecionadas e renomeia para uniformizar o cabeçalho
+# monta o df da tabela e renomeia para ficar sempre "Etapa"
 df_tabela = df_filtrado[vis_cols].copy()
 df_tabela = df_tabela.rename(columns={etapa_col: "Etapa"})
 
-# agora vis_cols para exibição
-vis_cols = vis_cols.copy()
-vis_cols[vis_cols.index(etapa_col)] = "Etapa"
+# atualiza vis_cols para refletir a coluna renomeada
+vis_cols = ["Ano"] + vis_cols[1:-2] + ["Etapa", "Rede", "Número de Matrículas"]
+
 
 # 3. CSS para centralizar coluna numérica
 st.markdown("""
