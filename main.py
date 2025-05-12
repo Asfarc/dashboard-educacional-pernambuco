@@ -62,6 +62,37 @@ section[data-testid="stSidebar"] .stRadio > div {
     width: 100% !important;
 }
 
+/* Correção específica para texto truncado em tags de Etapa */
+
+/* Amplia especificamente os elementos de tag na seção Etapa */
+[data-testid="stMultiSelect"]:has(div[key="etapa_sel"]) div[data-baseweb="tag"],
+[data-testid="stMultiSelect"]:has(div[key^="etapa_"]) div[data-baseweb="tag"] {
+    max-width: 95% !important;
+    width: auto !important;
+    white-space: normal !important;
+    word-break: normal !important; /* Permite truncamento apenas em espaços */
+    overflow-wrap: break-word !important;
+    padding-right: 30px !important;
+    min-width: 160px !important; /* Garante largura mínima adequada */
+}
+
+/* Ajusta o comportamento do texto no filtro de Etapa */
+[data-testid="stMultiSelect"]:has(div[key="etapa_sel"]) div[data-baseweb="tag"] span,
+[data-testid="stMultiSelect"]:has(div[key^="etapa_"]) div[data-baseweb="tag"] span {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+}
+
+/* Assegura que elementos curtos não sejam truncados */
+div[data-baseweb="tag"]:has(span:not(:empty)):has(span[data-testid*="ensino"i]) {
+    min-width: 150px !important;
+    max-width: none !important;
+    width: auto !important;
+}
+
 section[data-testid="stSidebar"] .stRadio > div > label {
     display: flex !important;
     align-items: center !important;
@@ -254,7 +285,7 @@ section[data-testid="stSidebar"] .stRadio > div > label {
     align-items: center !important;
     padding: 0.5rem 0.8rem !important;
     margin: 0.2rem 0 !important;
-    background: linear-gradient(to bottom, #0080cc, #0067a3) !important;
+    background: linear-gradient(to bottom, #5a6c7b, #5a6c7b) !important;
     border: 1px solid rgba(0, 0, 0, 0.3) !important;
     border-radius: 5px !important;
     transition: all 0.2s ease !important;
@@ -263,7 +294,7 @@ section[data-testid="stSidebar"] .stRadio > div > label {
 /* ---------- [ESTILOS NOVOS] Destaque do item selecionado ---------- */
 /* Label inteiro quando selecionado */
 section[data-testid="stSidebar"] .stRadio > div > label:has(input[type="radio"]:checked) {
-    background: #08306b !important;
+    background: #8a5343 !important;
     border: 2px solid #ffdfba !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
     transform: scale(1.02) !important;
