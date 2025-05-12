@@ -605,15 +605,24 @@ def construir_filtros_ui(df, modalidade_key, nivel):
         is_etapa_total = etapa_sel and etapa_sel[0] in config.etapa_valores.get("totais", [])
 
         if etapa_sel and not is_etapa_total:
-            # Mostrar subetapas disponíveis para as etapas selecionadas, excluindo valores "Total"
-            sub_disp = sorted(
-                df.loc[
-                    df["Etapa"].isin(etapa_sel) &
-                    df["Subetapa"].notna() &
-                    ~df["Subetapa"].str.contains("Total", na=False),
-                    "Subetapa"
-                ].unique()
-            )
+            # CORREÇÃO AQUI: Evitar operações diretas com tipos categoria
+            # Criar máscaras booleanas separadamente
+            etapa_mask = df["Etapa"].isin(etapa_sel)
+            notna_mask = df["Subetapa"].notna()
+
+            # Para o filtro de "Total", usamos string methods que funcionam com categorias
+            if "Subetapa" in df.columns and isinstance(df["Subetapa"].dtype, pd.CategoricalDtype):
+                # Converter para string antes de usar str.contains
+                total_mask = ~df["Subetapa"].astype(str).str.contains("Total", na=False)
+            else:
+                total_mask = ~df["Subetapa"].str.contains("Total", na=False)
+
+            # Aplicar os filtros sequencialmente
+            temp_df = df[etapa_mask]
+            temp_df = temp_df[temp_df["Subetapa"].notna()]
+            temp_df = temp_df[~temp_df["Subetapa"].astype(str).str.contains("Total", na=False)]
+
+            sub_disp = sorted(temp_df["Subetapa"].unique())
 
             if sub_disp:
                 sub_sel = st.multiselect(
@@ -644,15 +653,14 @@ def construir_filtros_ui(df, modalidade_key, nivel):
                 unsafe_allow_html=True
             )
 
-            serie_disp = sorted(
-                df.loc[
-                    df["Etapa"].isin(etapa_sel) &
-                    df["Subetapa"].isin(sub_sel) &
-                    df["Série"].notna() &
-                    df["Série"] != "",
-                    "Série"
-                ].unique()
-            )
+            # CORREÇÃO AQUI: Evitar operações diretas com tipos categoria
+            # Aplicamos os filtros sequencialmente
+            temp_df = df[df["Etapa"].isin(etapa_sel)]
+            temp_df = temp_df[temp_df["Subetapa"].isin(sub_sel)]
+            temp_df = temp_df[temp_df["Série"].notna()]
+            temp_df = temp_df[temp_df["Série"] != ""]
+
+            serie_disp = sorted(temp_df["Série"].unique())
 
             if serie_disp:
                 serie_sel = st.multiselect(
@@ -710,7 +718,6 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
         mask &= df["Série"].isin(serie_sel)
 
     return df[mask]
-
 
 # ─── 10. INICIALIZAÇÃO E CARREGAMENTO ─────────────────────────────────
 # Inicializa o cronômetro da sessão se não existir
