@@ -421,49 +421,37 @@ class Paginator:
 class ModalidadeConfig:
     """Configuração por tipo de modalidade de ensino"""
 
-    def __init__(self, arquivo, colunas_filtro, mapeamento_colunas=None, texto_ajuda=None):
+    def __init__(self, arquivo, etapa_valores=None, subetapa_valores=None, serie_col=None, texto_ajuda=None):
         self.arquivo = arquivo
-        self.colunas_filtro = colunas_filtro  # dict: nivel -> colunas disponíveis
-        self.mapeamento_colunas = mapeamento_colunas or {}  # renomear colunas inconsistentes
+        self.etapa_valores = etapa_valores or {}  # valores de etapa para facilitar seleção padrão
+        self.subetapa_valores = subetapa_valores or {}  # valores de subetapa específicos
+        self.serie_col = serie_col  # nome da coluna de série, se existir
         self.texto_ajuda = texto_ajuda  # texto de ajuda contextual para esta modalidade
-
-    def get_colunas_filtro(self, nivel):
-        """Retorna as colunas de filtro disponíveis para este nível"""
-        return self.colunas_filtro.get(nivel, [])
 
 
 # ─── 6. CONFIGURAÇÕES DE MODALIDADE ────────────────────────────────────
 MODALIDADES = {
     "Ensino Regular": ModalidadeConfig(
         arquivo="Ensino Regular.parquet",
-        colunas_filtro={
-            "nivel_1": ["Etapa"],
-            "nivel_2": ["Subetapa"],
-            "nivel_3": ["Ano/Série"]
+        etapa_valores={
+            "padrao": "Educação Infantil"  # valor padrão para seleção inicial
         },
+        serie_col="Ano/Série",
         texto_ajuda="No Ensino Regular, selecione primeiro a Etapa (Infantil, Fundamental ou Médio), depois a Subetapa e, se desejar, uma Série específica."
     ),
     "EJA - Educação de Jovens e Adultos": ModalidadeConfig(
         arquivo="EJA - Educação de Jovens e Adultos.parquet",
-        colunas_filtro={
-            "nivel_1": ["Etapa"],
-            "nivel_2": ["Subetapa"]
-        },
-        mapeamento_colunas={
-            "Etapa": "Etapa_padronizada",
-            "Nome da Etapa de ensino/Nome do painel de filtro": "Subetapa_padronizada"
+        etapa_valores={
+            "padrao": "EJA - Total",
+            "totais": ["EJA - Total"]  # identifica valores que representam totais
         },
         texto_ajuda="Na modalidade EJA, selecione primeiro o tipo de ensino (EJA - Total, EJA - Ensino Fundamental ou EJA - Ensino Médio) e depois a subetapa específica, quando disponível."
     ),
     "Educação Profissional": ModalidadeConfig(
         arquivo="Educação Profissional.parquet",
-        colunas_filtro={
-            "nivel_1": ["Etapa"],
-            "nivel_2": ["Subetapa"]
-        },
-        mapeamento_colunas={
-            "Etapa": "Etapa_padronizada",
-            "Nome da Etapa de ensino/Nome do painel de filtro": "Subetapa_padronizada"
+        etapa_valores={
+            "padrao": "Educação Profissional - Total",
+            "totais": ["Educação Profissional - Total"]  # identifica valores que representam totais
         },
         texto_ajuda="Na Educação Profissional, selecione primeiro a Etapa (Educação Profissional - Total, Formação Inicial Continuada (FIC) ou Educação profissional técnica de nível médio) e depois a subetapa específica, quando disponível."
     )
@@ -485,10 +473,6 @@ def carregar_dados(modalidade_key):
 
     tempo_inicio = time.time()
 
-    # Renomear colunas conforme mapeamento
-    if config.mapeamento_colunas:
-        df = df.rename(columns=config.mapeamento_colunas)
-
     # Normalização comum a todas as modalidades
     for cod in ["Cód. Município", "Cód. da Escola"]:
         if cod in df.columns:
@@ -501,42 +485,27 @@ def carregar_dados(modalidade_key):
         df["Número de Matrículas"], errors="coerce"
     )
 
-    # Padronização de colunas por modalidade
-    if modalidade_key == "Ensino Regular":
-        # Para compatibilidade com dados antigos que podem vir com "Etapa de Ensino"
-        if "Etapa" not in df.columns and "Etapa de Ensino" in df.columns:
-            def _split(s: str):
-                p = s.split(" - ")
-                etapa = p[0]
-                sub = p[1] if len(p) > 1 else ""
-                serie = " - ".join(p[2:]) if len(p) > 2 else ""
-                return etapa, sub, serie
+    # Garantir que todas as colunas necessárias existam
+    if "Etapa" not in df.columns:
+        df["Etapa"] = ""
 
-            df[["Etapa", "Subetapa", "Série"]] = (
-                df["Etapa de Ensino"]
-                .apply(lambda x: pd.Series(_split(x)))
-            )
+    if "Subetapa" not in df.columns:
+        df["Subetapa"] = ""
 
-        # Garantir categorias
-        for c in ["Etapa", "Subetapa", "Série"]:
-            if c in df.columns:
-                df[c] = df[c].astype("category")
+    # Adicionar coluna de Série para modalidades que não a possuem
+    if config.serie_col is None and "Série" not in df.columns:
+        df["Série"] = ""
+    elif config.serie_col is not None and config.serie_col in df.columns:
+        # Renomear a coluna de série conforme configuração
+        df["Série"] = df[config.serie_col]
 
-    elif modalidade_key in ["EJA - Educação de Jovens e Adultos", "Educação Profissional"]:
-        # Para compatibilidade com a estrutura antiga
-        df["Etapa_agregada"] = df.get("Etapa_agregada", df["Etapa_padronizada"])
+    # Converter para categóricos para economia de memória
+    for col in ["Etapa", "Subetapa", "Série", "Rede"]:
+        if col in df.columns:
+            df[col] = df[col].astype("category")
 
-        # Garantir que temos a coluna de subetapas padronizada
-        if "Subetapa_padronizada" not in df.columns:
-            df["Subetapa_padronizada"] = df.get("Nome da Etapa de ensino/Nome do painel de filtro", "")
-
-        # Criar série vazia para compatibilidade
-        if "Série" not in df.columns:
-            df["Série"] = pd.Categorical([""] * len(df), categories=[""])
-
-    # Comuns
+    # Formato padrão para nível de agregação
     df["Nível de agregação"] = df["Nível de agregação"].str.lower()
-    df["Rede"] = df["Rede"].astype("category")
 
     # Registra a métrica de tempo de carregamento
     tempo_carga = time.time() - tempo_inicio
@@ -557,6 +526,10 @@ def construir_filtros_ui(df, modalidade_key, nivel):
 
     # Layout em duas colunas
     c_left, c_right = st.columns([0.5, 0.7], gap="large")
+
+    # Detectar modalidade para compatibilidade
+    is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
+    is_prof = modalidade_key == "Educação Profissional"
 
     # Filtros comuns a todas as modalidades (coluna esquerda)
     with c_left:
@@ -598,11 +571,7 @@ def construir_filtros_ui(df, modalidade_key, nivel):
     with c_right:
         filtros = {}
 
-        # Detectar modalidade para compatibilidade
-        is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
-        is_prof = modalidade_key == "Educação Profissional"
-
-        # Nível 1 (Etapa)
+        # Etapa
         st.markdown(
             '<div class="filter-title" '
             'style="margin:0;padding:0;display:flex;align-items:center;height:32px">'
@@ -610,13 +579,10 @@ def construir_filtros_ui(df, modalidade_key, nivel):
             unsafe_allow_html=True
         )
 
-        # Determinar coluna e valores para Etapa
-        if is_prof or is_eja:
-            etapas_disp = sorted(df["Etapa_agregada"].unique())
-            default_etapas = [etapas_disp[0]] if etapas_disp else []
-        else:
-            etapas_disp = sorted(df["Etapa"].unique())
-            default_etapas = ["Educação Infantil"] if "Educação Infantil" in etapas_disp else []
+        # Recupera valores de Etapa e valor padrão
+        etapas_disp = sorted(df["Etapa"].unique())
+        padrao = config.etapa_valores.get("padrao", "")
+        default_etapas = [padrao] if padrao in etapas_disp else [etapas_disp[0]] if etapas_disp else []
 
         etapa_sel = st.multiselect(
             "Etapa",
@@ -625,9 +591,9 @@ def construir_filtros_ui(df, modalidade_key, nivel):
             key="etapa_sel",
             label_visibility="collapsed"
         )
-        filtros["nivel_1"] = etapa_sel
+        filtros["etapa"] = etapa_sel
 
-        # Nível 2 (Subetapa)
+        # Subetapa - mostrar apenas se Etapa foi selecionada
         st.markdown(
             '<div class="filter-title" '
             'style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">'
@@ -635,20 +601,21 @@ def construir_filtros_ui(df, modalidade_key, nivel):
             unsafe_allow_html=True
         )
 
-        if is_prof or is_eja:
-            # Sem subetapa quando for exatamente o primeiro item (Total)
-            if etapa_sel == default_etapas:
-                sub_sel = []
-                st.text(f"Nenhuma subetapa para {etapa_sel[0]}.")
-            else:
-                sub_disp = sorted(
-                    df.loc[
-                        df["Etapa_agregada"].isin(etapa_sel),
-                        "Nome da Etapa de ensino/Nome do painel de filtro"
-                    ]
-                    .dropna()
-                    .unique()
-                )
+        # Verificar se o valor selecionado de Etapa é um "Total"
+        is_etapa_total = etapa_sel and etapa_sel[0] in config.etapa_valores.get("totais", [])
+
+        if etapa_sel and not is_etapa_total:
+            # Mostrar subetapas disponíveis para as etapas selecionadas, excluindo valores "Total"
+            sub_disp = sorted(
+                df.loc[
+                    df["Etapa"].isin(etapa_sel) &
+                    df["Subetapa"].notna() &
+                    ~df["Subetapa"].str.contains("Total", na=False),
+                    "Subetapa"
+                ].unique()
+            )
+
+            if sub_disp:
                 sub_sel = st.multiselect(
                     "Subetapa",
                     sub_disp,
@@ -656,43 +623,38 @@ def construir_filtros_ui(df, modalidade_key, nivel):
                     key="sub_sel",
                     label_visibility="collapsed"
                 )
+            else:
+                st.text("Nenhuma subetapa disponível para esta etapa.")
+                sub_sel = []
         else:
-            # Ensino Regular mantém a lógica original de Subetapa
-            sub_disp = sorted(
+            # Para etapas "Total" ou quando nenhuma etapa está selecionada
+            if is_etapa_total:
+                st.text(f"Nenhuma subetapa para {etapa_sel[0]}.")
+            else:
+                st.text("Selecione uma etapa primeiro.")
+            sub_sel = []
+
+        filtros["subetapa"] = sub_sel
+
+        # Série - apenas para Ensino Regular e se subetapa foi selecionada
+        if modalidade_key == "Ensino Regular" and etapa_sel and sub_sel:
+            st.markdown(
+                '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">'
+                'Série</div>',
+                unsafe_allow_html=True
+            )
+
+            serie_disp = sorted(
                 df.loc[
                     df["Etapa"].isin(etapa_sel) &
-                    df["Subetapa"].ne("") &
-                    df["Subetapa"].ne("Total"),
-                    "Subetapa"
+                    df["Subetapa"].isin(sub_sel) &
+                    df["Série"].notna() &
+                    df["Série"] != "",
+                    "Série"
                 ].unique()
             )
-            sub_sel = st.multiselect(
-                "Subetapa",
-                sub_disp,
-                default=[],
-                key="sub_sel",
-                label_visibility="collapsed"
-            )
-        filtros["nivel_2"] = sub_sel
 
-        # Nível 3 (Série) - só para Ensino Regular e se nível 2 foi selecionado
-        if not is_prof and not is_eja:
-            if etapa_sel and sub_sel:
-                st.markdown(
-                    '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">'
-                    'Série</div>',
-                    unsafe_allow_html=True
-                )
-
-                serie_disp = sorted(
-                    df.loc[
-                        df["Etapa"].isin(etapa_sel) &
-                        df["Subetapa"].isin(sub_sel) &
-                        df["Série"].ne(""),
-                        "Série"
-                    ].unique()
-                )
-
+            if serie_disp:
                 serie_sel = st.multiselect(
                     "Série",
                     serie_disp,
@@ -700,13 +662,15 @@ def construir_filtros_ui(df, modalidade_key, nivel):
                     key="serie_sel",
                     label_visibility="collapsed"
                 )
-                filtros["nivel_3"] = serie_sel
             else:
-                filtros["nivel_3"] = []
-        else:
-            filtros["nivel_3"] = []
+                st.text("Nenhuma série disponível para esta subetapa.")
+                serie_sel = []
 
-    # Texto de ajuda contextual (opcional)
+            filtros["serie"] = serie_sel
+        else:
+            filtros["serie"] = []
+
+    # Texto de ajuda contextual
     if config.texto_ajuda:
         with st.expander("ℹ️ Ajuda com os filtros", expanded=False):
             st.info(config.texto_ajuda)
@@ -717,39 +681,33 @@ def construir_filtros_ui(df, modalidade_key, nivel):
 # ─── 9. FUNÇÃO DE FILTRO UNIFICADA ─────────────────────────────────
 def filtrar_dados(df, modalidade_key, anos, redes, filtros):
     """Filtra dados de forma unificada para qualquer modalidade"""
+    config = MODALIDADES[modalidade_key]
+
     # Filtros básicos (comuns a todas as modalidades)
     mask = df["Ano"].isin(anos)
     if redes:
         mask &= df["Rede"].isin(redes)
 
-    # Detectar modalidade para compatibilidade
-    is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
-    is_prof = modalidade_key == "Educação Profissional"
+    # Etapa
+    etapa_sel = filtros.get("etapa", [])
+    if etapa_sel:
+        mask &= df["Etapa"].isin(etapa_sel)
 
-    # Filtros específicos por nível e modalidade
-    # Nível 1 (Etapa)
-    nivel_1 = filtros.get("nivel_1", [])
-    if nivel_1:
-        if is_prof or is_eja:
-            mask &= df["Etapa_agregada"].isin(nivel_1)
-        else:
-            mask &= df["Etapa"].isin(nivel_1)
-            # Se não há subetapa selecionada, pegamos apenas os totais
-            if not filtros.get("nivel_2"):
-                mask &= df["Subetapa"].eq("Total")
+        # Se não há subetapa selecionada, verificar se precisamos mostrar apenas totais
+        if not filtros.get("subetapa") and modalidade_key == "Ensino Regular":
+            # Para Ensino Regular, quando selecionamos apenas a Etapa sem Subetapa,
+            # mostramos apenas as linhas com Subetapa = "Total"
+            mask &= df["Subetapa"].str.contains("Total", na=False)
 
-    # Nível 2 (Subetapa)
-    nivel_2 = filtros.get("nivel_2", [])
-    if nivel_2:
-        if is_prof or is_eja:
-            mask &= df["Nome da Etapa de ensino/Nome do painel de filtro"].isin(nivel_2)
-        else:
-            mask &= df["Subetapa"].isin(nivel_2)
+    # Subetapa
+    subetapa_sel = filtros.get("subetapa", [])
+    if subetapa_sel:
+        mask &= df["Subetapa"].isin(subetapa_sel)
 
-    # Nível 3 (Série)
-    nivel_3 = filtros.get("nivel_3", [])
-    if nivel_3 and not (is_prof or is_eja):
-        mask &= df["Série"].isin(nivel_3)
+    # Série - apenas para Ensino Regular
+    serie_sel = filtros.get("serie", [])
+    if serie_sel and modalidade_key == "Ensino Regular":
+        mask &= df["Série"].isin(serie_sel)
 
     return df[mask]
 
