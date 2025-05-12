@@ -846,42 +846,35 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
     st.session_state["page_size"] = page_size
 
 # ─── 10. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
-
 # 1. Colunas visíveis baseadas no nível de agregação
 vis_cols = ["Ano"]
-
 if nivel == "Escolas":
     vis_cols += ["Nome do Município", "Nome da Escola"]
 elif nivel == "Municípios":
     vis_cols += ["Nome do Município"]
 
-# para Profissional/EJA, mostramos o nome do painel (subetapa) como 'Etapa';
-# para o Regular, mantemos a coluna 'Etapa' já criada a partir de Etapa_agregada
-etapa_display = (
-    "Nome da Etapa de ensino/Nome do painel de filtro"
-    if tipo_ensino in ("Educação Profissional", "EJA - Educação de Jovens e Adultos")
-    else "Etapa"
-)
+# 2. Escolhe qual coluna vai aparecer como "Etapa":
+# — Profissional/EJA: sempre o nome do painel de filtro (subetapa)
+# — Ensino Regular:
+#     • se sub_sel não estiver vazio, mostramos a Subetapa
+#     • senão, mostramos a Etapa agregada
+if tipo_ensino in ("Educação Profissional", "EJA - Educação de Jovens e Adultos"):
+    etapa_col = "Nome da Etapa de ensino/Nome do painel de filtro"
+elif sub_sel:
+    etapa_col = "Subetapa"
+else:
+    etapa_col = "Etapa"
 
-vis_cols += [etapa_display, "Rede", "Número de Matrículas"]
+# adiciona "Etapa" (dinâmico), Rede e Matrículas
+vis_cols += [etapa_col, "Rede", "Número de Matrículas"]
 
-# 2. DataFrame base da tabela
+# 3. Puxa só as colunas selecionadas e renomeia para uniformizar o cabeçalho
 df_tabela = df_filtrado[vis_cols].copy()
+df_tabela = df_tabela.rename(columns={etapa_col: "Etapa"})
 
-# --- Adicionar coluna UF apenas para Pernambuco ---
-if nivel == "Pernambuco":
-    # 1. Adiciona a coluna "UF" ao DataFrame
-    df_tabela["UF"] = "Pernambuco"
-
-    # 2. Atualiza a lista vis_cols ANTES de reordenar o DataFrame
-    vis_cols.insert(1, "UF")  # Posição 1 (segunda coluna)
-
-    # 3. Reordena as colunas do DataFrame conforme a nova vis_cols
-    df_tabela = df_tabela[vis_cols]
-
-if df_tabela.empty:
-    st.warning("Não há dados para exibir após a aplicação dos filtros.")
-    st.stop()
+# agora vis_cols para exibição
+vis_cols = vis_cols.copy()
+vis_cols[vis_cols.index(etapa_col)] = "Etapa"
 
 # 3. CSS para centralizar coluna numérica
 st.markdown("""
