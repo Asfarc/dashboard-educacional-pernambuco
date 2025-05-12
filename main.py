@@ -369,63 +369,300 @@ div.filter-title {
     margin-top: 1rem;
 }
 
-/* Container principal dos multiselects */
-section[data-testid="stSidebar"] .stMultiSelect > div {
-    width: 30% !important;
-    min-width: 280px !important;  /* Largura mínima aumentada */
-}
+/* ===== CORREÇÃO PARA TEXTO TRUNCADO EM MULTISELECT ===== */
 
-/* Input principal */
-section[data-testid="stSidebar"] .stMultiSelect > div > div[data-baseweb="select"] {
-    background-color: #ffffff15 !important;
-    border-radius: 10px !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-}
-
-/* Texto dos itens selecionados */
-section[data-testid="stSidebar"] .stMultiSelect span[aria-selected="true"] {
+/* Correção para os elementos do dropdown */
+div[data-baseweb="select"] span, 
+div[data-baseweb="select"] div[role="option"] div {
     white-space: normal !important;
     word-break: break-word !important;
-    max-width: 250px !important;
-    line-height: 1.4 !important;
-    background: #0073ba !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: 100% !important;
+}
+
+/* Correção para tags selecionadas */
+div[data-baseweb="tag"] {
+    max-width: none !important;
+    width: auto !important;
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 32px !important;
+    word-break: break-word !important;
+    line-height: 1.3 !important;
+    padding: 4px 8px !important;
+}
+
+/* Correção para o texto dentro das tags */
+div[data-baseweb="tag"] span {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: inline !important;
+}
+
+/* Aumenta a largura do select e popover */
+div[data-baseweb="select"], 
+div[data-baseweb="popover"] {
+    min-width: 300px !important;
+    max-width: 550px !important;
+    width: auto !important;
+}
+
+/* Corrige o container da dropdown */
+div[role="listbox"] {
+    width: auto !important;
+    max-width: 550px !important;
+}
+
+/* Corrige o texto nas opções do dropdown */
+div[role="option"] div {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    width: 100% !important;
+}
+
+/* Aumenta a altura mínima do input */
+div[data-baseweb="input"] {
+    min-height: 38px !important;
+}
+
+/* Ajusta tamanho específico para o componente de multiselect */
+.stMultiSelect {
+    min-width: 300px !important;
+    max-width: 650px !important;
+    width: 100% !important;
+}
+
+/* Formato do input principal do multiselect */
+.stMultiSelect > div {
+    min-height: 38px !important;
+    height: auto !important;
+}
+
+/* Corrige o container interno */
+.stMultiSelect [data-testid="stFormSubmitButton"] > div {
+    height: auto !important;
+    min-height: 38px !important;
+}
+
+/* Aumenta ainda mais o tamanho das tags */
+.stMultiSelect div[data-baseweb="tag"] {
+    min-width: 50px !important;
+    max-width: 100% !important;
+    width: auto !important;
+}
+# Adicione estas regras ao seu CSS_COMPLETO (dentro da tag <style>)
+
+/* Correção de alinhamento para radio buttons na sidebar */
+section[data-testid="stSidebar"] .stRadio > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+section[data-testid="stSidebar"] .stRadio > div > label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    margin: 3px 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Alinhamento do círculo radio */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 10px !important;
+}
+
+/* Ajuste na margem superior para reposicionar */
+section[data-testid="stSidebar"] .stRadio {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+}
+
+/* Assegura que os botões da sidebar tenham a largura correta */
+section[data-testid="stSidebar"] .stButton,
+section[data-testid="stSidebar"] .stDownloadButton {
+    width: 100% !important;
+    margin: 5px 0 !important;
+}
+
+/* Garante que todos os elementos da sidebar tenham largura total */
+section[data-testid="stSidebar"] > div {
+    width: 100% !important;
+}
+
+/* Correção para o container dos botões */
+section[data-testid="stSidebar"] [data-testid="column"] {
+    width: 100% !important;
+    padding: 0 5px !important;
+    box-sizing: border-box !important;
+}
+
+/* Correção para o flexbox de colunas */
+section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    width: 100% !important;
+}
+/* Adicione estas regras ao seu CSS_COMPLETO */
+
+/* Corrige o problema de texto que transborda do contêiner azul */
+div[data-baseweb="tag"] {
+    max-width: 100% !important;
+    width: auto !important;
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 32px !important;
+    word-break: break-word !important;
+    line-height: 1.3 !important;
+    padding: 4px 8px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; /* Impede que o texto saia do contêiner */
+    display: flex !important;
+    align-items: center !important;
     margin: 2px !important;
 }
 
-/* Opções do dropdown */
-section[data-testid="stSidebar"] .stMultiSelect li div {
+/* Melhora o encapsulamento do texto dentro da tag */
+div[data-baseweb="tag"] span {
     white-space: normal !important;
-    word-wrap: break-word !important;
-    line-height: 1.4 !important;
-    padding: 8px 12px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
+    max-width: calc(100% - 20px) !important; /* Espaço para o botão X */
+    word-break: break-word !important;
 }
 
-/* Label dos filtros */
-section[data-testid="stSidebar"] .stMultiSelect label {
-    font-size: 15px !important;
-    color: #fff !important;
-    margin-bottom: 4px !important;
+/* Garante que o contêiner do multiselect expanda adequadamente */
+div[data-baseweb="select"] {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 40px !important;
 }
 
-/* Dropdown menu */
-section[data-testid="stSidebar"] .stMultiSelect [role="listbox"] {
-    max-height: 300px !important;
-    overflow-y: auto !important;
-    background: #5a6e7e !important;
-    border: 1px solid #405060 !important;
+/* Ajusta o tamanho do contêiner interno para acomodar textos longos */
+div[data-baseweb="select"] > div:first-child {
+    height: auto !important;
+    min-height: 40px !important;
+    flex-wrap: wrap !important;
+    padding: 2px !important;
 }
 
-/* Items do dropdown */
-section[data-testid="stSidebar"] .stMultiSelect [role="option"] {
-    color: #fff !important;
-    padding: 8px 12px !important;
+/* Garante que o contêiner dos tags tenha espaço adequado */
+div[data-baseweb="select"] > div:first-child > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
 }
 
-/* Hover nos items */
-section[data-testid="stSidebar"] .stMultiSelect [role="option"]:hover {
-    background: #0073ba !important;
+/* Ajuste específico para o dropdown de Série */
+div[key="serie_sel"] div[data-baseweb="tag"],
+div[key^="serie_"] div[data-baseweb="tag"] {
+    max-width: 95% !important; /* Ligeiramente menor para garantir que caiba */
+    margin-bottom: 2px !important;
+    margin-top: 2px !important;
 }
 
+/* Ajuste específico para textos muito longos */
+div[data-baseweb="tag"]:has(span:not(:empty)) {
+    max-width: 95% !important;
+    margin-right: 5px !important;
+}
+
+/* Estilo específico para o botão 'X' para não sobrepor o texto */
+div[data-baseweb="tag"] button {
+    flex-shrink: 0 !important;
+    margin-left: 4px !important;
+}
+/* CORREÇÃO RADICAL PARA TEXTO TRANSBORDANDO */
+
+/* 1. Forçar texto a quebrar dentro do contêiner */
+div[data-baseweb="tag"] {
+    width: auto !important;
+    max-width: 95% !important; /* Reduz para 95% da largura disponível */
+    display: block !important; /* Mudança para bloco em vez de flex */
+    height: auto !important;
+    min-height: 36px !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    padding: 8px 28px 8px 8px !important; /* Mais espaço à direita para o botão X */
+    box-sizing: border-box !important;
+    position: relative !important; /* Para posicionamento absoluto do botão X */
+    margin: 4px !important;
+    line-height: 1.2 !important;
+}
+
+/* 2. Garantir que o texto dentro do span quebre corretamente */
+div[data-baseweb="tag"] span {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    display: block !important; /* Mudança crítica para block */
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* 3. Posicionar o botão X de forma absoluta para não afetar o fluxo do texto */
+div[data-baseweb="tag"] button {
+    position: absolute !important;
+    right: 4px !important;
+    top: 4px !important;
+}
+
+/* 4. Ajustar o contêiner para usar wrap e acomodar os itens */
+div[data-baseweb="select"] > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 40px !important;
+}
+
+/* 5. Garantir que o contêiner pai tenha altura automática */
+.stMultiSelect div[data-baseweb="select"] {
+    height: auto !important;
+    min-height: 40px !important;
+    width: 100% !important;
+}
+
+/* 6. Aumentar o espaço disponível para o dropdown */
+div[role="listbox"] {
+    max-width: 95% !important;
+    width: auto !important;
+}
+
+/* 7. Estilo específico para o dropdown de Série - mais rigoroso */
+[data-testid="stMultiSelect"]:has([aria-labelledby*="serie"]) div[data-baseweb="tag"],
+div[key="serie_sel"] div[data-baseweb="tag"],
+div[key^="serie_"] div[data-baseweb="tag"] {
+    max-width: 95% !important;
+    padding-right: 30px !important; /* Mais espaço para o botão */
+}
+
+/* 8. Aumento do espaço na coluna dos multiselects */
+[data-testid="stHorizontalBlock"] > div:nth-child(2) [data-testid="stMultiSelect"] {
+    width: 100% !important;
+    max-width: 95% !important;
+}
+
+/* 9. Correção para o botão X não sobrepor texto */
+div[data-baseweb="tag"]:hover button {
+    background-color: rgba(0,0,0,0.1) !important; /* Destaque sutil ao passar o mouse */
+}
+
+}
 </style>
 """
 
@@ -608,8 +845,8 @@ def construir_filtros_ui(df, modalidade_key, nivel):
     """Constrói os filtros de UI baseados na modalidade e dados disponíveis"""
     config = MODALIDADES[modalidade_key]
 
-    # Layout em duas colunas - MUDE PARA TAMANHOS MAIS EQUILIBRADOS
-    c_left, c_right = st.columns([0.45, 0.55], gap="large")
+    # Layout em duas colunas - PROPORÇÃO MUITO MAIS ESPAÇO PARA DIREITA
+    c_left, c_right = st.columns([0.3, 0.7], gap="large")
 
     # Detectar modalidade para compatibilidade
     is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
