@@ -696,20 +696,23 @@ with st.container():
                         sub_disp = []
                         st.text("Não há subetapas disponíveis\npara o total de Educação Profissional.")
                     else:
-                        # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
+                        # Para cada etapa selecionada, obter exatamente os valores da coluna
+                        # "Nome da Etapa de ensino/Nome do painel de filtro"
                         sub_disp = []
                         for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
-                            # Buscar subetapas correspondentes na coluna "Nome da Etapa de ensino/Nome do painel de filtro"
+                            # Buscar subetapas correspondentes
                             etapa_mask = df_base["Etapa agregada"] == etapa_internal
+
+                            # Obter valores únicos da coluna nome do painel de filtro
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                            # CORREÇÃO: Adicionar TODOS os valores, sem filtrar
+                            # Adicionar valores sem nenhum filtro
                             for subetapa in subetapas_encontradas:
-                                if subetapa not in sub_disp:  # Evitar duplicatas
+                                if subetapa not in sub_disp:
                                     sub_disp.append(subetapa)
 
-                        # Ordenar a lista
+                        # Ordenar por ordem alfabética
                         sub_disp = sorted(sub_disp)
 
                 elif is_eja_modalidade:
@@ -719,20 +722,19 @@ with st.container():
                         sub_disp = []
                         st.text("Não há subetapas disponíveis\npara o total de EJA.")
                     else:
-                        # Para outras etapas, busca valores em "Nome da Etapa de ensino/Nome do painel de filtro"
+                        # Para cada etapa selecionada, obter valores
                         sub_disp = []
                         for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
-                            # Buscar subetapas correspondentes na coluna "Nome da Etapa de ensino/Nome do painel de filtro"
                             etapa_mask = df_base["Etapa Agregada"] == etapa_internal
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
-                            # CORREÇÃO: Adicionar TODOS os valores, sem filtrar
+                            # Adicionar valores sem nenhum filtro
                             for subetapa in subetapas_encontradas:
-                                if subetapa not in sub_disp:  # Evitar duplicatas
+                                if subetapa not in sub_disp:
                                     sub_disp.append(subetapa)
 
-                        # Ordenar a lista
+                        # Ordenar
                         sub_disp = sorted(sub_disp)
 
                 else:
@@ -743,9 +745,9 @@ with st.container():
                                           df_base["Subetapa"].ne("Total"),
                                           "Subetapa"
                                       ].unique())
-                    sub_disp = sub_real if sub_real else []
+                    sub_disp = sub_real
 
-                # Exibir Multiselect para Subetapa (somente se houver opções)
+                # Exibir multiselect para Subetapa (somente se houver opções)
                 if sub_disp:
                     sub_sel = st.multiselect(
                         "Subetapa",
@@ -793,18 +795,100 @@ with st.container():
     # Fechamento do container
     st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
+# ─── PARTE DE CÓDIGO PARA CARREGAR OS VALORES CORRETOS ─────────────────────────
 
-# ─── 8. FUNÇÃO DE FILTRO CORRIGIDA ────────────────────────────────
+# Substituir esta parte na seção de Subetapa no painel de filtros
+
+# ====== SUBETAPA ======
+# Só mostra se alguma etapa estiver selecionada
+if etapa_sel_display:
+    st.markdown(
+        '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Subetapa</div>',
+        unsafe_allow_html=True)
+
+    # Determinar opções de subetapa com base na modalidade e etapa selecionada
+    if is_educacao_profissional_modalidade:
+        # Para Educação Profissional
+        if "Educação Profissional - Total" in etapa_sel_display:
+            # Se selecionou "Educação Profissional - Total", não mostra subetapas
+            sub_disp = []
+            st.text("Não há subetapas disponíveis\npara o total de Educação Profissional.")
+        else:
+            # Para cada etapa selecionada, obter exatamente os valores da coluna
+            # "Nome da Etapa de ensino/Nome do painel de filtro"
+            sub_disp = []
+            for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
+                # Buscar subetapas correspondentes
+                etapa_mask = df_base["Etapa agregada"] == etapa_internal
+
+                # Obter valores únicos da coluna nome do painel de filtro
+                subetapas_encontradas = df_base.loc[
+                    etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
+
+                # Adicionar valores sem nenhum filtro
+                for subetapa in subetapas_encontradas:
+                    if subetapa not in sub_disp:
+                        sub_disp.append(subetapa)
+
+            # Ordenar por ordem alfabética
+            sub_disp = sorted(sub_disp)
+
+    elif is_eja_modalidade:
+        # Para EJA
+        if "EJA - Total" in etapa_sel_display:
+            # Se selecionou "EJA - Total", não mostra subetapas
+            sub_disp = []
+            st.text("Não há subetapas disponíveis\npara o total de EJA.")
+        else:
+            # Para cada etapa selecionada, obter valores
+            sub_disp = []
+            for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
+                etapa_mask = df_base["Etapa Agregada"] == etapa_internal
+                subetapas_encontradas = df_base.loc[
+                    etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
+
+                # Adicionar valores sem nenhum filtro
+                for subetapa in subetapas_encontradas:
+                    if subetapa not in sub_disp:
+                        sub_disp.append(subetapa)
+
+            # Ordenar
+            sub_disp = sorted(sub_disp)
+
+    else:
+        # Comportamento padrão para Ensino Regular
+        sub_real = sorted(df_base.loc[
+                              df_base["Etapa"].isin(etapa_sel) &
+                              df_base["Subetapa"].ne("") &
+                              df_base["Subetapa"].ne("Total"),
+                              "Subetapa"
+                          ].unique())
+        sub_disp = sub_real
+
+    # Exibir multiselect para Subetapa (somente se houver opções)
+    if sub_disp:
+        sub_sel = st.multiselect(
+            "Subetapa",
+            sub_disp,
+            default=[],
+            key="sub_sel",
+            label_visibility="collapsed"
+        )
+    else:
+        sub_sel = []
+else:
+    sub_sel = []
+
+# ─── FUNÇÃO DE FILTRO SIMPLIFICADA (SEM LÓGICA EXTRA) ────────────────────────
 def filtrar(df, anos, redes, etapas, subetapas, series):
     """
-    Função de filtro corrigida para todas as modalidades,
-    mantendo todos os valores incluindo os que contêm "Total".
+    Função de filtro simplificada.
 
     Args:
         df: DataFrame com os dados
         anos: Lista de anos selecionados
         redes: Lista de redes selecionadas
-        etapas: Lista de etapas selecionadas (valores internos, não de exibição)
+        etapas: Lista de etapas selecionadas (valores internos)
         subetapas: Lista de subetapas selecionadas
         series: Lista de séries selecionadas
 
@@ -827,38 +911,34 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
     is_eja = "Modalidade" in df.columns and "EJA - Educação de Jovens e Adultos" in df["Modalidade"].unique()
     is_educacao_profissional = "Modalidade" in df.columns and "Educação Profissional" in df["Modalidade"].unique()
 
-    # === FILTRO DE ETAPA ===
+    # Filtro de etapa
     if etapas:
         if is_educacao_profissional:
-            # Para Educação Profissional: filtrar pela coluna "Etapa agregada"
+            # Para Educação Profissional
             m &= df["Etapa agregada"].isin(etapas)
-
         elif is_eja:
-            # Para EJA: filtrar pela coluna "Etapa Agregada"
+            # Para EJA
             m &= df["Etapa Agregada"].isin(etapas)
-
         else:
-            # Para Ensino Regular: comportamento padrão
+            # Para Ensino Regular
             m &= df["Etapa"].isin(etapas)
             if not subetapas:
                 m &= df["Subetapa"] == "Total"
 
-    # === FILTRO DE SUBETAPA ===
+    # Filtro de subetapa
     if subetapas:
         if is_educacao_profissional or is_eja:
-            # Para Educação Profissional e EJA: filtrar pela coluna "Nome da Etapa de ensino/Nome do painel de filtro"
+            # Para Educação Profissional e EJA
             m &= df["Nome da Etapa de ensino/Nome do painel de filtro"].isin(subetapas)
         else:
-            # Para Ensino Regular: comportamento padrão
+            # Para Ensino Regular
             m &= df["Subetapa"].isin(subetapas)
 
-    # === FILTRO DE SÉRIE ===
-    if series:
-        if not is_eja and not is_educacao_profissional:
-            # Apenas para Ensino Regular
-            m &= df["Série"].isin(series)
+    # Filtro de série (apenas para Ensino Regular)
+    if series and not is_eja and not is_educacao_profissional:
+        m &= df["Série"].isin(series)
 
-    # Aplicar a máscara final e retornar o resultado
+    # Retornar o DataFrame filtrado
     return df.loc[m]
 
 
