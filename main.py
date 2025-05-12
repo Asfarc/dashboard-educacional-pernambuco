@@ -855,8 +855,15 @@ if nivel == "Escolas":
 elif nivel == "Municípios":
     vis_cols += ["Nome do Município"]
 
-# Adiciona colunas comuns
-vis_cols += ["Etapa", "Rede", "Número de Matrículas"]
+# para Profissional/EJA, mostramos o nome do painel (subetapa) como 'Etapa';
+# para o Regular, mantemos a coluna 'Etapa' já criada a partir de Etapa_agregada
+etapa_display = (
+    "Nome da Etapa de ensino/Nome do painel de filtro"
+    if tipo_ensino in ("Educação Profissional", "EJA - Educação de Jovens e Adultos")
+    else "Etapa"
+)
+
+vis_cols += [etapa_display, "Rede", "Número de Matrículas"]
 
 # 2. DataFrame base da tabela
 df_tabela = df_filtrado[vis_cols].copy()
