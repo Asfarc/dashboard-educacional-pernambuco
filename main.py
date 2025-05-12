@@ -701,20 +701,21 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
     if etapa_sel:
         result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
 
-        # Se não há subetapa selecionada, verificar se precisamos mostrar apenas totais
-        if not filtros.get("subetapa") and modalidade_key == "Ensino Regular":
-            # Para Ensino Regular, quando selecionamos apenas a Etapa sem Subetapa,
-            # mostramos apenas as linhas com Subetapa = "Total"
+        # Determinar se a etapa selecionada é um total
+        is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
+
+        # Apenas para Ensino Regular: quando não há subetapa selecionada, mostrar totais
+        if not is_etapa_total and modalidade_key == "Ensino Regular" and not filtros.get("subetapa"):
             result_df = result_df[result_df["Subetapa"].astype(str).str.contains("Total", na=False)]
 
-    # Subetapa
+    # Subetapa (só aplicar se não for etapa total)
     subetapa_sel = filtros.get("subetapa", [])
-    if subetapa_sel:
+    if subetapa_sel and not is_etapa_total:
         result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
-    # Série - apenas para Ensino Regular
+    # Série - apenas para Ensino Regular e se não for etapa total
     serie_sel = filtros.get("serie", [])
-    if serie_sel and modalidade_key == "Ensino Regular":
+    if serie_sel and modalidade_key == "Ensino Regular" and not is_etapa_total:
         result_df = result_df[result_df["Série"].isin(serie_sel)]
 
     return result_df
