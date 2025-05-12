@@ -905,6 +905,13 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
 # ─── 15. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 # 1. Colunas visíveis baseadas no nível de agregação
 vis_cols = ["Ano"]
+
+# Adicionar coluna UF apenas quando o nível de agregação for "Pernambuco"
+if nivel == "Pernambuco":
+    vis_cols += ["UF"]  # Adiciona UF logo após o Ano
+    # Garantir que a coluna UF exista no DataFrame
+    df_filtrado["UF"] = "Pernambuco"  # Cria a coluna com valor fixo
+
 if nivel == "Escolas":
     vis_cols += ["Nome do Município", "Nome da Escola"]
 elif nivel == "Municípios":
