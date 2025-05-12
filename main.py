@@ -1270,26 +1270,9 @@ if pag.total_pages > 1:  # Só mostra controles se houver mais de uma página
 else:
     # Se houver apenas uma página, mostra apenas o total de linhas
     st.markdown(
-        f"""
-        <div style="
-            text-align: right;
-            padding: 12px 0 8px 0;
-            margin-top: 5px;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-        ">
-            <span style="font-weight: 600; margin-right: 5px;">Total:</span>
-            <span style="
-                color: #0073ba;
-                font-weight: 500;
-                background-color: rgba(0, 115, 186, 0.1);
-                padding: 2px 8px;
-                border-radius: 4px;
-            ">{format_number_br(len(df_texto))} linhas</span>
-        </div>
-        """,
+        f"<div style='text-align:right;padding:8px 0;'>"
+        f"<span style='font-weight:500;'>"
+        f"Total: {format_number_br(len(df_texto))} linhas</span></div>",
         unsafe_allow_html=True
     )
 
