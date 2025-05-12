@@ -884,29 +884,20 @@ elif nivel == "Municípios":
 is_eja = tipo_ensino == "EJA - Educação de Jovens e Adultos"
 is_prof = tipo_ensino == "Educação Profissional"
 
-if is_prof or is_eja:
-    # Para EJA e Educação Profissional, usar o nome do painel de filtro
-    if filtros_especificos.get("nivel_2"):
-        etapa_col = "Nome da Etapa de ensino/Nome do painel de filtro"
-    else:
-        etapa_col = "Etapa_agregada"
-else:
-    # Para Ensino Regular
-    if filtros_especificos.get("nivel_2"):
-        etapa_col = "Subetapa"
-    else:
-        etapa_col = "Etapa"
+# Adicionamos a coluna Etapa sem renomear
+vis_cols += ["Etapa"]
 
-# Adiciona "Etapa" (dinâmico), Rede e Matrículas
-vis_cols += [etapa_col, "Rede", "Número de Matrículas"]
+# Adicionamos a coluna Subetapa aqui
+vis_cols += ["Subetapa"]
 
-# 3. Puxa só as colunas selecionadas e renomeia para uniformizar o cabeçalho
+# Adiciona Rede e Matrículas
+vis_cols += ["Rede", "Número de Matrículas"]
+
+# 3. Puxa só as colunas selecionadas (não precisamos mais renomear Etapa)
 df_tabela = df_filtrado[vis_cols].copy()
-df_tabela = df_tabela.rename(columns={etapa_col: "Etapa"})
 
-# Atualiza vis_cols para exibição
-vis_cols = vis_cols.copy()
-vis_cols[vis_cols.index(etapa_col)] = "Etapa"
+# Não é mais necessário renomear a coluna, pois estamos usando o nome original "Etapa"
+# df_tabela = df_tabela.rename(columns={etapa_col: "Etapa"})
 
 # 4. CSS para centralizar coluna numérica
 st.markdown("""
