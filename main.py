@@ -638,19 +638,8 @@ with st.container():
                     "Educação Profissional - Total"] if "Educação Profissional - Total" in etapas_disp else []
 
             elif is_eja_modalidade:
-                # Para EJA: valores da coluna "Etapa Agregada" com prefixo "EJA - "
-                etapas_disp = []
-                etapas_orig = sorted(df_base["Etapa Agregada"].unique())
-
-                for etapa in etapas_orig:
-                    if etapa == "Total - EJA":
-                        etapas_disp.append("EJA - Total")
-                    elif etapa == "Ensino Fundamental":
-                        etapas_disp.append("EJA - Ensino Fundamental")
-                    elif etapa == "Ensino Médio":
-                        etapas_disp.append("EJA - Ensino Médio")
-                    else:
-                        etapas_disp.append(f"EJA - {etapa}")
+                # Para EJA: usar os valores exatos da coluna "Etapa Agregada" sem modificações
+                etapas_disp = sorted(df_base["Etapa Agregada"].unique())
 
                 # Valor padrão para EJA
                 default_etapas = ["EJA - Total"] if "EJA - Total" in etapas_disp else []
@@ -674,11 +663,8 @@ with st.container():
             for etapa in etapa_sel_display:
                 if etapa == "Educação Profissional - Total":
                     etapa_sel.append("Total")
-                elif etapa == "EJA - Total":
-                    etapa_sel.append("Total - EJA")
-                elif etapa.startswith("EJA - "):
-                    etapa_sel.append(etapa[5:])  # Remove "EJA - " prefix
                 else:
+                    # Para EJA e Ensino Regular, usar o valor sem modificações
                     etapa_sel.append(etapa)
 
             # ====== SUBETAPA ======
@@ -722,10 +708,10 @@ with st.container():
                         sub_disp = []
                         st.text("Não há subetapas disponíveis\npara o total de EJA.")
                     else:
-                        # Para cada etapa selecionada, obter valores
+                        # Para cada etapa selecionada, obter valores sem modificações
                         sub_disp = []
-                        for etapa_display, etapa_internal in zip(etapa_sel_display, etapa_sel):
-                            etapa_mask = df_base["Etapa Agregada"] == etapa_internal
+                        for etapa_display in etapa_sel_display:
+                            etapa_mask = df_base["Etapa Agregada"] == etapa_display
                             subetapas_encontradas = df_base.loc[
                                 etapa_mask, "Nome da Etapa de ensino/Nome do painel de filtro"].dropna().unique()
 
