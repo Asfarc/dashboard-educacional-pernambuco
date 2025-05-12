@@ -856,7 +856,7 @@ elif nivel == "Municípios":
     vis_cols += ["Nome do Município"]
 
 # Adiciona colunas comuns
-vis_cols += ["Etapa de Ensino", "Rede", "Número de Matrículas"]
+vis_cols += ["Etapa", "Rede", "Número de Matrículas"]
 
 # 2. DataFrame base da tabela
 df_tabela = df_filtrado[vis_cols].copy()
