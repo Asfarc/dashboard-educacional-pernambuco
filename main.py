@@ -691,33 +691,38 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
     """Filtra dados de forma unificada para qualquer modalidade"""
     config = MODALIDADES[modalidade_key]
 
+    # Aplicamos os filtros sequencialmente em vez de usar operadores lógicos
+    # diretamente com categorias
+    result_df = df.copy()
+
     # Filtros básicos (comuns a todas as modalidades)
-    mask = df["Ano"].isin(anos)
+    result_df = result_df[result_df["Ano"].isin(anos)]
+
     if redes:
-        mask &= df["Rede"].isin(redes)
+        result_df = result_df[result_df["Rede"].isin(redes)]
 
     # Etapa
     etapa_sel = filtros.get("etapa", [])
     if etapa_sel:
-        mask &= df["Etapa"].isin(etapa_sel)
+        result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
 
         # Se não há subetapa selecionada, verificar se precisamos mostrar apenas totais
         if not filtros.get("subetapa") and modalidade_key == "Ensino Regular":
             # Para Ensino Regular, quando selecionamos apenas a Etapa sem Subetapa,
             # mostramos apenas as linhas com Subetapa = "Total"
-            mask &= df["Subetapa"].str.contains("Total", na=False)
+            result_df = result_df[result_df["Subetapa"].astype(str).str.contains("Total", na=False)]
 
     # Subetapa
     subetapa_sel = filtros.get("subetapa", [])
     if subetapa_sel:
-        mask &= df["Subetapa"].isin(subetapa_sel)
+        result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
     # Série - apenas para Ensino Regular
     serie_sel = filtros.get("serie", [])
     if serie_sel and modalidade_key == "Ensino Regular":
-        mask &= df["Série"].isin(serie_sel)
+        result_df = result_df[result_df["Série"].isin(serie_sel)]
 
-    return df[mask]
+    return result_df
 
 # ─── 10. INICIALIZAÇÃO E CARREGAMENTO ─────────────────────────────────
 # Inicializa o cronômetro da sessão se não existir
