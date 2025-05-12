@@ -651,20 +651,23 @@ def construir_filtros_ui(df, modalidade_key, nivel):
 
         filtros["subetapa"] = sub_sel
 
-        # Série - apenas para Ensino Regular e se subetapa foi selecionada
-        if modalidade_key == "Ensino Regular" and etapa_sel and sub_sel:
+        # Série - apenas para Ensino Regular e se subetapa NÃO for total
+        if (
+                modalidade_key == "Ensino Regular"
+                and etapa_sel
+                and sub_sel
+                and not any("Total" in sub for sub in sub_sel)  # Nova verificação
+        ):
             st.markdown(
                 '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">'
                 'Série</div>',
                 unsafe_allow_html=True
             )
 
-            # CORREÇÃO AQUI: Evitar operações diretas com tipos categoria
-            # Aplicamos os filtros sequencialmente
+            # Filtra séries apenas para subetapas não totais
             temp_df = df[df["Etapa"].isin(etapa_sel)]
             temp_df = temp_df[temp_df["Subetapa"].isin(sub_sel)]
             temp_df = temp_df[temp_df["Série"].notna()]
-            temp_df = temp_df[temp_df["Série"] != ""]
 
             serie_disp = sorted(temp_df["Série"].unique())
 
@@ -733,9 +736,15 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
         if subetapa_sel and etapa_sel and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel):  # CORREÇÃO AQUI
             result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
-        # Série - apenas para Ensino Regular
+        # Série - apenas para Ensino Regular e se não for total
         serie_sel = filtros.get("serie", [])
-        if serie_sel and modalidade_key == "Ensino Regular" and etapa_sel and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel):  # CORREÇÃO AQUI
+        if (
+            serie_sel
+            and modalidade_key == "Ensino Regular"
+            and etapa_sel
+            and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
+            and not any("Total" in sub for sub in subetapa_sel)  # Nova verificação
+        ):
             result_df = result_df[result_df["Série"].isin(serie_sel)]
 
     return result_df
