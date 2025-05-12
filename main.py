@@ -50,6 +50,66 @@ section[data-testid="stSidebar"] {
     width: 300px !important;      /* LARGURA DO SIDEBAR */
     background: linear-gradient(to bottom, #5a6e7e, #7b8e9e) !important;
 }
+# Adicione estas regras ao seu CSS_COMPLETO (dentro da tag <style>)
+
+/* Correção de alinhamento para radio buttons na sidebar */
+section[data-testid="stSidebar"] .stRadio > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+section[data-testid="stSidebar"] .stRadio > div > label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    margin: 3px 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Alinhamento do círculo radio */
+section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 10px !important;
+}
+
+/* Ajuste na margem superior para reposicionar */
+section[data-testid="stSidebar"] .stRadio {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+}
+
+/* Assegura que os botões da sidebar tenham a largura correta */
+section[data-testid="stSidebar"] .stButton,
+section[data-testid="stSidebar"] .stDownloadButton {
+    width: 100% !important;
+    margin: 5px 0 !important;
+}
+
+/* Garante que todos os elementos da sidebar tenham largura total */
+section[data-testid="stSidebar"] > div {
+    width: 100% !important;
+}
+
+/* Correção para o container dos botões */
+section[data-testid="stSidebar"] [data-testid="column"] {
+    width: 100% !important;
+    padding: 0 5px !important;
+    box-sizing: border-box !important;
+}
+
+/* Correção para o flexbox de colunas */
+section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    width: 100% !important;
+}
 /* Container principal da sidebar */
 section[data-testid="stSidebar"] > div:first-child {
     padding-top: 0 !important;
@@ -67,7 +127,6 @@ section[data-testid="stSidebar"] .stRadio,
 section[data-testid="stSidebar"] .stButton {
     margin-top: -20px !important;
 }
-
 
 /* ─── CONTEUDO PRINCIPAL ─────────────────────────────────────────── */
 section.main .block-container {
@@ -92,56 +151,120 @@ section[data-testid="stSidebar"] * {
     transform: none !important;
 }
 
-/* Título principal da sidebar */
+/* ─── Título principal da sidebar ───────────────────────────── */
 section[data-testid="stSidebar"] h1 {
-    color: #FFFFFF !important;
-    font-size: 1.8rem !important;
-    margin-bottom: 1.2rem !important;
-    border-top: 2px solid #ffdfba !important;
+    /* cor de destaque mais suave */
+    color: #ffdfba !important;
+    /* ligeiramente maior e com peso para sobressair */
+    font-size: 1.3rem !important;
+    font-weight: 500 !important;
+    /* margem menor embaixo para compactar o bloco */
+    margin-bottom: 2rem !important;
+    /* borda discreta abaixo, em vez de acima */
+    border-bottom: 1px solid rgba(255,223,186,0.5) !important;
     padding-bottom: 0.5rem !important;
+    /* letra toda em maiúscula e espaçamento para um toque moderno */
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    /* fonte sem serifa para maior leitura */
+    font-family: Arial, sans-serif !important;
 }
 
-/* Títulos secundários */
+/* ─── Títulos secundários ──────────────────────────────────── */
 section[data-testid="stSidebar"] h3 {
-    color: #FFFFFF !important;
-    font-size: 1.5rem !important;
-    margin: 1.5rem 0 0.8rem 0 !important;
-    padding-left: 0.3rem !important;
-    border-top: 2px solid #ffdfba !important;
-    padding-bottom: 0.4rem !important;
+    /* cor um pouco mais clara que o texto normal */
+    color: #e0e0e0 !important;
+    font-size: 1.25rem !important;
+    font-weight: 500 !important;
+    /* margens mais compactas */
+    margin: 1.2rem 0 0.6rem 0 !important;
+    /* borda fina abaixo para separar seções */
+    border-bottom: 1px solid rgba(255,223,186,0.5) !important;
+    padding-bottom: 0.3rem !important;
+    /* texto em uppercase para consistência */
+    text-transform: uppercase !important;
 }
 
-/* Todos os parágrafos na sidebar */
-section[data-testid="stSidebar"] p {
-    color: #FFFFFF !important;
-    writing-mode: horizontal-tb !important;
+/* Garante que o primeiro <p> (seu "Modalidade") fique sempre por cima e legível */
+section[data-testid="stSidebar"] > div:first-child > p {
+    /* restauro do tamanho e peso originais */
+    font-size: 4rem !important;
+    font-weight: 700 !important;
+    margin: 0.5rem 0 1rem 0 !important;
+    /* traz para frente */
+    position: relative !important;
+    z-index: 10 !important;
+    /* mesma fonte sem serifa */
+    font-family: Arial, sans-serif !important;
 }
+
+/* Só estiliza parágrafos DENTRO das labels de radio (ajuda, descrições, etc) */
+section[data-testid="stSidebar"] .stRadio label p {
+    color: #dcdcdc !important;
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+    margin: 0.3rem 0 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+/* Se tiver outros parágrafos de ajuda em expanders, você também pode fazer: */
+section[data-testid="stSidebar"] .stExpander p {
+    color: #dcdcdc !important;
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+    margin: 0.3rem 0 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+/* Container geral */
+.stats-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.95rem;
+  color: #333;                  /* texto principal mais escuro */
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.1);  /* linha discreta */
+}
+
+/* Texto “Exibindo X de Y registros” */
+.stats-text {
+  display: flex;
+  gap: 0.3rem;
+}
+
+/* Contagem filtrada em negrito e preta */
+.stats-count {
+  font-weight: 700;
+  color: #000;
+}
+
+/* Total em azul suave */
+.stats-total {
+  font-weight: 600;
+  color: #0073ba;
+}
+
+/* Percentual num badge discreto */
+.stats-percent {
+  background: rgba(0,115,186,0.1); /* azul clarinho */
+  color: #0073ba;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 46px;
+  text-align: center;
+}
+
+
 /* ─── COMPONENTES ────────────────────────────────────────────────── */
 /* Radio buttons - container principal */
 section[data-testid="stSidebar"] .stRadio > div {
     padding: 0;
     margin: 0;
 }
-/* Ajustes para quebra de texto nos radio buttons */
-section[data-testid="stSidebar"] .stRadio > div > label {
-    align-items: flex-start !important;  /* Alinhar no topo */
-    padding: 0.8rem 1rem !important;     /* Aumentar padding */
-    min-height: 60px !important;         /* Altura mínima maior */
-}
 
-section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
-    white-space: normal !important;
-    overflow-wrap: break-word !important;
-    word-break: break-word !important;
-    min-width: 0 !important;             /* Permite redução de largura */
-    flex: 1 !important;
-}
-
-/* Aumentar largura da sidebar se necessário */
-section[data-testid="stSidebar"] {
-    min-width: 350px !important;
-    width: 350px !important;
-}
 /* Labels das opções */
 section[data-testid="stSidebar"] .stRadio > div > label {
     height: auto !important;
@@ -368,301 +491,6 @@ div.filter-title {
     display: inline-block;
     margin-top: 1rem;
 }
-
-/* ===== CORREÇÃO PARA TEXTO TRUNCADO EM MULTISELECT ===== */
-
-/* Correção para os elementos do dropdown */
-div[data-baseweb="select"] span, 
-div[data-baseweb="select"] div[role="option"] div {
-    white-space: normal !important;
-    word-break: break-word !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    max-width: 100% !important;
-}
-
-/* Correção para tags selecionadas */
-div[data-baseweb="tag"] {
-    max-width: none !important;
-    width: auto !important;
-    white-space: normal !important;
-    height: auto !important;
-    min-height: 32px !important;
-    word-break: break-word !important;
-    line-height: 1.3 !important;
-    padding: 4px 8px !important;
-}
-
-/* Correção para o texto dentro das tags */
-div[data-baseweb="tag"] span {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    display: inline !important;
-}
-
-/* Aumenta a largura do select e popover */
-div[data-baseweb="select"], 
-div[data-baseweb="popover"] {
-    min-width: 300px !important;
-    max-width: 550px !important;
-    width: auto !important;
-}
-
-/* Corrige o container da dropdown */
-div[role="listbox"] {
-    width: auto !important;
-    max-width: 550px !important;
-}
-
-/* Corrige o texto nas opções do dropdown */
-div[role="option"] div {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    width: 100% !important;
-}
-
-/* Aumenta a altura mínima do input */
-div[data-baseweb="input"] {
-    min-height: 38px !important;
-}
-
-/* Ajusta tamanho específico para o componente de multiselect */
-.stMultiSelect {
-    min-width: 300px !important;
-    max-width: 650px !important;
-    width: 100% !important;
-}
-
-/* Formato do input principal do multiselect */
-.stMultiSelect > div {
-    min-height: 38px !important;
-    height: auto !important;
-}
-
-/* Corrige o container interno */
-.stMultiSelect [data-testid="stFormSubmitButton"] > div {
-    height: auto !important;
-    min-height: 38px !important;
-}
-
-/* Aumenta ainda mais o tamanho das tags */
-.stMultiSelect div[data-baseweb="tag"] {
-    min-width: 50px !important;
-    max-width: 100% !important;
-    width: auto !important;
-}
-# Adicione estas regras ao seu CSS_COMPLETO (dentro da tag <style>)
-
-/* Correção de alinhamento para radio buttons na sidebar */
-section[data-testid="stSidebar"] .stRadio > div {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 5px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-}
-
-section[data-testid="stSidebar"] .stRadio > div > label {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    width: 100% !important;
-    margin: 3px 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Alinhamento do círculo radio */
-section[data-testid="stSidebar"] .stRadio > div > label > div:first-child {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin-right: 10px !important;
-}
-
-/* Ajuste na margem superior para reposicionar */
-section[data-testid="stSidebar"] .stRadio {
-    margin-top: 0px !important;
-    padding-top: 0px !important;
-}
-
-/* Assegura que os botões da sidebar tenham a largura correta */
-section[data-testid="stSidebar"] .stButton,
-section[data-testid="stSidebar"] .stDownloadButton {
-    width: 100% !important;
-    margin: 5px 0 !important;
-}
-
-/* Garante que todos os elementos da sidebar tenham largura total */
-section[data-testid="stSidebar"] > div {
-    width: 100% !important;
-}
-
-/* Correção para o container dos botões */
-section[data-testid="stSidebar"] [data-testid="column"] {
-    width: 100% !important;
-    padding: 0 5px !important;
-    box-sizing: border-box !important;
-}
-
-/* Correção para o flexbox de colunas */
-section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
-    flex-wrap: nowrap !important;
-    gap: 10px !important;
-    width: 100% !important;
-}
-/* Adicione estas regras ao seu CSS_COMPLETO */
-
-/* Corrige o problema de texto que transborda do contêiner azul */
-div[data-baseweb="tag"] {
-    max-width: 100% !important;
-    width: auto !important;
-    white-space: normal !important;
-    height: auto !important;
-    min-height: 32px !important;
-    word-break: break-word !important;
-    line-height: 1.3 !important;
-    padding: 4px 8px !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important; /* Impede que o texto saia do contêiner */
-    display: flex !important;
-    align-items: center !important;
-    margin: 2px !important;
-}
-
-/* Melhora o encapsulamento do texto dentro da tag */
-div[data-baseweb="tag"] span {
-    white-space: normal !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    display: inline-block !important;
-    max-width: calc(100% - 20px) !important; /* Espaço para o botão X */
-    word-break: break-word !important;
-}
-
-/* Garante que o contêiner do multiselect expanda adequadamente */
-div[data-baseweb="select"] {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 40px !important;
-}
-
-/* Ajusta o tamanho do contêiner interno para acomodar textos longos */
-div[data-baseweb="select"] > div:first-child {
-    height: auto !important;
-    min-height: 40px !important;
-    flex-wrap: wrap !important;
-    padding: 2px !important;
-}
-
-/* Garante que o contêiner dos tags tenha espaço adequado */
-div[data-baseweb="select"] > div:first-child > div {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    overflow: hidden !important;
-}
-
-/* Ajuste específico para o dropdown de Série */
-div[key="serie_sel"] div[data-baseweb="tag"],
-div[key^="serie_"] div[data-baseweb="tag"] {
-    max-width: 95% !important; /* Ligeiramente menor para garantir que caiba */
-    margin-bottom: 2px !important;
-    margin-top: 2px !important;
-}
-
-/* Ajuste específico para textos muito longos */
-div[data-baseweb="tag"]:has(span:not(:empty)) {
-    max-width: 95% !important;
-    margin-right: 5px !important;
-}
-
-/* Estilo específico para o botão 'X' para não sobrepor o texto */
-div[data-baseweb="tag"] button {
-    flex-shrink: 0 !important;
-    margin-left: 4px !important;
-}
-/* CORREÇÃO RADICAL PARA TEXTO TRANSBORDANDO */
-
-/* 1. Forçar texto a quebrar dentro do contêiner */
-div[data-baseweb="tag"] {
-    width: auto !important;
-    max-width: 95% !important; /* Reduz para 95% da largura disponível */
-    display: block !important; /* Mudança para bloco em vez de flex */
-    height: auto !important;
-    min-height: 36px !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    white-space: normal !important;
-    padding: 8px 28px 8px 8px !important; /* Mais espaço à direita para o botão X */
-    box-sizing: border-box !important;
-    position: relative !important; /* Para posicionamento absoluto do botão X */
-    margin: 4px !important;
-    line-height: 1.2 !important;
-}
-
-/* 2. Garantir que o texto dentro do span quebre corretamente */
-div[data-baseweb="tag"] span {
-    white-space: normal !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    display: block !important; /* Mudança crítica para block */
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-/* 3. Posicionar o botão X de forma absoluta para não afetar o fluxo do texto */
-div[data-baseweb="tag"] button {
-    position: absolute !important;
-    right: 4px !important;
-    top: 4px !important;
-}
-
-/* 4. Ajustar o contêiner para usar wrap e acomodar os itens */
-div[data-baseweb="select"] > div {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 40px !important;
-}
-
-/* 5. Garantir que o contêiner pai tenha altura automática */
-.stMultiSelect div[data-baseweb="select"] {
-    height: auto !important;
-    min-height: 40px !important;
-    width: 100% !important;
-}
-
-/* 6. Aumentar o espaço disponível para o dropdown */
-div[role="listbox"] {
-    max-width: 95% !important;
-    width: auto !important;
-}
-
-/* 7. Estilo específico para o dropdown de Série - mais rigoroso */
-[data-testid="stMultiSelect"]:has([aria-labelledby*="serie"]) div[data-baseweb="tag"],
-div[key="serie_sel"] div[data-baseweb="tag"],
-div[key^="serie_"] div[data-baseweb="tag"] {
-    max-width: 95% !important;
-    padding-right: 30px !important; /* Mais espaço para o botão */
-}
-
-/* 8. Aumento do espaço na coluna dos multiselects */
-[data-testid="stHorizontalBlock"] > div:nth-child(2) [data-testid="stMultiSelect"] {
-    width: 100% !important;
-    max-width: 95% !important;
-}
-
-/* 9. Correção para o botão X não sobrepor texto */
-div[data-baseweb="tag"]:hover button {
-    background-color: rgba(0,0,0,0.1) !important; /* Destaque sutil ao passar o mouse */
-}
-
-}
 </style>
 """
 
@@ -845,8 +673,8 @@ def construir_filtros_ui(df, modalidade_key, nivel):
     """Constrói os filtros de UI baseados na modalidade e dados disponíveis"""
     config = MODALIDADES[modalidade_key]
 
-    # Layout em duas colunas - PROPORÇÃO MUITO MAIS ESPAÇO PARA DIREITA
-    c_left, c_right = st.columns([0.3, 0.7], gap="large")
+    # Layout em duas colunas
+    c_left, c_right = st.columns([0.5, 0.7], gap="large")
 
     # Detectar modalidade para compatibilidade
     is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
@@ -910,8 +738,7 @@ def construir_filtros_ui(df, modalidade_key, nivel):
             etapas_disp,
             default=default_etapas,
             key="etapa_sel",
-            label_visibility="collapsed",
-            max_selections=None
+            label_visibility="collapsed"
         )
         filtros["etapa"] = etapa_sel
 
@@ -1073,10 +900,7 @@ if "tempo_inicio" not in st.session_state:
 # ----- Seleção de modalidade e chamada protegida ---------------------
 try:
     with st.sidebar:
-        st.markdown(
-            '<p style="color:#FFFFFF;font-weight:600;font-size:1.8rem;margin-top:0.5rem">'
-            'Modalidade</p>', unsafe_allow_html=True
-        )
+        st.sidebar.title("Modalidade")
         tipo_ensino = st.radio(
             "Selecione a modalidade",
             list(MODALIDADES.keys()),
@@ -1096,13 +920,6 @@ try:
 except Exception as e:
     st.error(f"Erro ao carregar '{tipo_ensino}': {str(e)}")
     st.stop()
-
-# Uso de memória
-ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
-st.sidebar.markdown(
-    f'<div class="ram-indicator">💾 RAM usada: <b>{ram_mb:.0f} MB</b></div>',
-    unsafe_allow_html=True
-)
 
 # ─── 11. SELEÇÃO DE NÍVEL DE AGREGAÇÃO ─────────────────────────────
 st.sidebar.title("Filtros")
@@ -1164,14 +981,20 @@ num_filtrado = len(df_filtrado)
 if num_filtrado > 0:
     percent = (num_filtrado / num_total) * 100
     st.markdown(
-        f"<div style='margin-bottom:10px;'>"
-        f"<span style='font-size:0.9rem;color:#666;'>"
-        f"Exibindo <b>{format_number_br(num_filtrado)}</b> de "
-        f"<b>{format_number_br(num_total)}</b> registros "
-        f"(<b>{percent:.1f}%</b>)"
-        f"</span></div>",
+        f"""
+        <div class="stats-container">
+            <div class="stats-text">
+                Exibindo <strong class="stats-count">{format_number_br(num_filtrado)}</strong>
+                de <strong class="stats-total">{format_number_br(num_total)}</strong> registros
+            </div>
+            <div class="stats-percent">
+                {percent:.1f}%  
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
+
 else:
     # Mensagens específicas por modalidade quando não há dados
     config = MODALIDADES[tipo_ensino]
@@ -1190,9 +1013,12 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
     # Adicionar um estilo personalizado para o texto do slider
     st.markdown("""
     <style>
-    /* Seletor mais específico para o texto do slider */
+    /* ─── Slider: título e valores na mesma cor ─── */
     [data-testid="stExpander"] [data-testid="stSlider"] > div:first-child {
-        color: #000000 !important;
+        color: #FFFFFF !important;   /* título */
+    }
+    [data-testid="stExpander"] [data-testid="stSlider"] > div:nth-child(2) {
+        color: #FFFFFF !important;   /* valor atual */
         font-weight: 500 !important;
     }
     </style>
@@ -1217,6 +1043,13 @@ with st.sidebar.expander("Configurações avançadas da tabela", False):
     )
 
     st.session_state["page_size"] = page_size
+
+    # Uso de memória
+    ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+    st.sidebar.markdown(
+        f'<div class="ram-indicator">💾 RAM usada: <b>{ram_mb:.0f} MB</b></div>',
+        unsafe_allow_html=True
+    )
 
 # ─── 15. TABELA PERSONALIZADA COM FILTROS INTEGRADOS ────────────────
 # 1. Colunas visíveis baseadas no nível de agregação
@@ -1255,6 +1088,7 @@ df_tabela = df_filtrado[vis_cols].copy()
 # 4. CSS para centralizar coluna numérica
 st.markdown("""
 <style>
+
 /* Centraliza a coluna de matrículas */
 [data-testid="stDataFrame"] table tbody tr td:last-child,
 [data-testid="stDataFrame"] table thead tr th:last-child {
@@ -1265,7 +1099,10 @@ st.markdown("""
 [data-testid="stDataFrame"] table tbody tr:hover {
     background-color: rgba(107, 129, 144, 0.1) !important;
 }
-
+section[data-testid="stSidebar"] {
+  background: #2f3e4e !important;
+  border-left: 4px solid #ffdfba !important;
+}
 /* Bordas mais claras e estilo mais limpo */
 [data-testid="stDataFrame"] table {
     border-collapse: collapse !important;
@@ -1433,9 +1270,26 @@ if pag.total_pages > 1:  # Só mostra controles se houver mais de uma página
 else:
     # Se houver apenas uma página, mostra apenas o total de linhas
     st.markdown(
-        f"<div style='text-align:right;padding:8px 0;'>"
-        f"<span style='font-weight:500;'>"
-        f"Total: {format_number_br(len(df_texto))} linhas</span></div>",
+        f"""
+        <div style="
+            text-align: right;
+            padding: 12px 0 8px 0;
+            margin-top: 5px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        ">
+            <span style="font-weight: 600; margin-right: 5px;">Total:</span>
+            <span style="
+                color: #0073ba;
+                font-weight: 500;
+                background-color: rgba(0, 115, 186, 0.1);
+                padding: 2px 8px;
+                border-radius: 4px;
+            ">{format_number_br(len(df_texto))} linhas</span>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
@@ -1495,7 +1349,7 @@ st.sidebar.markdown("### Download")
 # Informação sobre os dados que serão baixados
 num_linhas_download = len(df_texto)
 st.sidebar.markdown(
-    f"<div style='font-size:0.85rem;margin-bottom:8px;'>"
+    f"<div style='font-size:0.85rem;margin-bottom:8px;color:white;'>"
     f"Download de <b>{format_number_br(num_linhas_download)}</b> linhas"
     f"</div>",
     unsafe_allow_html=True
