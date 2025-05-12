@@ -678,11 +678,6 @@ def construir_filtros_ui(df, modalidade_key, nivel):
         else:
             filtros["serie"] = []
 
-    # Texto de ajuda contextual
-    if config.texto_ajuda:
-        with st.expander("ℹ️ Ajuda com os filtros", expanded=False):
-            st.info(config.texto_ajuda)
-
     return anos_sel, redes_sel, filtros
 
 
