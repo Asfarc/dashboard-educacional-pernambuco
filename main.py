@@ -68,6 +68,7 @@ section[data-testid="stSidebar"] .stButton {
     margin-top: -20px !important;
 }
 
+
 /* ─── CONTEUDO PRINCIPAL ─────────────────────────────────────────── */
 section.main .block-container {
     padding-top: 0.5rem !important;
@@ -121,7 +122,26 @@ section[data-testid="stSidebar"] .stRadio > div {
     padding: 0;
     margin: 0;
 }
+/* Ajustes para quebra de texto nos radio buttons */
+section[data-testid="stSidebar"] .stRadio > div > label {
+    align-items: flex-start !important;  /* Alinhar no topo */
+    padding: 0.8rem 1rem !important;     /* Aumentar padding */
+    min-height: 60px !important;         /* Altura mínima maior */
+}
 
+section[data-testid="stSidebar"] .stRadio > div > label > div:last-child {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    min-width: 0 !important;             /* Permite redução de largura */
+    flex: 1 !important;
+}
+
+/* Aumentar largura da sidebar se necessário */
+section[data-testid="stSidebar"] {
+    min-width: 350px !important;
+    width: 350px !important;
+}
 /* Labels das opções */
 section[data-testid="stSidebar"] .stRadio > div > label {
     height: auto !important;
@@ -348,6 +368,64 @@ div.filter-title {
     display: inline-block;
     margin-top: 1rem;
 }
+
+/* Container principal dos multiselects */
+section[data-testid="stSidebar"] .stMultiSelect > div {
+    width: 30% !important;
+    min-width: 280px !important;  /* Largura mínima aumentada */
+}
+
+/* Input principal */
+section[data-testid="stSidebar"] .stMultiSelect > div > div[data-baseweb="select"] {
+    background-color: #ffffff15 !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+}
+
+/* Texto dos itens selecionados */
+section[data-testid="stSidebar"] .stMultiSelect span[aria-selected="true"] {
+    white-space: normal !important;
+    word-break: break-word !important;
+    max-width: 250px !important;
+    line-height: 1.4 !important;
+    background: #0073ba !important;
+    margin: 2px !important;
+}
+
+/* Opções do dropdown */
+section[data-testid="stSidebar"] .stMultiSelect li div {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    line-height: 1.4 !important;
+    padding: 8px 12px !important;
+}
+
+/* Label dos filtros */
+section[data-testid="stSidebar"] .stMultiSelect label {
+    font-size: 15px !important;
+    color: #fff !important;
+    margin-bottom: 4px !important;
+}
+
+/* Dropdown menu */
+section[data-testid="stSidebar"] .stMultiSelect [role="listbox"] {
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    background: #5a6e7e !important;
+    border: 1px solid #405060 !important;
+}
+
+/* Items do dropdown */
+section[data-testid="stSidebar"] .stMultiSelect [role="option"] {
+    color: #fff !important;
+    padding: 8px 12px !important;
+}
+
+/* Hover nos items */
+section[data-testid="stSidebar"] .stMultiSelect [role="option"]:hover {
+    background: #0073ba !important;
+}
+
 </style>
 """
 
