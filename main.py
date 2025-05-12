@@ -530,8 +530,8 @@ def construir_filtros_ui(df, modalidade_key, nivel):
     """Constrói os filtros de UI baseados na modalidade e dados disponíveis"""
     config = MODALIDADES[modalidade_key]
 
-    # Layout em duas colunas
-    c_left, c_right = st.columns([0.5, 0.7], gap="large")
+    # Layout em duas colunas - MUDE PARA TAMANHOS MAIS EQUILIBRADOS
+    c_left, c_right = st.columns([0.45, 0.55], gap="large")
 
     # Detectar modalidade para compatibilidade
     is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
@@ -595,7 +595,8 @@ def construir_filtros_ui(df, modalidade_key, nivel):
             etapas_disp,
             default=default_etapas,
             key="etapa_sel",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            max_selections=None
         )
         filtros["etapa"] = etapa_sel
 
