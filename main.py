@@ -443,9 +443,15 @@ MODALIDADES = {
         arquivo="EJA - Educação de Jovens e Adultos.parquet",
         etapa_valores={
             "padrao": "EJA - Total",
-            "totais": ["EJA - Total"]  # identifica valores que representam totais
+            "totais": ["EJA - Total", "EJA Ensino Fundamental - Total", "EJA Ensino Médio - Total"]  # Novos totais
         },
-        texto_ajuda="Na modalidade EJA, selecione primeiro o tipo de ensino (EJA - Total, EJA - Ensino Fundamental ou EJA - Ensino Médio) e depois a subetapa específica, quando disponível."
+        subetapa_valores={
+            "EJA Ensino Fundamental": ["EJA Anos Iniciais", "EJA Anos Finais", "EJA Ensino Fundamental - Curso FIC"],
+            "EJA Ensino Médio": ["EJA Ensino Médio - Sem componente profissionalizante",
+                                 "EJA Ensino Médio - Curso FIC",
+                                 "EJA Ensino Médio - Curso Técnico Integrado"]
+        },
+        texto_ajuda="Selecione a Etapa (Total ou específica). Para etapas específicas, escolha a Subetapa."
     ),
     "Educação Profissional": ModalidadeConfig(
         arquivo="Educação Profissional.parquet",
