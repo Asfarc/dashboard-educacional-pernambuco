@@ -712,7 +712,7 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
 
         # Aplica subetapa apenas se não for total
         if (etapa_sel and
-            not any(e in config.etapa_valores["totais"] for e in etapa_sel) and
+            not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel) and  # CORREÇÃO AQUI
             subetapa_sel):
             result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
@@ -722,7 +722,7 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
         etapa_sel = filtros.get("etapa", [])
         if etapa_sel:
             result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
-            is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
+            is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)  # CORREÇÃO AQUI
 
             # Lógica específica para Ensino Regular
             if modalidade_key == "Ensino Regular" and not is_etapa_total and not filtros.get("subetapa"):
@@ -730,12 +730,12 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
 
         # Subetapa (só aplicar se não for total)
         subetapa_sel = filtros.get("subetapa", [])
-        if subetapa_sel and etapa_sel and not any(e in config.etapa_valores["totais"] for e in etapa_sel):
+        if subetapa_sel and etapa_sel and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel):  # CORREÇÃO AQUI
             result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
         # Série - apenas para Ensino Regular
         serie_sel = filtros.get("serie", [])
-        if serie_sel and modalidade_key == "Ensino Regular" and etapa_sel and not any(e in config.etapa_valores["totais"] for e in etapa_sel):
+        if serie_sel and modalidade_key == "Ensino Regular" and etapa_sel and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel):  # CORREÇÃO AQUI
             result_df = result_df[result_df["Série"].isin(serie_sel)]
 
     return result_df
