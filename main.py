@@ -567,7 +567,7 @@ if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível de agregação '{nivel}'.")
     st.stop()
 
-# ─── 7. PAINEL DE FILTROS SIMPLIFICADO ──────────────────────────────
+# ─── 7. PAINEL DE FILTROS CORRIGIDO (SEM "TOTAL - TODAS AS SUBETAPAS") ──────────────────────────────
 with st.container():
     st.markdown('<div class="panel-filtros" style="margin-top:-30px">', unsafe_allow_html=True)
 
@@ -734,14 +734,15 @@ with st.container():
                         sub_disp = sorted(list(set(sub_disp)))
 
                 else:
-                    # Comportamento padrão para Ensino Regular - MANTIDO COMO ESTÁ
+                    # Comportamento padrão para Ensino Regular - CORRIGIDO, REMOVENDO "Total - Todas as Subetapas"
                     sub_real = sorted(df_base.loc[
                                           df_base["Etapa"].isin(etapa_sel) &
                                           df_base["Subetapa"].ne("") &
                                           df_base["Subetapa"].ne("Total"),
                                           "Subetapa"
                                       ].unique())
-                    sub_disp = ["Total - Todas as Subetapas"] + sub_real if sub_real else []
+                    # Removido a adição de "Total - Todas as Subetapas"
+                    sub_disp = sub_real if sub_real else []
 
                 # Exibir Multiselect para Subetapa (somente se houver opções)
                 if sub_disp:
@@ -764,24 +765,19 @@ with st.container():
                     '<div class="filter-title" style="margin-top:-12px;padding:0;display:flex;align-items:center;height:32px">Série</div>',
                     unsafe_allow_html=True)
 
-                # Se "Total - Todas as Subetapas" foi selecionado
-                if "Total - Todas as Subetapas" in sub_sel:
-                    # Não mostra opções de série
-                    serie_sel = []
-                    st.text("Selecione uma subetapa específica\npara ver as séries disponíveis.")
-                else:
-                    # Comportamento padrão para Ensino Regular
-                    serie_real = sorted(df_base.loc[
-                                            df_base["Etapa"].isin(etapa_sel) &
-                                            df_base["Subetapa"].isin(sub_sel) &
-                                            df_base["Série"].ne("") &
-                                            ~df_base["Série"].str.startswith("Total -", na=False),
-                                            "Série"
-                                        ].unique())
+                # Comportamento para Ensino Regular - CORRIGIDO, REMOVENDO "Total - Todas as Séries"
+                serie_real = sorted(df_base.loc[
+                                        df_base["Etapa"].isin(etapa_sel) &
+                                        df_base["Subetapa"].isin(sub_sel) &
+                                        df_base["Série"].ne("") &
+                                        ~df_base["Série"].str.startswith("Total -", na=False),
+                                        "Série"
+                                    ].unique())
 
-                    # Adiciona "Total - Todas as Séries" apenas se houver séries específicas
-                    serie_disp = ["Total - Todas as Séries"] + serie_real if serie_real else []
+                # Removido a adição de "Total - Todas as Séries"
+                serie_disp = serie_real if serie_real else []
 
+                if serie_disp:
                     serie_sel = st.multiselect(
                         "Série",
                         serie_disp,
@@ -789,6 +785,9 @@ with st.container():
                         key="serie_sel",
                         label_visibility="collapsed"
                     )
+                else:
+                    serie_sel = []
+                    st.text("Não há séries disponíveis\npara esta subetapa.")
             else:
                 serie_sel = []
 
@@ -796,11 +795,10 @@ with st.container():
     st.markdown('</div>', unsafe_allow_html=True)  # fecha .panel-filtros
 
 
-# ─── 8. FUNÇÃO DE FILTRO SIMPLIFICADA PARA TODAS AS MODALIDADES ─────────
+# ─── 8. FUNÇÃO DE FILTRO CORRIGIDA ────────────────────────────────
 def filtrar(df, anos, redes, etapas, subetapas, series):
     """
-    Função de filtro simplificada para todas as modalidades.
-    Adaptada para estrutura de dados de Educação Profissional e EJA.
+    Função de filtro corrigida para todas as modalidades, sem opções "Total - Todas".
 
     Args:
         df: DataFrame com os dados
@@ -808,7 +806,7 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
         redes: Lista de redes selecionadas
         etapas: Lista de etapas selecionadas (valores internos, não de exibição)
         subetapas: Lista de subetapas selecionadas
-        series: Lista de séries selecionadas (apenas para Ensino Regular)
+        series: Lista de séries selecionadas
 
     Returns:
         DataFrame filtrado
@@ -852,21 +850,12 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
             m &= df["Nome da Etapa de ensino/Nome do painel de filtro"].isin(subetapas)
         else:
             # Para Ensino Regular: comportamento padrão
-            if "Total - Todas as Subetapas" in subetapas:
-                m &= df["Subetapa"] == "Total"
-            else:
-                m &= df["Subetapa"].isin(subetapas)
+            m &= df["Subetapa"].isin(subetapas)
 
-    # === FILTRO DE SÉRIE (APENAS PARA ENSINO REGULAR) ===
-    if series and not is_eja and not is_educacao_profissional:
-        # Apenas para Ensino Regular
-        if "Total - Todas as Séries" in series:
-            if subetapas and "Total - Todas as Subetapas" not in subetapas:
-                serie_totals = [f"Total - {sub}" for sub in subetapas]
-                m &= df["Série"].isin(serie_totals)
-            else:
-                m &= df["Série"].eq("")
-        else:
+    # === FILTRO DE SÉRIE ===
+    if series:
+        if not is_eja and not is_educacao_profissional:
+            # Apenas para Ensino Regular
             m &= df["Série"].isin(series)
 
     # Aplicar a máscara final e retornar o resultado
@@ -875,7 +864,7 @@ def filtrar(df, anos, redes, etapas, subetapas, series):
     return result
 
 
-# ─── VERIFICAÇÃO DE FILTROS SIMPLIFICADA ───────────────────────────
+# ─── VERIFICAÇÃO DE FILTROS CORRIGIDA ───────────────────────────
 # Verificar se há pelo menos um filtro selecionado para cada categoria obrigatória
 if not ano_sel:
     st.warning("Por favor, selecione pelo menos um ano.")
@@ -896,7 +885,7 @@ df_filtrado = filtrar(
     tuple(rede_sel),
     tuple(etapa_sel),
     tuple(sub_sel),
-    tuple(serie_sel) if not is_eja_modalidade and not is_educacao_profissional_modalidade else []
+    tuple(serie_sel)
 )
 
 # Indicador visual de resultados
