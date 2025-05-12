@@ -62,36 +62,7 @@ section[data-testid="stSidebar"] .stRadio > div {
     width: 100% !important;
 }
 
-/* Correção específica para texto truncado em tags de Etapa */
 
-/* Amplia especificamente os elementos de tag na seção Etapa */
-[data-testid="stMultiSelect"]:has(div[key="etapa_sel"]) div[data-baseweb="tag"],
-[data-testid="stMultiSelect"]:has(div[key^="etapa_"]) div[data-baseweb="tag"] {
-    max-width: 95% !important;
-    width: auto !important;
-    white-space: normal !important;
-    word-break: normal !important; /* Permite truncamento apenas em espaços */
-    overflow-wrap: break-word !important;
-    padding-right: 30px !important;
-    min-width: 160px !important; /* Garante largura mínima adequada */
-}
-
-/* Ajusta o comportamento do texto no filtro de Etapa */
-[data-testid="stMultiSelect"]:has(div[key="etapa_sel"]) div[data-baseweb="tag"] span,
-[data-testid="stMultiSelect"]:has(div[key^="etapa_"]) div[data-baseweb="tag"] span {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    display: inline-block !important;
-    max-width: 100% !important;
-}
-
-/* Assegura que elementos curtos não sejam truncados */
-div[data-baseweb="tag"]:has(span:not(:empty)):has(span[data-testid*="ensino"i]) {
-    min-width: 150px !important;
-    max-width: none !important;
-    width: auto !important;
-}
 
 section[data-testid="stSidebar"] .stRadio > div > label {
     display: flex !important;
@@ -245,6 +216,21 @@ section[data-testid="stSidebar"] .stExpander p {
     margin: 0.3rem 0 !important;
     font-family: Arial, sans-serif !important;
 }
+/* ─── Multiselect: não truncar as tags selecionadas ───────────────── */
+[data-baseweb="tag"] {
+  /* remove qualquer limite de largura */
+  max-width: none !important;
+  /* garante que o conteúdo não seja escondido */
+  overflow: visible !important;
+}
+
+[data-baseweb="tag"] > span {
+  /* força o texto a aparecer completo em uma só linha */
+  white-space: nowrap !important;
+  /* evita o "..." (ellipsis) */
+  text-overflow: clip !important;
+}
+
 
 /* Container geral: linha discreta e espaçamento */
 .stats-container {
@@ -427,12 +413,20 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] {
     border-radius: 5px !important;
     margin: 1.5rem 0 !important;
 }
-/* Ajustar padding da tabela: */
-
+/* Substitua o bloco existente por: */
 [data-testid="stDataFrame"] th, 
 [data-testid="stDataFrame"] td {
-    padding: 4px 8px !important;
+    padding: 8px 12px !important;
+    white-space: normal !important;  /* Permite quebra de linha */
+    text-overflow: clip !important;  /* Remove reticências (...) */
+    max-width: 400px !important;     /* Aumenta o limite máximo */
 }
+
+/* Melhora o alinhamento vertical */
+[data-testid="stDataFrame"] td {
+    vertical-align: top !important;
+}
+
 /* Remove margem superior do container principal */
 section.main .block-container {
     padding-top: 0 !important;
@@ -686,7 +680,7 @@ def construir_filtros_ui(df, modalidade_key, nivel):
     config = MODALIDADES[modalidade_key]
 
     # Layout em duas colunas
-    c_left, c_right = st.columns([0.5, 0.7], gap="large")
+    c_left, c_right = st.columns([0.4, 0.8], gap="large")
 
     # Detectar modalidade para compatibilidade
     is_eja = modalidade_key == "EJA - Educação de Jovens e Adultos"
