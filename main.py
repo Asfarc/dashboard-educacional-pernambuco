@@ -154,9 +154,9 @@ section[data-testid="stSidebar"] * {
 /* ─── Título principal da sidebar ───────────────────────────── */
 section[data-testid="stSidebar"] h1 {
     /* cor de destaque mais suave */
-    color: #ffdfba !important;
+    color: #dab990 !important;
     /* ligeiramente maior e com peso para sobressair */
-    font-size: 1.3rem !important;
+    font-size: 1.4rem !important;
     font-weight: 500 !important;
     /* margem menor embaixo para compactar o bloco */
     margin-bottom: 2rem !important;
@@ -166,14 +166,13 @@ section[data-testid="stSidebar"] h1 {
     /* letra toda em maiúscula e espaçamento para um toque moderno */
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
-    /* fonte sem serifa para maior leitura */
-    font-family: Arial, sans-serif !important;
+
 }
 
 /* ─── Títulos secundários ──────────────────────────────────── */
 section[data-testid="stSidebar"] h3 {
     /* cor um pouco mais clara que o texto normal */
-    color: #e0e0e0 !important;
+    color: #ebdcd5 !important;
     font-size: 1.25rem !important;
     font-weight: 500 !important;
     /* margens mais compactas */
@@ -216,46 +215,29 @@ section[data-testid="stSidebar"] .stExpander p {
     font-family: Arial, sans-serif !important;
 }
 
-/* Container geral */
+/* Container geral: linha discreta e espaçamento */
 .stats-container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   font-size: 0.95rem;
-  color: #333;                  /* texto principal mais escuro */
+  color: #333; /* cinza-escuro, mais suave que preto puro */
   margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0,0,0,0.1);  /* linha discreta */
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08); /* linha muito leve */
+  white-space: nowrap;
 }
 
-/* Texto “Exibindo X de Y registros” */
-.stats-text {
-  display: flex;
-  gap: 0.3rem;
-}
-
-/* Contagem filtrada em negrito e preta */
-.stats-count {
-  font-weight: 700;
-  color: #000;
-}
-
-/* Total em azul suave */
+/* Números em negrito mas sem cor */
+.stats-count,
 .stats-total {
   font-weight: 600;
-  color: #0073ba;
 }
 
-/* Percentual num badge discreto */
+/* Percentual em itálico, cor levemente mais clara */
 .stats-percent {
-  background: rgba(0,115,186,0.1); /* azul clarinho */
-  color: #0073ba;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  min-width: 46px;
-  text-align: center;
+  font-style: italic;
+  color: #555; /* tom médio de cinza */
+  margin-left: 2px; /* pequeno espaçamento antes do % */
 }
+
 
 
 /* ─── COMPONENTES ────────────────────────────────────────────────── */
@@ -396,7 +378,7 @@ section[data-testid="stSidebar"] .stDownloadButton > button:hover {
 
 /* Cabeçalhos das colunas */
 .column-header {
-    background: #ffdfba;
+    background: #daba93;
     text-align: center;
     font-weight: bold;
     height: 50px !important;
@@ -666,7 +648,6 @@ def carregar_dados(modalidade_key):
         df[df["Nível de agregação"].eq("município")],
         df[df["Nível de agregação"].eq("estado")],
     )
-
 
 # ─── 8. CONSTRUÇÃO DOS FILTROS DINÂMICOS ─────────────────────────────
 def construir_filtros_ui(df, modalidade_key, nivel):
@@ -983,17 +964,15 @@ if num_filtrado > 0:
     st.markdown(
         f"""
         <div class="stats-container">
-            <div class="stats-text">
-                Exibindo <strong class="stats-count">{format_number_br(num_filtrado)}</strong>
-                de <strong class="stats-total">{format_number_br(num_total)}</strong> registros
-            </div>
-            <div class="stats-percent">
-                {percent:.1f}%  
-            </div>
+            Exibindo 
+            <strong class="stats-count">{format_number_br(num_filtrado)}</strong> de 
+            <strong class="stats-total">{format_number_br(num_total)}</strong> registros
+            (<span class="stats-percent">{percent:.1f}%</span>)
         </div>
         """,
         unsafe_allow_html=True
     )
+
 
 else:
     # Mensagens específicas por modalidade quando não há dados
@@ -1057,29 +1036,32 @@ vis_cols = ["Ano"]
 
 # Adicionar coluna UF apenas quando o nível de agregação for "Pernambuco"
 if nivel == "Pernambuco":
-    vis_cols += ["UF"]  # Adiciona UF logo após o Ano
     # Garantir que a coluna UF exista no DataFrame
+    df_filtrado = df_filtrado.copy()  # Cria uma cópia para não modificar o original
     df_filtrado["UF"] = "Pernambuco"  # Cria a coluna com valor fixo
+    vis_cols += ["UF"]  # Adiciona UF logo após o Ano
 
 if nivel == "Escolas":
-    vis_cols += ["Nome do Município", "Nome da Escola"]
+    vis_cols.extend(["Nome do Município", "Nome da Escola"])
 elif nivel == "Municípios":
-    vis_cols += ["Nome do Município"]
+    vis_cols.append("Nome do Município")
 
-# 2. Escolhe qual coluna vai aparecer como "Etapa":
-is_eja = tipo_ensino == "EJA - Educação de Jovens e Adultos"
-is_prof = tipo_ensino == "Educação Profissional"
+# 2. Colunas de Etapa e Subetapa
+vis_cols.append("Etapa")
+vis_cols.append("Subetapa")
 
-# Adicionamos a coluna Etapa sem renomear
-vis_cols += ["Etapa"]
+# 3. (NOVO) Coluna Ano/Série para Ensino Regular
+if tipo_ensino == "Ensino Regular":
+    # Pega o nome da coluna configurada em MODALIDADES
+    config = MODALIDADES[tipo_ensino]
+    # Se preferir usar o nome original ("Ano/Série"), verifique se existe:
+    serie_col = config.serie_col if config.serie_col in df_filtrado.columns else "Série"
+    vis_cols.append(serie_col)
 
-# Adicionamos a coluna Subetapa aqui
-vis_cols += ["Subetapa"]
+# 4. Colunas finais
+vis_cols.extend(["Rede", "Número de Matrículas"])
 
-# Adiciona Rede e Matrículas
-vis_cols += ["Rede", "Número de Matrículas"]
-
-# 3. Puxa só as colunas selecionadas (não precisamos mais renomear Etapa)
+# Puxa só as colunas selecionadas (não precisamos mais renomear Etapa)
 df_tabela = df_filtrado[vis_cols].copy()
 
 # Não é mais necessário renomear a coluna, pois estamos usando o nome original "Etapa"
@@ -1270,9 +1252,12 @@ if pag.total_pages > 1:  # Só mostra controles se houver mais de uma página
 else:
     # Se houver apenas uma página, mostra apenas o total de linhas
     st.markdown(
-        f"<div style='text-align:right;padding:8px 0;'>"
-        f"<span style='font-weight:500;'>"
-        f"Total: {format_number_br(len(df_texto))} linhas</span></div>",
+        f"""
+        <div style="text-align: right; padding: 8px 0;">
+            <span style="font-family: Arial, sans-serif; font-weight: 600;">Total:</span>
+            <span>{format_number_br(len(df_texto))} linhas</span>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
