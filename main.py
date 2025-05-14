@@ -626,32 +626,48 @@ col_matriculas = beautify_column_header("Número de Matrículas")
 if col_matriculas in config_colunas:
     config_colunas[col_matriculas] = {"width": "120px"}
 
-# ----  TABELA PRINCIPAL  ----
+# ─── PLACEHOLDER do somatório ──────────────────────────────────────
+# (criado ANTES da tabela para que apareça acima dela)
+soma_placeholder = st.empty()
+
+# ─── TABELA PRINCIPAL ──────────────────────────────────────────────
 event = st.dataframe(
-    df_page,                     # ⚠️  use df_page, ainda numérico!
+    df_page,                          # ainda numérico, sem formatação
     height=altura_tabela,
     use_container_width=True,
     hide_index=True,
-    selection_mode=["multi-row", "multi-column"],  # permite marcar linhas e colunas
-    on_select="rerun",           # força recarregar quando muda seleção
+    selection_mode=["multi-row", "multi-column"],
+    on_select="rerun",
     key="tabela_principal"
 )
 
-# ----  SOMA DOS ITENS SELECIONADOS  ----
-sel_rows = event.selection.rows      # índices inteiros
-sel_cols = event.selection.columns   # nomes das colunas
+# ─── SOMA DOS ITENS SELECIONADOS ───────────────────────────────────
+sel_rows = event.selection.rows
+sel_cols = event.selection.columns
 
 if sel_rows and sel_cols:
-    # Sub‑dataframe só com numéricos
-    sub = df_page.iloc[sel_rows][sel_cols]
+    sub  = df_page.iloc[sel_rows][sel_cols]
     soma = pd.to_numeric(sub.select_dtypes('number').stack()).sum()
 
-    st.success(
-        f"Soma das células numéricas selecionadas: "
-        f"<b>{aplicar_padrao_numerico_brasileiro(soma)}</b>",
-        icon="➕",
+    soma_placeholder.markdown(
+        f"""
+        <div style="
+            text-align:right;                /* alinha à direita */
+            margin-bottom:8px;               /* separa da tabela */
+            background:#dff0d8;
+            border:1px solid #3c763d;
+            padding:12px 16px;
+            border-radius:6px;
+            font-size:1rem;">
+            ➕ <b>Soma das células numéricas selecionadas:</b>
+            {aplicar_padrao_numerico_brasileiro(soma)}
+        </div>
+        """,
         unsafe_allow_html=True
     )
+else:
+    # se nada estiver selecionado, esvazia o banner
+    soma_placeholder.empty()
 
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
