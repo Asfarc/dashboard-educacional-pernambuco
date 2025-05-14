@@ -626,13 +626,12 @@ col_matriculas = beautify_column_header("Número de Matrículas")
 if col_matriculas in config_colunas:
     config_colunas[col_matriculas] = {"width": "120px"}
 
-# ─── PLACEHOLDER do somatório ──────────────────────────────────────
-# (criado ANTES da tabela para que apareça acima dela)
-soma_placeholder = st.empty()
+# ─── PLACEHOLDER DO SOMATÓRIO (acima da tabela) ────────────────────
+soma_placeholder = st.empty()          # cria espaço antes da grade
 
 # ─── TABELA PRINCIPAL ──────────────────────────────────────────────
 event = st.dataframe(
-    df_page,                          # ainda numérico, sem formatação
+    df_page,
     height=altura_tabela,
     use_container_width=True,
     hide_index=True,
@@ -646,19 +645,26 @@ sel_rows = event.selection.rows
 sel_cols = event.selection.columns
 
 if sel_rows and sel_cols:
-    sub  = df_page.iloc[sel_rows][sel_cols]
-    soma = pd.to_numeric(sub.select_dtypes('number').stack()).sum()
+    soma = (
+        pd.to_numeric(
+            df_page.iloc[sel_rows][sel_cols].select_dtypes("number").stack()
+        ).sum()
+    )
 
     soma_placeholder.markdown(
         f"""
         <div style="
-            text-align:right;                /* alinha à direita */
-            margin-bottom:8px;               /* separa da tabela */
+            display:inline-block;          /* só ocupa o necessário    */
+            max-width:80%;                 /* evita “colar” no canto   */
+            float:right;                   /* gruda à direita          */
+            margin:0 800px 8px 0;          /* 120 px ≈ largura do menu */
             background:#dff0d8;
             border:1px solid #3c763d;
             padding:12px 16px;
             border-radius:6px;
-            font-size:1rem;">
+            font-size:1rem;
+            z-index:9999;                  /* fica acima dos ícones    */
+            position:relative;">
             ➕ <b>Soma das células numéricas selecionadas:</b>
             {aplicar_padrao_numerico_brasileiro(soma)}
         </div>
@@ -666,8 +672,8 @@ if sel_rows and sel_cols:
         unsafe_allow_html=True
     )
 else:
-    # se nada estiver selecionado, esvazia o banner
     soma_placeholder.empty()
+
 
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
