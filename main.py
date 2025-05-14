@@ -640,37 +640,35 @@ event = st.dataframe(
     key="tabela_principal"
 )
 
-# ─── RESULTADO DO SELECIONADO (soma OU contagem) ───────────────────
+# ─── RESULTADO DO SELECIONADO: SOMA ou CONTAGEM ───────────────────
 sel_rows = event.selection.rows
 sel_cols = event.selection.columns
 
 if sel_rows and sel_cols:
-    # Sub‑DataFrame somente com as células marcadas
-    sel_df = df_calc.iloc[sel_rows][sel_cols]           # df_calc = numérico
+    # Empilha todas as células escolhidas numa única Série
+    sel_vals = df_page.iloc[sel_rows][sel_cols].stack()
 
-    # Empilhamos tudo numa série e tentamos converter para número
-    valores = sel_df.stack()
-    valores_num = pd.to_numeric(valores, errors="coerce")   # não‑numéricos → NaN
+    # Converte a números (texto vira NaN)
+    sel_num  = pd.to_numeric(sel_vals, errors="coerce")
 
-    if valores_num.notna().any():                      # há pelo menos 1 número
-        total = valores_num.sum()
-        texto_resultado = (
+    if sel_num.notna().any():                              # há pelo menos 1 número
+        total = sel_num.sum()
+        msg   = (
             f"➕ <b>Soma das células numéricas selecionadas:</b> "
             f"{aplicar_padrao_numerico_brasileiro(total)}"
         )
-    else:                                              # nenhum número → contagem
-        total = valores.size                           # qtde de células
-        texto_resultado = (
-            f"🔢 <b>Contagem de células selecionadas:</b> {total}"
-        )
+    else:                                                  # tudo é não‑numérico
+        total = sel_vals.size                              # qtde de células
+        msg   = f"🔢 <b>Contagem de células selecionadas:</b> {total}"
 
+    # Exibe o banner alinhado à direita
     soma_placeholder.markdown(
         f"""
 <div style="width:100%;display:flex;justify-content:flex-end;margin-bottom:8px;">
   <div style="background:#dff0d8;border:1px solid #3c763d;padding:12px 16px;
               border-radius:6px;font-size:1rem;white-space:nowrap;
               margin-right:120px;">
-    {texto_resultado}
+    {msg}
   </div>
 </div>
 """,

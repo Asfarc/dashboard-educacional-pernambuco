@@ -487,3 +487,37 @@ section[data-testid="stSidebar"] h3 {
 /* Aproximar elementos na sidebar */
 section[data-testid="stSidebar"] [data-testid="stExpander"] {
     margin: 0.7rem 0 !important;
+
+/* Ajuste do indicador de RAM e expander de diagnóstico */
+.ram-indicator {
+  margin-bottom: 8px !important;  /* Reduz espaçamento entre RAM e expander */
+  display: block !important;       /* Força bloco completo */
+}
+
+/* Ajuste específico para o expander de Diagnóstico de Memória */
+section[data-testid="stSidebar"] [data-testid="stExpander"][aria-label*="Diagnóstico"] {
+  margin-top: 0 !important;        /* Remove margem superior */
+  margin-bottom: 1rem !important;  /* Espaço após o diagnóstico */
+  background: rgba(0, 0, 0, 0.1) !important; /* Fundo mais leve */
+  padding: 0.5rem !important;      /* Padding interno menor */
+  border: 1px solid rgba(0, 0, 0, 0.2) !important; /* Borda mais leve */
+}
+
+/* Reduzir tamanho interno do expander de diagnóstico */
+section[data-testid="stSidebar"] [data-testid="stExpander"][aria-label*="Diagnóstico"] .streamlit-expanderContent {
+  padding: 0.5rem !important;      /* Padding interno menor */
+}
+
+/* Conteúdo do expander de diagnóstico com fonte menor */
+section[data-testid="stSidebar"] [data-testid="stExpander"][aria-label*="Diagnóstico"] p {
+  font-size: 0.85rem !important;   /* Texto menor */
+  margin: 0.2rem 0 !important;     /* Menos espaço entre linhas */
+  line-height: 1.2 !important;     /* Linhas mais próximas */
+}
+
+/* Adiciona linha separadora acima do expander Configurações */
+section[data-testid="stSidebar"] [data-testid="stExpander"][aria-label*="Configurações"] {
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding-top: 1rem !important;
+  margin-top: 1rem !important;
+}
