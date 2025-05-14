@@ -635,190 +635,238 @@ st.dataframe(
     hide_index=True
 )
 
-# Adicionar o componente de soma
+# Adicionar o componente de soma (VERSÃO CORRIGIDA)
 with st.container():
-    # Container para o somatório que ficará à direita
-    st.markdown("""
-    <style>
-    .sum-container {
-        position: fixed;
-        right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: rgba(255, 255, 255, 0.95);
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        z-index: 1000;
-        width: 220px;
-        max-width: 220px;
-        display: none;
-    }
-
-    .sum-header {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 8px;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 5px;
-    }
-
-    .sum-value {
-        font-size: 1.4rem;
-        font-weight: bold;
-        color: #0073ba;
-        text-align: center;
-        margin: 10px 0;
-    }
-
-    .sum-meta {
-        font-size: 0.8rem;
-        color: #777;
-        text-align: center;
-    }
-
-    .sum-cells {
-        margin-top: 8px;
-        font-size: 0.85rem;
-        color: #555;
-        max-height: 100px;
-        overflow-y: auto;
-    }
-    </style>
-
-    <div id="selection-sum" class="sum-container">
-        <div class="sum-header">Somatório de Seleção</div>
-        <div id="sum-value" class="sum-value">0</div>
-        <div id="sum-meta" class="sum-meta">0 células selecionadas</div>
-        <div id="sum-cells" class="sum-cells"></div>
+    # Adicionar iframe para isolar e garantir funcionamento do JavaScript
+    html_content = """
+    <div style="margin-top: 10px; position: relative;">
+        <div id="selection-sum" class="sum-container" style="
+            position: fixed; 
+            right: 20px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background-color: rgba(255, 255, 255, 0.95); 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            padding: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+            width: 250px; 
+            max-width: 250px; 
+            display: none;
+        ">
+            <div style="font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                Somatório de Seleção
+            </div>
+            <div id="sum-value" style="font-size: 1.6rem; font-weight: bold; color: #0073ba; text-align: center; margin: 10px 0;">
+                0
+            </div>
+            <div id="sum-meta" style="font-size: 0.85rem; color: #777; text-align: center;">
+                0 células selecionadas
+            </div>
+            <div id="sum-cells" style="margin-top: 8px; font-size: 0.9rem; color: #555; max-height: 150px; overflow-y: auto;">
+            </div>
+            <button id="clear-selection" style="width: 100%; margin-top: 10px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background-color: #f5f5f5; cursor: pointer;">
+                Limpar seleção
+            </button>
+        </div>
     </div>
-    """, unsafe_allow_html=True)
 
-# Adicionar JavaScript para habilitar o somatório de células selecionadas
-js_code = """
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Variáveis para rastrear células selecionadas
-    let selectedCells = [];
-    let sumContainer = document.getElementById('selection-sum');
-    let sumValue = document.getElementById('sum-value');
-    let sumMeta = document.getElementById('sum-meta');
-    let sumCells = document.getElementById('sum-cells');
+    <script>
+    // Função para executar quando o DOM estiver completamente carregado
+    function initializeSummation() {
+        console.log("Inicializando funcionalidade de soma");
 
-    // Função para formatar números no padrão brasileiro
-    function formatNumberBR(num) {
-        return num.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
-    }
+        // Variáveis para rastrear células selecionadas
+        let selectedCells = [];
+        let sumContainer = document.getElementById('selection-sum');
+        let sumValue = document.getElementById('sum-value');
+        let sumMeta = document.getElementById('sum-meta');
+        let sumCells = document.getElementById('sum-cells');
+        let clearBtn = document.getElementById('clear-selection');
 
-    // Função para atualizar o somatório
-    function updateSum() {
-        if (selectedCells.length === 0) {
-            sumContainer.style.display = 'none';
-            return;
+        // Função para formatar números no padrão brasileiro
+        function formatNumberBR(num) {
+            return num.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
         }
 
-        // Somar os valores
-        let sum = selectedCells.reduce((acc, cell) => acc + cell.value, 0);
-
-        // Atualizar a exibição
-        sumContainer.style.display = 'block';
-        sumValue.textContent = formatNumberBR(sum);
-        sumMeta.textContent = `${selectedCells.length} célula${selectedCells.length > 1 ? 's' : ''} selecionada${selectedCells.length > 1 ? 's' : ''}`;
-
-        // Mostrar células selecionadas
-        sumCells.innerHTML = '';
-        selectedCells.forEach((cell, idx) => {
-            sumCells.innerHTML += `<div>${idx+1}. ${cell.rowLabel}: ${formatNumberBR(cell.value)}</div>`;
-        });
-    }
-
-    // Monitorar cliques na tabela após um pequeno atraso para garantir que a tabela esteja renderizada
-    setTimeout(() => {
-        // Selecionar todas as células da última coluna (matrículas)
-        const table = document.querySelector('[data-testid="stDataFrame"] table');
-        if (!table) return;
-
-        const rows = table.querySelectorAll('tbody tr');
-
-        rows.forEach((row, rowIdx) => {
-            // Obter a última célula (coluna de matrículas)
-            const lastCell = row.querySelector('td:last-child');
-            if (!lastCell) return;
-
-            // Obter o valor e remover pontos de milhar antes de converter para número
-            const valueText = lastCell.textContent.trim().replace(/\\./g, '').replace(',', '.');
-            const value = parseFloat(valueText);
-            if (isNaN(value)) return;
-
-            // Obter rótulo da linha (primeira célula ou segunda se houver município)
-            let rowLabel = '';
-            const firstCell = row.querySelector('td:first-child');
-            const secondCell = row.querySelector('td:nth-child(2)');
-
-            // Tentar determinar um bom rótulo
-            if (secondCell && secondCell.textContent.trim().length > 0) {
-                rowLabel = secondCell.textContent.trim();
-            } else if (firstCell) {
-                rowLabel = firstCell.textContent.trim();
+        // Função para atualizar o somatório
+        function updateSum() {
+            if (selectedCells.length === 0) {
+                sumContainer.style.display = 'none';
+                return;
             }
 
-            // Adicionar evento de clique
-            lastCell.style.cursor = 'pointer';
-            lastCell.style.transition = 'background-color 0.2s';
+            // Somar os valores
+            let sum = selectedCells.reduce((acc, cell) => acc + cell.value, 0);
 
-            lastCell.addEventListener('click', () => {
-                // Verificar se já está selecionada
-                const cellIndex = selectedCells.findIndex(cell => 
-                    cell.rowIdx === rowIdx && cell.value === value);
+            // Atualizar a exibição
+            sumContainer.style.display = 'block';
+            sumValue.textContent = formatNumberBR(sum);
+            sumMeta.textContent = `${selectedCells.length} célula${selectedCells.length > 1 ? 's' : ''} selecionada${selectedCells.length > 1 ? 's' : ''}`;
 
-                if (cellIndex > -1) {
-                    // Remover da seleção
-                    selectedCells.splice(cellIndex, 1);
-                    lastCell.style.backgroundColor = '';
-                } else {
-                    // Adicionar à seleção
-                    selectedCells.push({ rowIdx, value, rowLabel });
-                    lastCell.style.backgroundColor = 'rgba(0, 115, 186, 0.2)';
+            // Mostrar células selecionadas
+            sumCells.innerHTML = '';
+            selectedCells.forEach((cell, idx) => {
+                sumCells.innerHTML += `<div>${idx+1}. ${cell.rowLabel}: ${formatNumberBR(cell.value)}</div>`;
+            });
+        }
+
+        // Limpar seleção
+        clearBtn.addEventListener('click', function() {
+            // Limpar array de seleção
+            selectedCells = [];
+
+            // Remover highlight das células
+            document.querySelectorAll('[data-testid="stDataFrame"] table tbody tr td.highlighted').forEach(cell => {
+                cell.classList.remove('highlighted');
+                cell.style.backgroundColor = '';
+            });
+
+            // Atualizar exibição
+            updateSum();
+        });
+
+        // Função principal para processar a tabela
+        function processTable() {
+            console.log("Processando tabela");
+
+            // Adicionar CSS para células destacadas
+            const style = document.createElement('style');
+            style.textContent = `
+                [data-testid="stDataFrame"] table tbody tr td.highlighted {
+                    background-color: rgba(0, 115, 186, 0.2) !important;
+                    cursor: pointer !important;
+                }
+                [data-testid="stDataFrame"] table tbody tr td:last-child {
+                    cursor: pointer !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Encontrar a tabela do Streamlit
+            const dataFrames = document.querySelectorAll('[data-testid="stDataFrame"]');
+            if (dataFrames.length === 0) {
+                console.log("Tabela não encontrada, tentando novamente em 500ms");
+                setTimeout(processTable, 500);
+                return;
+            }
+
+            const table = dataFrames[0].querySelector('table');
+            if (!table) {
+                console.log("Elemento table não encontrado, tentando novamente em 500ms");
+                setTimeout(processTable, 500);
+                return;
+            }
+
+            console.log("Tabela encontrada, processando linhas");
+
+            // Processar todas as linhas
+            const rows = table.querySelectorAll('tbody tr');
+            if (rows.length === 0) {
+                console.log("Nenhuma linha encontrada, tentando novamente em 500ms");
+                setTimeout(processTable, 500);
+                return;
+            }
+
+            console.log(`Encontradas ${rows.length} linhas para processar`);
+
+            rows.forEach((row, rowIdx) => {
+                // Obter a última célula (coluna de matrículas)
+                const lastCell = row.querySelector('td:last-child');
+                if (!lastCell) return;
+
+                // Obter o valor e remover pontos de milhar antes de converter para número
+                const valueText = lastCell.textContent.trim().replace(/\\./g, '').replace(',', '.');
+                const value = parseFloat(valueText);
+                if (isNaN(value)) return;
+
+                // Obter rótulo da linha (primeira célula ou segunda se houver município)
+                let rowLabel = '';
+                const cells = row.querySelectorAll('td');
+
+                // Tentar encontrar um bom rótulo (priorizar a primeira ou segunda célula com texto)
+                for (let i = 0; i < Math.min(3, cells.length); i++) {
+                    if (cells[i] && cells[i].textContent.trim().length > 0) {
+                        rowLabel = cells[i].textContent.trim();
+                        if (rowLabel !== valueText) break;
+                    }
                 }
 
-                updateSum();
+                if (!rowLabel || rowLabel === valueText) {
+                    rowLabel = `Linha ${rowIdx+1}`;
+                }
+
+                // Adicionar evento de clique
+                lastCell.style.cursor = 'pointer';
+                lastCell.style.transition = 'background-color 0.2s';
+
+                lastCell.addEventListener('click', function() {
+                    console.log(`Célula clicada: ${rowLabel}, valor: ${value}`);
+
+                    // Verificar se já está selecionada
+                    const cellIndex = selectedCells.findIndex(cell => 
+                        cell.rowIdx === rowIdx && cell.value === value);
+
+                    if (cellIndex > -1) {
+                        // Remover da seleção
+                        selectedCells.splice(cellIndex, 1);
+                        lastCell.classList.remove('highlighted');
+                        lastCell.style.backgroundColor = '';
+                    } else {
+                        // Adicionar à seleção
+                        selectedCells.push({ rowIdx, value, rowLabel });
+                        lastCell.classList.add('highlighted');
+                        lastCell.style.backgroundColor = 'rgba(0, 115, 186, 0.2)';
+                    }
+
+                    updateSum();
+                });
             });
-        });
-    }, 1000);
 
-    // Adicionar botão para limpar seleção
-    const clearBtn = document.createElement('button');
-    clearBtn.textContent = 'Limpar seleção';
-    clearBtn.style.width = '100%';
-    clearBtn.style.marginTop = '10px';
-    clearBtn.style.padding = '5px';
-    clearBtn.style.border = '1px solid #ddd';
-    clearBtn.style.borderRadius = '4px';
-    clearBtn.style.backgroundColor = '#f5f5f5';
-    clearBtn.style.cursor = 'pointer';
+            console.log("Processamento da tabela concluído com sucesso");
+        }
 
-    clearBtn.addEventListener('click', () => {
-        // Limpar array de seleção
-        selectedCells = [];
+        // Verificar periodicamente se a tabela está pronta
+        const checkInterval = setInterval(function() {
+            const dataFrame = document.querySelector('[data-testid="stDataFrame"]');
+            if (dataFrame) {
+                clearInterval(checkInterval);
+                processTable();
+            }
+        }, 300);
+    }
 
-        // Remover highlight das células
-        const cellsWithHighlight = document.querySelectorAll('[data-testid="stDataFrame"] table tbody tr td');
-        cellsWithHighlight.forEach(cell => {
-            cell.style.backgroundColor = '';
-        });
+    // Executar quando o DOM estiver pronto ou imediatamente se já estiver carregado
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeSummation);
+    } else {
+        // Se o DOM já estiver carregado
+        setTimeout(initializeSummation, 100);
+    }
 
-        // Atualizar exibição
-        updateSum();
+    // Executar novamente quando o conteúdo da página mudar (para paginação)
+    const observer = new MutationObserver(function(mutations) {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE && 
+                        (node.matches('[data-testid="stDataFrame"]') || 
+                         node.querySelector('[data-testid="stDataFrame"]'))) {
+                        setTimeout(initializeSummation, 300);
+                        return;
+                    }
+                }
+            }
+        }
     });
 
-    sumContainer.appendChild(clearBtn);
-});
-</script>
-"""
+    observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+    """
 
-st.markdown(js_code, unsafe_allow_html=True)
+    # Usar components.html para injetar o HTML com JavaScript diretamente
+    components.html(html_content, height=0)
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
 if pag.total_pages > 1:
@@ -880,11 +928,8 @@ def gerar_xlsx(df):
     """Prepara os dados para download em formato Excel"""
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as w:
-        # Configura a planilha com formatação melhorada
         df.to_excel(w, index=False, sheet_name="Dados")
-        # Acessa a planilha para formatar
         worksheet = w.sheets["Dados"]
-        # Formata os cabeçalhos
         header_format = w.book.add_format({
             'bold': True,
             'bg_color': '#FFDFBA',
@@ -894,50 +939,53 @@ def gerar_xlsx(df):
         })
         for col_num, value in enumerate(df.columns.values):
             worksheet.write(0, col_num, value, header_format)
-        # Ajusta largura das colunas
         for i, col in enumerate(df.columns):
             max_len = max(
                 df[col].astype(str).apply(len).max(),
                 len(str(col))
-            ) + 2  # adiciona um pouco de espaço
+            ) + 2
             worksheet.set_column(i, i, max_len)
-
     return buf.getvalue()
 
-# Informação sobre os dados que serão baixados
-st.sidebar.markdown("### Download")
-st.sidebar.markdown(
-    f'<div class="download-info">Download de <b>{format_number_br(len(df_texto))}</b> linhas</div>',
-    unsafe_allow_html=True
-)
 
-col1, col2 = st.sidebar.columns(2)
+# ------ SEÇÃO DE DOWNLOAD AJUSTADA ------
+with st.sidebar:
+    # Container para agrupar os elementos de download
+    with st.container():
+        st.markdown("### Download")
 
-with col1:
-    if st.button("Em CSV", disabled=len(df_texto) == 0, key="csv_btn"):
-        csv_data = gerar_csv(df_texto)
-        st.download_button(
-            "Baixar CSV",
-            data=csv_data,
-            mime="text/csv",
-            file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.csv",
-            key="csv_download"
+        # Texto informativo com margem aumentada
+        st.markdown(
+            f'<div class="download-info" style="margin-bottom:25px">'
+            f'Download de <b>{format_number_br(len(df_texto))}</b> linhas</div>',
+            unsafe_allow_html=True
         )
-        # Liberar memória após download
-        del csv_data
 
-with col2:
-    if st.button("Em Excel", disabled=len(df_texto) == 0, key="xlsx_btn"):
-        xlsx_data = gerar_xlsx(df_texto)
-        st.download_button(
-            "Baixar Excel",
-            data=xlsx_data,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.xlsx",
-            key="xlsx_download"
-        )
-        # Liberar memória após download
-        del xlsx_data
+        # Botões em colunas com margem superior
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Em CSV", disabled=len(df_texto) == 0, key="csv_btn"):
+                csv_data = gerar_csv(df_texto)
+                st.download_button(
+                    "Baixar CSV",
+                    data=csv_data,
+                    mime="text/csv",
+                    file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.csv",
+                    key="csv_download"
+                )
+                del csv_data
+
+        with col2:
+            if st.button("Em Excel", disabled=len(df_texto) == 0, key="xlsx_btn"):
+                xlsx_data = gerar_xlsx(df_texto)
+                st.download_button(
+                    "Baixar Excel",
+                    data=xlsx_data,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                    key="xlsx_download"
+                )
+                del xlsx_data
 
 # ─── 18. RODAPÉ ────────────────────────────────────────────────────
 st.markdown("---")
