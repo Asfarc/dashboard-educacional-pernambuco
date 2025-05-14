@@ -1,10 +1,12 @@
 # ─── 1. IMPORTS ──────────────────────────────────────────────────────
 import streamlit as st
 import pandas as pd
-import io, re, time, os, psutil
+import io, re, time
+import base64, os
 from pathlib import Path
+import streamlit.components.v1 as components
+import psutil
 from datetime import datetime
-import pyarrow.parquet as pq
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
@@ -34,6 +36,7 @@ def beautify(col: str) -> str:
     """Formata o nome de uma coluna para exibição"""
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
 
+
 def beautify_column_header(col: str) -> str:
     """Formata o cabeçalho de uma coluna com abreviações conhecidas"""
     abreviacoes = {
@@ -52,6 +55,7 @@ def beautify_column_header(col: str) -> str:
 
     # Caso contrário, usar o comportamento da beautify original
     return " ".join(p.capitalize() for p in col.replace("\n", " ").lower().split())
+
 
 def aplicar_padrao_numerico_brasileiro(num):
     """Formata números no padrão brasileiro (1.234,56)"""
@@ -88,15 +92,17 @@ class Paginator:
         """Retorna uma fatia do DataFrame correspondente à página atual"""
         return df.iloc[self.start:self.end]
 
+
 # ─── 5. DEFINIÇÃO DE MODELO DE DADOS POR MODALIDADE ─────────────────
 class ModalidadeConfig:
     """Configuração específica de cada modalidade"""
+
     def __init__(
-        self, arquivo: str,
-        etapa_valores: dict | None = None,
-        subetapa_valores: dict | None = None,
-        serie_col: str | None = None,
-        texto_ajuda: str | None = None,
+            self, arquivo: str,
+            etapa_valores: dict | None = None,
+            subetapa_valores: dict | None = None,
+            serie_col: str | None = None,
+            texto_ajuda: str | None = None,
     ):
         self.arquivo = arquivo
         self.etapa_valores = etapa_valores or {}
@@ -157,48 +163,71 @@ MODALIDADES: dict[str, ModalidadeConfig] = {
     ),
 }
 
-# ─── 7. FUNÇÃO DE CARREGAMENTO PADRONIZADA ─────────────────────────
+# Mapeamento comum (define apenas uma vez)
+nivel_map = {
+    "Escolas": "escola",
+    "Municípios": "município",
+    "Pernambuco": "estado"
+}
+
+# Mapeamento de modalidades para arquivos
+ARQ = {k: v.arquivo for k, v in MODALIDADES.items()}
+
+
+# ─── 7. FUNÇÃO DE CARREGAMENTO OTIMIZADA ─────────────────────────
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_parquet_otimizado(arquivo: str, nivel: str | None = None) -> pd.DataFrame:
-    """Lê Parquet com dtypes compactos, ignorando colunas ausentes."""
+    """Lê o Parquet com dtypes compactos e retorna apenas o nível desejado."""
+    try:
+        # Tipos de dados otimizados para reduzir uso de RAM
+        dtype = {
+            "Ano": "int16",
+            "Cód. Município": "Int32",
+            "Cód. da Escola": "Int64",
+            "Número de Matrículas": "uint32",
+        }
 
-    # 1. schema do arquivo (rápido, não carrega dados)
-    schema_cols = set(pq.read_schema(arquivo).names)
+        # Carregar apenas as colunas necessárias
+        use_cols = [
+            "Nível de agregação", "Ano",
+            "Cód. Município", "Nome do Município",
+            "Cód. da Escola", "Nome da Escola",
+            "Etapa", "Subetapa", "Rede",
+            "Número de Matrículas",
+        ]
 
-    base_cols = [
-        "Nível de agregação", "Ano",
-        "Cód. Município", "Nome do Município",
-        "Cód. da Escola", "Nome da Escola",
-        "Etapa", "Subetapa", "Rede",
-        "Número de Matrículas",
-    ]
-    if "Ensino Regular" in arquivo:
-        base_cols.append("Ano/Série")
+        # Adicionar coluna específica para Ensino Regular
+        if "Ensino Regular" in arquivo:
+            use_cols.append("Ano/Série")
 
-    use_cols = [c for c in base_cols if c in schema_cols]
+        # Carregamento otimizado do Parquet
+        df = pd.read_parquet(
+            arquivo,
+            columns=use_cols,
+            dtype=dtype,
+            engine="pyarrow"
+        )
 
-    # 2. dtypes só para as colunas que realmente existem
-    dtype = {
-        "Ano": "int16",
-        "Cód. Município": "Int32",
-        "Cód. da Escola": "Int64",
-        "Número de Matrículas": "uint32",
-    }
-    dtype = {k: v for k, v in dtype.items() if k in use_cols}
+        # Converter texto para category para economizar mais RAM
+        for col in ["Nome do Município", "Nome da Escola",
+                    "Etapa", "Subetapa", "Rede", "Nível de agregação"]:
+            if col in df.columns:
+                df[col] = df[col].astype("category")
 
-    df = pd.read_parquet(arquivo, columns=use_cols, dtype=dtype, engine="pyarrow")
+        # Tratamento de valores nulos em Subetapa
+        if "Subetapa" in df.columns:
+            df["Subetapa"] = df["Subetapa"].fillna("N/A").astype("category")
 
-    # 3. textos → category (apenas se a coluna existe)
-    for col in ["Nome do Município", "Nome da Escola",
-                "Etapa", "Subetapa", "Rede", "Nível de agregação"]:
-        if col in df.columns:
-            df[col] = df[col].astype("category")
+        # Converter Ano/Série para category no caso do Ensino Regular
+        if "Ano/Série" in df.columns:
+            df["Ano/Série"] = df["Ano/Série"].astype("category")
 
-    if "Subetapa" in df.columns:
-        df["Subetapa"] = df["Subetapa"].fillna("N/A").astype("category")
+        # Filtrar por nível se especificado
+        return df[df["Nível de agregação"].eq(nivel)] if nivel else df
 
-    return df[df["Nível de agregação"].eq(nivel)] if nivel else df
-
+    except Exception as e:
+        st.error(f"Erro ao carregar arquivo '{arquivo}': {str(e)}")
+        return pd.DataFrame()
 
 
 # ─── 8. CONSTRUÇÃO DOS FILTROS DINÂMICOS ───────────────────────────
@@ -262,26 +291,22 @@ def construir_filtros_ui(df: pd.DataFrame, modalidade_key: str, nivel_ui: str):
                 default=[], label_visibility="collapsed", key="sub_sel"
             )
         else:
-            st.text("Nenhuma subetapa disponível.")
+            st.text("Nenhuma subetapa disponível." if etapa_sel else "Selecione uma etapa primeiro.")
             sub_sel = []
 
         filtros["subetapa"] = sub_sel
 
         # Série (somente Ensino Regular)
         if (modalidade_key == "Ensino Regular" and sub_sel
-                and "Série" in df.columns
                 and not any("Total" in s for s in sub_sel)):
             st.markdown('<div class="filter-title" style="margin-top:-12px;">Série</div>',
                         unsafe_allow_html=True)
-            if "Série" in df.columns:
-                serie_disp = sorted(
-                    df.loc[
-                        df["Etapa"].isin(etapa_sel) & df["Subetapa"].isin(sub_sel) & df["Série"].notna(),
-                        "Série"
-                    ].unique()
-                )
-            else:
-                serie_disp = []
+            serie_disp = sorted(
+                df.loc[
+                    df["Etapa"].isin(etapa_sel) & df["Subetapa"].isin(sub_sel) & df["Série"].notna(),
+                    "Série"
+                ].unique()
+            )
             serie_sel = st.multiselect(
                 "Série", serie_disp,
                 default=[], label_visibility="collapsed", key="serie_sel"
@@ -317,8 +342,8 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
 
         # Aplica subetapa apenas se não for total
         if (etapa_sel and
-            not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel) and  # CORREÇÃO AQUI
-            subetapa_sel):
+                not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel) and
+                subetapa_sel):
             result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
     # ─── LÓGICA PARA DEMAIS MODALIDADES ────────────────────────────
@@ -327,7 +352,7 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
         etapa_sel = filtros.get("etapa", [])
         if etapa_sel:
             result_df = result_df[result_df["Etapa"].isin(etapa_sel)]
-            is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)  # CORREÇÃO AQUI
+            is_etapa_total = any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
 
             # Lógica específica para Ensino Regular
             if modalidade_key == "Ensino Regular" and not is_etapa_total and not filtros.get("subetapa"):
@@ -335,49 +360,67 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
 
         # Subetapa (só aplicar se não for total)
         subetapa_sel = filtros.get("subetapa", [])
-        if subetapa_sel and etapa_sel and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel):  # CORREÇÃO AQUI
+        if subetapa_sel and etapa_sel and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel):
             result_df = result_df[result_df["Subetapa"].isin(subetapa_sel)]
 
         # Série - apenas para Ensino Regular e se não for total
         serie_sel = filtros.get("serie", [])
         if (
-            serie_sel
-            and modalidade_key == "Ensino Regular"
-            and etapa_sel
-            and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
-            and not any("Total" in sub for sub in subetapa_sel)  # Nova verificação
+                serie_sel
+                and modalidade_key == "Ensino Regular"
+                and etapa_sel
+                and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
+                and not any("Total" in sub for sub in subetapa_sel)
         ):
             result_df = result_df[result_df["Série"].isin(serie_sel)]
 
     return result_df
 
+# ─── 10. INICIALIZAÇÃO E CARREGAMENTO ──────────────────────────────
+if "tempo_inicio" not in st.session_state:
+    st.session_state["tempo_inicio"] = time.time()
+
 # ─── 11. SELEÇÃO DE MODALIDADE / NÍVEL ─────────────────────────────
-st.sidebar.title("Filtros")
+with st.sidebar:
+    st.sidebar.title("Modalidade")
+    tipo_ensino = st.radio(
+        "Selecione a modalidade",
+        list(MODALIDADES.keys()),
+        index=0,
+        label_visibility="collapsed"
+    )
 
-tipo_ensino = st.radio(
-    "Selecione a modalidade", list(MODALIDADES.keys()),
-    index=0, label_visibility="collapsed"
-)
+    st.sidebar.title("Filtros")
+    nivel_ui = st.radio(
+        "Nível de Agregação",
+        ["Escolas", "Municípios", "Pernambuco"],
+        label_visibility="collapsed",
+        key="nivel_sel"
+    )
 
-nivel_ui = st.sidebar.radio(
-    "Nível de Agregação",
-    ["Escolas", "Municípios", "Pernambuco"],
-    label_visibility="collapsed", key="nivel_sel"
-)
-nivel_map = {"Escolas": "escola",
-             "Municípios": "município",
-             "Pernambuco": "estado"}
+    # Informações de diagnóstico
+    with st.expander("Diagnóstico de Memória", False):
+        ram_antes = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+        st.markdown(f"**Antes do carregamento**: {ram_antes:.1f} MB")
 
-ARQ = {k: v.arquivo for k, v in MODALIDADES.items()}
-
-with st.spinner("Carregando dados…"):
+# Carregamento com spinner de progresso
+with st.spinner("Carregando dados otimizados…"):
     df_base = carregar_parquet_otimizado(
-        ARQ[tipo_ensino], nivel=nivel_map[nivel_ui]
+        ARQ[tipo_ensino],
+        nivel=nivel_map[nivel_ui]
     )
 
 if df_base.empty:
-    st.warning(f"Não há dados para o nível '{nivel_ui}'.")
+    st.warning(f"Não há dados disponíveis para o nível '{nivel_ui}'.")
     st.stop()
+
+# Atualização das informações de memória após carregamento
+with st.sidebar:
+    with st.expander("Diagnóstico de Memória", False):
+        ram_depois = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+        st.markdown(f"**Após carregamento**: {ram_depois:.1f} MB")
+        st.markdown(f"**Diferença**: {ram_depois - ram_antes:.1f} MB")
+        st.markdown(f"**Registros carregados**: {format_number_br(len(df_base))}")
 
 # ─── 12. PAINEL DE FILTROS DINÂMICOS ─────────────────────────────
 with st.container():
@@ -394,9 +437,11 @@ with st.container():
 
 # ─── 13. VALIDAÇÃO E FILTRAGEM ────────────────────────────────────
 if not anos_sel:
-    st.warning("Por favor, selecione pelo menos um ano."); st.stop()
+    st.warning("Por favor, selecione pelo menos um ano.")
+    st.stop()
 if not redes_sel:
-    st.warning("Por favor, selecione pelo menos uma rede."); st.stop()
+    st.warning("Por favor, selecione pelo menos uma rede.")
+    st.stop()
 
 df_filtrado = filtrar_dados(
     df_base, tipo_ensino, anos_sel, redes_sel, filtros_especificos
@@ -427,17 +472,15 @@ with st.sidebar.expander("Configurações", False):
 
     altura_tabela = st.slider("Altura da tabela (px)", 200, 1000, 600, 50)
 
-    page_options = [10, 25, 50, 100, 250, 500, 10000]
     page_size = st.selectbox(
-        "Linhas por página", page_options,
-        index=page_options.index(10000),
-        format_func=lambda x: "Mostrar todos" if x == 10000 else str(x)
+        "Linhas por página", [10, 25, 50, 100, 250, 500, 10000],
+        index=5, format_func=lambda x: "Mostrar todos" if x == 10000 else str(x)
     )
     st.session_state["page_size"] = page_size
 
-    ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024**2
+    ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
     st.sidebar.markdown(
-        f'<div class="ram-indicator">💾 RAM usada: <b>{ram_mb:.0f} MB</b></div>',
+        f'<div class="ram-indicator">💾 RAM usada: <b>{ram_mb:.0f} MB</b></div>',
         unsafe_allow_html=True
     )
 
@@ -455,96 +498,201 @@ elif nivel_ui == "Municípios":
 vis_cols += ["Etapa", "Subetapa"]
 if tipo_ensino == "Ensino Regular":
     serie_col = MODALIDADES[tipo_ensino].serie_col or "Série"
-    vis_cols.append(serie_col)
+    if serie_col in df_filtrado.columns:
+        vis_cols.append(serie_col)
 vis_cols += ["Rede", "Número de Matrículas"]
 
 df_tabela = df_filtrado[vis_cols].copy()
 
-# --- estilização rápida -------------------------------------------------
+# --- estilização da tabela ---
 st.markdown("""<style>
-[data-testid="stDataFrame"] tr:hover{background:rgba(107,129,144,.1)!important}
-[data-testid="stDataFrame"] td:last-child,[data-testid="stDataFrame"] th:last-child{
- text-align:center!important}
-.column-header{background:#daba93;text-align:center;font-weight:bold;
- height:40px;display:flex;align-items:center;justify-content:center;
- padding:5px;margin-bottom:4px}
+[data-testid="stDataFrame"] table tbody tr td:last-child,
+[data-testid="stDataFrame"] table thead tr th:last-child {
+    text-align:center !important;
+}
+[data-testid="stDataFrame"] table tbody tr:hover {
+    background-color: rgba(107, 129, 144, 0.1) !important;
+}
 </style>""", unsafe_allow_html=True)
 
-# 5. Cabeçalhos e filtros alinhados --------------------------------------
-col_headers = st.columns(len(vis_cols))
-for col, slot in zip(vis_cols, col_headers):
-    with slot:
-        header = beautify_column_header(col)
-        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
-        st.markdown(f"<div class='column-header'{extra}>{header}</div>", unsafe_allow_html=True)
-
-col_filters = st.columns(len(vis_cols))
+# Cabeçalhos dos filtros em colunas
+filter_cols = st.columns(len(vis_cols))
 filter_values = {}
-for col, slot in zip(vis_cols, col_filters):
-    with slot:
+
+for i, col in enumerate(vis_cols):
+    with filter_cols[i]:
+        # Cabeçalho formatado
+        header_name = beautify_column_header(col)
+        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
+        st.markdown(f"<div class='column-header'{extra}>{header_name}</div>",
+                    unsafe_allow_html=True)
+
+        # Campo de filtro
         filter_values[col] = st.text_input(
-            "", key=f"filter_{col}",
-            placeholder=f"Filtrar {beautify_column_header(col).lower()}...",
-            label_visibility="collapsed"
+            f"Filtro para {header_name}",
+            key=f"filter_{col}",
+            label_visibility="collapsed",
+            placeholder=f"Filtrar {header_name.lower()}..."
         )
 
-# 6. Aplicação dos filtros ----------------------------------------------
+# Aplicação dos filtros de texto
 mask = pd.Series(True, index=df_tabela.index)
 filtros_ativos = False
 
 for col, val in filter_values.items():
-    val = (val or "").strip()
-    if val:
+    if val.strip():
         filtros_ativos = True
         s = df_tabela[col]
-        mask &= s.astype(str).str.contains(val, case=False)
+        if col.startswith("Número de") or pd.api.types.is_numeric_dtype(s):
+            v = val.replace(",", ".")
+            if re.fullmatch(r"-?\d+(\.\d+)?", v):
+                # Filtro exato para números
+                mask &= s == float(v)
+            else:
+                # Filtro por texto em valores numéricos convertidos
+                mask &= s.astype(str).str.contains(val, case=False)
+        else:
+            # Filtro por texto em colunas de texto
+            mask &= s.astype(str).str.contains(val, case=False)
 
 df_texto = df_tabela[mask]
 
-# 7. Feedback visual dos filtros ativos ----------------------------------
+# Feedback visual para filtros ativos
 if filtros_ativos:
+    num_filtrados = len(df_texto)
+    num_total = len(df_tabela)
     st.markdown(
-        f"<div style='margin-top:-8px;margin-bottom:8px;'>"
-        f"<span style='font-size:0.85rem;color:#555;background:#f5f5f5;"
-        f"padding:2px 8px;border-radius:4px'>"
-        f"Filtro: <b>{format_number_br(len(df_texto))}</b> de "
-        f"<b>{format_number_br(len(df_tabela))}</b> linhas</span></div>",
+        f"<div style='margin-top:-10px;margin-bottom:10px;'>"
+        f"<span style='font-size:0.85rem;color:#666;background:#f5f5f5;padding:2px 8px;border-radius:4px;'>"
+        f"Filtro: <b>{format_number_br(num_filtrados)}</b> de "
+        f"<b>{format_number_br(num_total)}</b> linhas"
+        f"</span></div>",
         unsafe_allow_html=True
     )
-    st.session_state["current_page"] = 1  # volta para a 1ª página sempre que digita filtro
-
 
 # Paginação
-pag = Paginator(len(df_texto),
-                page_size=st.session_state["page_size"],
-                current=st.session_state.get("current_page",1))
+pag = Paginator(
+    len(df_texto),
+    page_size=st.session_state["page_size"],
+    current=st.session_state.get("current_page", 1)
+)
 df_page = pag.slice(df_texto)
 
-# Exibição
-st.dataframe(df_page, height=altura_tabela, use_container_width=True, hide_index=True)
+# Formatar colunas numéricas
+df_show = df_page.copy()
+colunas_numericas = df_show.filter(like="Número de").columns.tolist()
+df_show.columns = [beautify_column_header(col) for col in df_show.columns]
+
+for col in colunas_numericas:
+    col_beautificada = beautify_column_header(col)
+    if col_beautificada in df_show.columns:
+        df_show[col_beautificada] = df_show[col_beautificada].apply(aplicar_padrao_numerico_brasileiro)
+
+# Configuração de larguras de coluna
+num_colunas = len(df_show.columns)
+largura_base = 150
+config_colunas = {
+    col: {"width": f"{largura_base}px"} for col in df_show.columns
+}
+
+# Coluna de matrículas mais estreita
+col_matriculas = beautify_column_header("Número de Matrículas")
+if col_matriculas in config_colunas:
+    config_colunas[col_matriculas] = {"width": "120px"}
+
+# Exibição da tabela
+st.dataframe(
+    df_show,
+    column_config=config_colunas,
+    height=altura_tabela,
+    use_container_width=True,
+    hide_index=True
+)
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
 if pag.total_pages > 1:
-    b1,b2,b3,b4 = st.columns([1,1,1,2])
+    b1, b2, b3, b4 = st.columns([1, 1, 1, 2])
     with b1:
-        st.button("◀", disabled=pag.current==1, key="prev",
-                  on_click=lambda: (st.session_state.update(current_page=pag.current-1), st.rerun()))
+        if st.button("◀", disabled=pag.current == 1, key="prev_page",
+                     help="Página anterior", use_container_width=True):
+            st.session_state["current_page"] = pag.current - 1
+            st.rerun()
     with b2:
-        st.button("▶", disabled=pag.current==pag.total_pages, key="next",
-                  on_click=lambda: (st.session_state.update(current_page=pag.current+1), st.rerun()))
+        if st.button("▶", disabled=pag.current == pag.total_pages, key="next_page",
+                     help="Próxima página", use_container_width=True):
+            st.session_state["current_page"] = pag.current + 1
+            st.rerun()
+    with b3:
+        # Opções de paginação
+        page_options = [10, 25, 50, 100, 250, 500, 10000]
+        new_ps = st.selectbox(
+            "Itens por página",
+            options=page_options,
+            index=page_options.index(pag.page_size),
+            format_func=lambda opt: "Mostrar todos" if opt == 10000 else str(opt),
+            label_visibility="collapsed",
+            key="page_size_select"
+        )
+        if new_ps != pag.page_size:
+            st.session_state["page_size"] = new_ps
+            st.session_state["current_page"] = 1
+            st.rerun()
     with b4:
-        st.markdown(f"<div style='text-align:right;padding-top:8px;'>"
-                    f"Página {pag.current}/{pag.total_pages} · "
-                    f"{format_number_br(len(df_texto))} linhas</div>",
-                    unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='text-align:right;padding-top:8px;'>"
+            f"<span style='font-weight:500;'>"
+            f"Página {pag.current}/{pag.total_pages} · "
+            f"{format_number_br(len(df_texto))} linhas</span></div>",
+            unsafe_allow_html=True
+        )
+
+else:
+    # Se houver apenas uma página, mostra apenas o total de linhas
+    st.markdown(
+        f"""
+        <div style="text-align: right; padding: 8px 0;">
+            <span style="font-family: Arial, sans-serif; font-weight: 600;">Total:</span>
+            <span>{format_number_br(len(df_texto))} linhas</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 # ─── 17. DOWNLOADS (sob demanda) ───────────────────────────────────
-def gerar_csv(df): return df.to_csv(index=False).encode("utf-8")
+def gerar_csv(df):
+    """Prepara os dados para download em formato CSV"""
+    return df.to_csv(index=False).encode("utf-8")
+
+
 def gerar_xlsx(df):
+    """Prepara os dados para download em formato Excel"""
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as w:
+        # Configura a planilha com formatação melhorada
         df.to_excel(w, index=False, sheet_name="Dados")
+        # Acessa a planilha para formatar
+        worksheet = w.sheets["Dados"]
+        # Formata os cabeçalhos
+        header_format = w.book.add_format({
+            'bold': True,
+            'bg_color': '#FFDFBA',
+            'border': 1,
+            'align': 'center',
+            'valign': 'vcenter'
+        })
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        # Ajusta largura das colunas
+        for i, col in enumerate(df.columns):
+            max_len = max(
+                df[col].astype(str).apply(len).max(),
+                len(str(col))
+            ) + 2  # adiciona um pouco de espaço
+            worksheet.set_column(i, i, max_len)
+
     return buf.getvalue()
+
 
 st.sidebar.markdown("### Download")
 st.sidebar.markdown(
@@ -553,27 +701,50 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-col1,col2 = st.sidebar.columns(2)
+col1, col2 = st.sidebar.columns(2)
+
 with col1:
-    if st.button("CSV", disabled=df_texto.empty):
-        st.download_button("Baixar CSV", gerar_csv(df_texto),
-                           mime="text/csv",
-                           file_name=f"dados_{datetime.now():%Y%m%d}.csv")
+    if st.button("Em CSV", disabled=len(df_texto) == 0, key="csv_btn"):
+        csv_data = gerar_csv(df_texto)
+        st.download_button(
+            "Baixar CSV",
+            data=csv_data,
+            mime="text/csv",
+            file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.csv",
+            key="csv_download"
+        )
+        # Liberar memória após download
+        del csv_data
+
 with col2:
-    if st.button("Excel", disabled=df_texto.empty):
-        st.download_button("Baixar Excel", gerar_xlsx(df_texto),
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                           file_name=f"dados_{datetime.now():%Y%m%d}.xlsx")
+    if st.button("Em Excel", disabled=len(df_texto) == 0, key="xlsx_btn"):
+        xlsx_data = gerar_xlsx(df_texto)
+        st.download_button(
+            "Baixar Excel",
+            data=xlsx_data,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            key="xlsx_download"
+        )
+        # Liberar memória após download
+        del xlsx_data
 
 # ─── 18. RODAPÉ ────────────────────────────────────────────────────
 st.markdown("---")
-left,right = st.columns([3,1])
-with left:
-    st.caption("© Dashboard Educacional – atualização: Mai 2025")
-    delta = time.time() - st.session_state["tempo_inicio"]
-    st.caption(f"⏱️ Processamento: {delta:.2f}s")
-with right:
-    st.caption(f"Build: {datetime.now():%Y-%m-%d %H:%M:%S} UTC")
 
+# Layout de rodapé em colunas
+footer_left, footer_right = st.columns([3, 1])
+
+with footer_left:
+    st.caption("© Dashboard Educacional – atualização: Mai 2025")
+
+    # Informações de desempenho
+    delta = time.time() - st.session_state.get("tempo_inicio", time.time())
+    st.caption(f"⏱️ Tempo de processamento: {delta:.2f}s")
+
+with footer_right:
+    # Build info mais visível
+    st.caption(f"Build: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UTC")
+
+# Reinicia o timer para a próxima atualização
 st.session_state["tempo_inicio"] = time.time()
-# ===================================================================
