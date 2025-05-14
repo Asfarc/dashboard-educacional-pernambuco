@@ -457,3 +457,28 @@ div.filter-title {
   background:rgba(0,0,0,.2);border-radius:4px;padding:.3rem .5rem;
   font-size:.85rem;color:#fff;display:inline-block;margin-top:1rem
 }
+/* Melhorar espaçamento do texto de download */
+.download-info {
+    margin-bottom: 12px !important;
+    padding: 4px 8px !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 4px !important;
+    color: #ffffff !important;
+    font-size: 0.85rem !important;
+    display: block !important;
+}
+
+/* Reduzir espaço vertical entre expansores */
+.streamlit-expanderHeader {
+    margin-top: -10px !important;
+}
+
+/* Otimizar espaçamento dos títulos na sidebar - ajuste mais refinado */
+section[data-testid="stSidebar"] h3 {
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Aproximar elementos na sidebar */
+section[data-testid="stSidebar"] [data-testid="stExpander"] {
+    margin: 0.7rem 0 !important;

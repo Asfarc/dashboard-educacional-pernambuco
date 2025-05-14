@@ -179,15 +179,7 @@ ARQ = {k: v.arquivo for k, v in MODALIDADES.items()}
 def carregar_parquet_otimizado(arquivo: str, nivel: str | None = None) -> pd.DataFrame:
     """Lê o Parquet com dtypes compactos e retorna apenas o nível desejado."""
     try:
-        # Tipos de dados otimizados para reduzir uso de RAM
-        dtype = {
-            "Ano": "int16",
-            "Cód. Município": "Int32",
-            "Cód. da Escola": "Int64",
-            "Número de Matrículas": "uint32",
-        }
-
-        # Carregar apenas as colunas necessárias
+        # Definir colunas a carregar
         use_cols = [
             "Nível de agregação", "Ano",
             "Cód. Município", "Nome do Município",
@@ -200,27 +192,44 @@ def carregar_parquet_otimizado(arquivo: str, nivel: str | None = None) -> pd.Dat
         if "Ensino Regular" in arquivo:
             use_cols.append("Ano/Série")
 
-        # Carregamento otimizado do Parquet
+        # Carregamento do Parquet - apenas com colunas selecionadas
         df = pd.read_parquet(
             arquivo,
             columns=use_cols,
-            dtype=dtype,
             engine="pyarrow"
         )
 
+        # Aplicar conversões de tipo após carregamento
+        # Converter números para tipos menores
+        if "Ano" in df.columns:
+            df["Ano"] = pd.to_numeric(df["Ano"], downcast="integer")
+
+        if "Número de Matrículas" in df.columns:
+            df["Número de Matrículas"] = pd.to_numeric(
+                df["Número de Matrículas"], downcast="unsigned"
+            )
+
+        if "Cód. Município" in df.columns:
+            df["Cód. Município"] = pd.to_numeric(df["Cód. Município"], errors="coerce")
+
+        if "Cód. da Escola" in df.columns:
+            df["Cód. da Escola"] = pd.to_numeric(df["Cód. da Escola"], errors="coerce")
+
+        # Tratamento de valores nulos em Subetapa ANTES de converter para category
+        if "Subetapa" in df.columns:
+            # Importante: preencher nulos antes de converter para category
+            df["Subetapa"] = df["Subetapa"].fillna("N/A")
+
         # Converter texto para category para economizar mais RAM
-        for col in ["Nome do Município", "Nome da Escola",
-                    "Etapa", "Subetapa", "Rede", "Nível de agregação"]:
+        for col in ["Nome do Município", "Nome da Escola", "Etapa",
+                    "Subetapa", "Rede", "Nível de agregação"]:
             if col in df.columns:
                 df[col] = df[col].astype("category")
 
-        # Tratamento de valores nulos em Subetapa
-        if "Subetapa" in df.columns:
-            df["Subetapa"] = df["Subetapa"].fillna("N/A").astype("category")
-
         # Converter Ano/Série para category no caso do Ensino Regular
         if "Ano/Série" in df.columns:
-            df["Ano/Série"] = df["Ano/Série"].astype("category")
+            # Tratar possíveis nulos antes de converter para category
+            df["Ano/Série"] = df["Ano/Série"].fillna("N/A").astype("category")
 
         # Filtrar por nível se especificado
         return df[df["Nível de agregação"].eq(nivel)] if nivel else df
@@ -297,25 +306,35 @@ def construir_filtros_ui(df: pd.DataFrame, modalidade_key: str, nivel_ui: str):
         filtros["subetapa"] = sub_sel
 
         # Série (somente Ensino Regular)
-        if (modalidade_key == "Ensino Regular" and sub_sel
-                and not any("Total" in s for s in sub_sel)):
+        if modalidade_key == "Ensino Regular" and sub_sel and not any("Total" in s for s in sub_sel):
             st.markdown('<div class="filter-title" style="margin-top:-12px;">Série</div>',
                         unsafe_allow_html=True)
-            serie_disp = sorted(
-                df.loc[
-                    df["Etapa"].isin(etapa_sel) & df["Subetapa"].isin(sub_sel) & df["Série"].notna(),
-                    "Série"
-                ].unique()
-            )
-            serie_sel = st.multiselect(
-                "Série", serie_disp,
-                default=[], label_visibility="collapsed", key="serie_sel"
-            )
-            filtros["serie"] = serie_sel
+
+            # Verificar o nome correto da coluna de série
+            serie_col = config.serie_col if config.serie_col in df.columns else "Série"
+
+            if serie_col in df.columns:  # Verificar se a coluna existe
+                serie_disp = sorted(
+                    df.loc[
+                        df["Etapa"].isin(etapa_sel) &
+                        df["Subetapa"].isin(sub_sel) &
+                        df[serie_col].notna(),
+                        serie_col
+                    ].unique()
+                )
+                serie_sel = st.multiselect(
+                    "Série", serie_disp,
+                    default=[], label_visibility="collapsed", key="serie_sel"
+                )
+                filtros["serie"] = serie_sel
+            else:
+                st.text(f"Coluna {serie_col} não encontrada nos dados.")
+                filtros["serie"] = []
         else:
             filtros["serie"] = []
 
     return anos_sel, redes_sel, filtros
+
 
 # ─── 9. FUNÇÃO DE FILTRO UNIFICADA ─────────────────────────────────
 def filtrar_dados(df, modalidade_key, anos, redes, filtros):
@@ -372,9 +391,14 @@ def filtrar_dados(df, modalidade_key, anos, redes, filtros):
                 and not any(e in config.etapa_valores.get("totais", []) for e in etapa_sel)
                 and not any("Total" in sub for sub in subetapa_sel)
         ):
-            result_df = result_df[result_df["Série"].isin(serie_sel)]
+            # Verificar o nome correto da coluna de série
+            serie_col = config.serie_col if config.serie_col in result_df.columns else "Série"
+
+            if serie_col in result_df.columns:  # Verificar se a coluna existe
+                result_df = result_df[result_df[serie_col].isin(serie_sel)]
 
     return result_df
+
 
 # ─── 10. INICIALIZAÇÃO E CARREGAMENTO ──────────────────────────────
 if "tempo_inicio" not in st.session_state:
@@ -398,26 +422,28 @@ with st.sidebar:
         key="nivel_sel"
     )
 
-    # Informações de diagnóstico
-    with st.expander("Diagnóstico de Memória", False):
-        ram_antes = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
-        st.markdown(f"**Antes do carregamento**: {ram_antes:.1f} MB")
-
 # Carregamento com spinner de progresso
 with st.spinner("Carregando dados otimizados…"):
+    # Medir RAM antes
+    ram_antes = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+
+    # Carregar dados
     df_base = carregar_parquet_otimizado(
         ARQ[tipo_ensino],
         nivel=nivel_map[nivel_ui]
     )
 
+    # Medir RAM depois
+    ram_depois = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+
 if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível '{nivel_ui}'.")
     st.stop()
 
-# Atualização das informações de memória após carregamento
+# Mostrar diagnóstico de memória
 with st.sidebar:
     with st.expander("Diagnóstico de Memória", False):
-        ram_depois = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+        st.markdown(f"**Antes do carregamento**: {ram_antes:.1f} MB")
         st.markdown(f"**Após carregamento**: {ram_depois:.1f} MB")
         st.markdown(f"**Diferença**: {ram_depois - ram_antes:.1f} MB")
         st.markdown(f"**Registros carregados**: {format_number_br(len(df_base))}")
@@ -696,8 +722,7 @@ def gerar_xlsx(df):
 
 st.sidebar.markdown("### Download")
 st.sidebar.markdown(
-    f"<div style='font-size:0.85rem;margin-bottom:8px;color:white;'>"
-    f"Download de <b>{format_number_br(len(df_texto))}</b> linhas</div>",
+    f'<div class="download-info">Download de <b>{format_number_br(len(df_texto))}</b> linhas</div>',
     unsafe_allow_html=True
 )
 
