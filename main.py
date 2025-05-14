@@ -160,15 +160,12 @@ MODALIDADES: dict[str, ModalidadeConfig] = {
 # ─── 7. FUNÇÃO DE CARREGAMENTO PADRONIZADA ─────────────────────────
 @st.cache_resource(show_spinner="⏳ Carregando dados…")
 def carregar_parquet_otimizado(arquivo: str, nivel: str | None = None) -> pd.DataFrame:
-    """Lê o Parquet com dtypes compactos e retorna apenas o nível desejado."""
-    dtype = {
-        "Ano": "int16",
-        "Cód. Município": "Int32",
-        "Cód. da Escola": "Int64",
-        "Número de Matrículas": "uint32",
-    }
+    """Lê Parquet com dtypes compactos, ignorando colunas ausentes."""
 
-    use_cols = [
+    # 1. schema do arquivo (rápido, não carrega dados)
+    schema_cols = set(pq.read_schema(arquivo).names)
+
+    base_cols = [
         "Nível de agregação", "Ano",
         "Cód. Município", "Nome do Município",
         "Cód. da Escola", "Nome da Escola",
@@ -176,11 +173,22 @@ def carregar_parquet_otimizado(arquivo: str, nivel: str | None = None) -> pd.Dat
         "Número de Matrículas",
     ]
     if "Ensino Regular" in arquivo:
-        use_cols.append("Ano/Série")
+        base_cols.append("Ano/Série")
+
+    use_cols = [c for c in base_cols if c in schema_cols]
+
+    # 2. dtypes só para as colunas que realmente existem
+    dtype = {
+        "Ano": "int16",
+        "Cód. Município": "Int32",
+        "Cód. da Escola": "Int64",
+        "Número de Matrículas": "uint32",
+    }
+    dtype = {k: v for k, v in dtype.items() if k in use_cols}
 
     df = pd.read_parquet(arquivo, columns=use_cols, dtype=dtype, engine="pyarrow")
 
-    # texto → category (baixa cardinalidade)
+    # 3. textos → category (apenas se a coluna existe)
     for col in ["Nome do Município", "Nome da Escola",
                 "Etapa", "Subetapa", "Rede", "Nível de agregação"]:
         if col in df.columns:
@@ -189,8 +197,8 @@ def carregar_parquet_otimizado(arquivo: str, nivel: str | None = None) -> pd.Dat
     if "Subetapa" in df.columns:
         df["Subetapa"] = df["Subetapa"].fillna("N/A").astype("category")
 
-    # devolve só o nível pedido (escola/município/estado) se houver filtro
     return df[df["Nível de agregação"].eq(nivel)] if nivel else df
+
 
 
 # ─── 8. CONSTRUÇÃO DOS FILTROS DINÂMICOS ───────────────────────────
