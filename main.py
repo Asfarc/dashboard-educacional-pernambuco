@@ -424,18 +424,12 @@ with st.sidebar:
 
 # Carregamento com spinner de progresso
 with st.spinner("Carregando dados otimizados…"):
-    # Medir RAM antes
-    ram_antes = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
 
     # Carregar dados
     df_base = carregar_parquet_otimizado(
         ARQ[tipo_ensino],
         nivel=nivel_map[nivel_ui]
     )
-
-    # Medir RAM depois
-    ram_depois = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
-
 if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível '{nivel_ui}'.")
     st.stop()
@@ -449,24 +443,15 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    # Logo em seguida o expander de diagnóstico (reduzido)
-    with st.expander("Diagnóstico de Memória", False):
-        st.markdown(f"**Antes**: {ram_antes:.1f} MB")
-        st.markdown(f"**Após**: {ram_depois:.1f} MB")
-        st.markdown(f"**Diferença**: {ram_depois - ram_antes:.1f} MB")
-        st.markdown(f"**Registros**: {format_number_br(len(df_base))}")
-
 # ─── 12. PAINEL DE FILTROS DINÂMICOS ─────────────────────────────
 with st.container():
     st.markdown(
         '<div class="panel-filtros" style="margin-top:-30px">',
         unsafe_allow_html=True
     )
-
     anos_sel, redes_sel, filtros_especificos = construir_filtros_ui(
         df_base, tipo_ensino, nivel_ui
     )
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ─── 13. VALIDAÇÃO E FILTRAGEM ────────────────────────────────────
@@ -511,12 +496,6 @@ with st.sidebar.expander("Configurações", False):
         index=5, format_func=lambda x: "Mostrar todos" if x == 10000 else str(x)
     )
     st.session_state["page_size"] = page_size
-
-    ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
-    st.sidebar.markdown(
-        f'<div class="ram-indicator">💾 RAM usada: <b>{ram_mb:.0f} MB</b></div>',
-        unsafe_allow_html=True
-    )
 
 # ─── 15. PREPARAÇÃO DA TABELA ──────────────────────────────────────
 vis_cols = ["Ano"]
@@ -684,7 +663,6 @@ if sel_rows and sel_cols:
     )
 else:
     soma_placeholder.empty()
-
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
 if pag.total_pages > 1:
