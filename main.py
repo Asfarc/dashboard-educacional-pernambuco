@@ -626,247 +626,33 @@ col_matriculas = beautify_column_header("Número de Matrículas")
 if col_matriculas in config_colunas:
     config_colunas[col_matriculas] = {"width": "120px"}
 
-# Exibição da tabela
-st.dataframe(
-    df_show,
-    column_config=config_colunas,
+# ----  TABELA PRINCIPAL  ----
+event = st.dataframe(
+    df_page,                     # ⚠️  use df_page, ainda numérico!
     height=altura_tabela,
     use_container_width=True,
-    hide_index=True
+    hide_index=True,
+    selection_mode=["multi-row", "multi-column"],  # permite marcar linhas e colunas
+    on_select="rerun",           # força recarregar quando muda seleção
+    key="tabela_principal"
 )
 
-# Adicionar o componente de soma (VERSÃO CORRIGIDA)
-with st.container():
-    # Adicionar iframe para isolar e garantir funcionamento do JavaScript
-    html_content = """
-    <div style="margin-top: 10px; position: relative;">
-        <div id="selection-sum" class="sum-container" style="
-            position: fixed; 
-            right: 20px; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            background-color: rgba(255, 255, 255, 0.95); 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            padding: 12px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            z-index: 1000; 
-            width: 250px; 
-            max-width: 250px; 
-            display: none;
-        ">
-            <div style="font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                Somatório de Seleção
-            </div>
-            <div id="sum-value" style="font-size: 1.6rem; font-weight: bold; color: #0073ba; text-align: center; margin: 10px 0;">
-                0
-            </div>
-            <div id="sum-meta" style="font-size: 0.85rem; color: #777; text-align: center;">
-                0 células selecionadas
-            </div>
-            <div id="sum-cells" style="margin-top: 8px; font-size: 0.9rem; color: #555; max-height: 150px; overflow-y: auto;">
-            </div>
-            <button id="clear-selection" style="width: 100%; margin-top: 10px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background-color: #f5f5f5; cursor: pointer;">
-                Limpar seleção
-            </button>
-        </div>
-    </div>
+# ----  SOMA DOS ITENS SELECIONADOS  ----
+sel_rows = event.selection.rows      # índices inteiros
+sel_cols = event.selection.columns   # nomes das colunas
 
-    <script>
-    // Função para executar quando o DOM estiver completamente carregado
-    function initializeSummation() {
-        console.log("Inicializando funcionalidade de soma");
+if sel_rows and sel_cols:
+    # Sub‑dataframe só com numéricos
+    sub = df_page.iloc[sel_rows][sel_cols]
+    soma = pd.to_numeric(sub.select_dtypes('number').stack()).sum()
 
-        // Variáveis para rastrear células selecionadas
-        let selectedCells = [];
-        let sumContainer = document.getElementById('selection-sum');
-        let sumValue = document.getElementById('sum-value');
-        let sumMeta = document.getElementById('sum-meta');
-        let sumCells = document.getElementById('sum-cells');
-        let clearBtn = document.getElementById('clear-selection');
+    st.success(
+        f"Soma das células numéricas selecionadas: "
+        f"<b>{aplicar_padrao_numerico_brasileiro(soma)}</b>",
+        icon="➕",
+        unsafe_allow_html=True
+    )
 
-        // Função para formatar números no padrão brasileiro
-        function formatNumberBR(num) {
-            return num.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
-        }
-
-        // Função para atualizar o somatório
-        function updateSum() {
-            if (selectedCells.length === 0) {
-                sumContainer.style.display = 'none';
-                return;
-            }
-
-            // Somar os valores
-            let sum = selectedCells.reduce((acc, cell) => acc + cell.value, 0);
-
-            // Atualizar a exibição
-            sumContainer.style.display = 'block';
-            sumValue.textContent = formatNumberBR(sum);
-            sumMeta.textContent = `${selectedCells.length} célula${selectedCells.length > 1 ? 's' : ''} selecionada${selectedCells.length > 1 ? 's' : ''}`;
-
-            // Mostrar células selecionadas
-            sumCells.innerHTML = '';
-            selectedCells.forEach((cell, idx) => {
-                sumCells.innerHTML += `<div>${idx+1}. ${cell.rowLabel}: ${formatNumberBR(cell.value)}</div>`;
-            });
-        }
-
-        // Limpar seleção
-        clearBtn.addEventListener('click', function() {
-            // Limpar array de seleção
-            selectedCells = [];
-
-            // Remover highlight das células
-            document.querySelectorAll('[data-testid="stDataFrame"] table tbody tr td.highlighted').forEach(cell => {
-                cell.classList.remove('highlighted');
-                cell.style.backgroundColor = '';
-            });
-
-            // Atualizar exibição
-            updateSum();
-        });
-
-        // Função principal para processar a tabela
-        function processTable() {
-            console.log("Processando tabela");
-
-            // Adicionar CSS para células destacadas
-            const style = document.createElement('style');
-            style.textContent = `
-                [data-testid="stDataFrame"] table tbody tr td.highlighted {
-                    background-color: rgba(0, 115, 186, 0.2) !important;
-                    cursor: pointer !important;
-                }
-                [data-testid="stDataFrame"] table tbody tr td:last-child {
-                    cursor: pointer !important;
-                }
-            `;
-            document.head.appendChild(style);
-
-            // Encontrar a tabela do Streamlit
-            const dataFrames = document.querySelectorAll('[data-testid="stDataFrame"]');
-            if (dataFrames.length === 0) {
-                console.log("Tabela não encontrada, tentando novamente em 500ms");
-                setTimeout(processTable, 500);
-                return;
-            }
-
-            const table = dataFrames[0].querySelector('table');
-            if (!table) {
-                console.log("Elemento table não encontrado, tentando novamente em 500ms");
-                setTimeout(processTable, 500);
-                return;
-            }
-
-            console.log("Tabela encontrada, processando linhas");
-
-            // Processar todas as linhas
-            const rows = table.querySelectorAll('tbody tr');
-            if (rows.length === 0) {
-                console.log("Nenhuma linha encontrada, tentando novamente em 500ms");
-                setTimeout(processTable, 500);
-                return;
-            }
-
-            console.log(`Encontradas ${rows.length} linhas para processar`);
-
-            rows.forEach((row, rowIdx) => {
-                // Obter a última célula (coluna de matrículas)
-                const lastCell = row.querySelector('td:last-child');
-                if (!lastCell) return;
-
-                // Obter o valor e remover pontos de milhar antes de converter para número
-                const valueText = lastCell.textContent.trim().replace(/\\./g, '').replace(',', '.');
-                const value = parseFloat(valueText);
-                if (isNaN(value)) return;
-
-                // Obter rótulo da linha (primeira célula ou segunda se houver município)
-                let rowLabel = '';
-                const cells = row.querySelectorAll('td');
-
-                // Tentar encontrar um bom rótulo (priorizar a primeira ou segunda célula com texto)
-                for (let i = 0; i < Math.min(3, cells.length); i++) {
-                    if (cells[i] && cells[i].textContent.trim().length > 0) {
-                        rowLabel = cells[i].textContent.trim();
-                        if (rowLabel !== valueText) break;
-                    }
-                }
-
-                if (!rowLabel || rowLabel === valueText) {
-                    rowLabel = `Linha ${rowIdx+1}`;
-                }
-
-                // Adicionar evento de clique
-                lastCell.style.cursor = 'pointer';
-                lastCell.style.transition = 'background-color 0.2s';
-
-                lastCell.addEventListener('click', function() {
-                    console.log(`Célula clicada: ${rowLabel}, valor: ${value}`);
-
-                    // Verificar se já está selecionada
-                    const cellIndex = selectedCells.findIndex(cell => 
-                        cell.rowIdx === rowIdx && cell.value === value);
-
-                    if (cellIndex > -1) {
-                        // Remover da seleção
-                        selectedCells.splice(cellIndex, 1);
-                        lastCell.classList.remove('highlighted');
-                        lastCell.style.backgroundColor = '';
-                    } else {
-                        // Adicionar à seleção
-                        selectedCells.push({ rowIdx, value, rowLabel });
-                        lastCell.classList.add('highlighted');
-                        lastCell.style.backgroundColor = 'rgba(0, 115, 186, 0.2)';
-                    }
-
-                    updateSum();
-                });
-            });
-
-            console.log("Processamento da tabela concluído com sucesso");
-        }
-
-        // Verificar periodicamente se a tabela está pronta
-        const checkInterval = setInterval(function() {
-            const dataFrame = document.querySelector('[data-testid="stDataFrame"]');
-            if (dataFrame) {
-                clearInterval(checkInterval);
-                processTable();
-            }
-        }, 300);
-    }
-
-    // Executar quando o DOM estiver pronto ou imediatamente se já estiver carregado
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeSummation);
-    } else {
-        // Se o DOM já estiver carregado
-        setTimeout(initializeSummation, 100);
-    }
-
-    // Executar novamente quando o conteúdo da página mudar (para paginação)
-    const observer = new MutationObserver(function(mutations) {
-        for (const mutation of mutations) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                for (const node of mutation.addedNodes) {
-                    if (node.nodeType === Node.ELEMENT_NODE && 
-                        (node.matches('[data-testid="stDataFrame"]') || 
-                         node.querySelector('[data-testid="stDataFrame"]'))) {
-                        setTimeout(initializeSummation, 300);
-                        return;
-                    }
-                }
-            }
-        }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-    </script>
-    """
-
-    # Usar components.html para injetar o HTML com JavaScript diretamente
-    components.html(html_content, height=0)
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
 if pag.total_pages > 1:
