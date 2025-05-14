@@ -638,15 +638,15 @@ if sel_rows and sel_cols:
     # Converte a números (texto vira NaN)
     sel_num  = pd.to_numeric(sel_vals, errors="coerce")
 
-    if sel_num.notna().any():                              # há pelo menos 1 número
+    if sel_num.notna().any():  # há pelo menos 1 número
         total = sel_num.sum()
-        msg   = (
-            f"➕ <b>Soma das células numéricas selecionadas:</b> "
+        msg = (
+            f"➕ <b>Soma das células numéricas selecionadas:</b> "
             f"{aplicar_padrao_numerico_brasileiro(total)}"
         )
-    else:                                                  # tudo é não‑numérico
-        total = sel_vals.size                              # qtde de células
-        msg   = f"🔢 <b>Contagem de células selecionadas:</b> {total}"
+    else:  # tudo é não‑numérico
+        total = sel_vals.size  # qtde de células
+        msg = f"🔢 <b>Contagem de células selecionadas:</b> {aplicar_padrao_numerico_brasileiro(total)}"
 
     # Exibe o banner alinhado à direita
     soma_placeholder.markdown(
