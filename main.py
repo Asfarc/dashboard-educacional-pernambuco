@@ -4,6 +4,7 @@ import pandas as pd
 import io, re, time, os, psutil
 from pathlib import Path
 from datetime import datetime
+import pyarrow.parquet as pq
 
 # ─── 2. PAGE CONFIG (primeiro comando Streamlit!) ───────────────────
 st.set_page_config(
