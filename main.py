@@ -640,40 +640,44 @@ event = st.dataframe(
     key="tabela_principal"
 )
 
-# ─── SOMA DOS ITENS SELECIONADOS ───────────────────────────────────
+# ─── RESULTADO DO SELECIONADO (soma OU contagem) ───────────────────
 sel_rows = event.selection.rows
 sel_cols = event.selection.columns
 
 if sel_rows and sel_cols:
-    soma = (
-        pd.to_numeric(
-            df_page.iloc[sel_rows][sel_cols].select_dtypes("number").stack()
-        ).sum()
-    )
+    # Sub‑DataFrame somente com as células marcadas
+    sel_df = df_calc.iloc[sel_rows][sel_cols]           # df_calc = numérico
+
+    # Empilhamos tudo numa série e tentamos converter para número
+    valores = sel_df.stack()
+    valores_num = pd.to_numeric(valores, errors="coerce")   # não‑numéricos → NaN
+
+    if valores_num.notna().any():                      # há pelo menos 1 número
+        total = valores_num.sum()
+        texto_resultado = (
+            f"➕ <b>Soma das células numéricas selecionadas:</b> "
+            f"{aplicar_padrao_numerico_brasileiro(total)}"
+        )
+    else:                                              # nenhum número → contagem
+        total = valores.size                           # qtde de células
+        texto_resultado = (
+            f"🔢 <b>Contagem de células selecionadas:</b> {total}"
+        )
 
     soma_placeholder.markdown(
         f"""
-        <div style="
-            display:inline-block;          /* só ocupa o necessário    */
-            max-width:80%;                 /* evita “colar” no canto   */
-            float:right;                   /* gruda à direita          */
-            margin:0 800px 8px 0;          /* 120 px ≈ largura do menu */
-            background:#dff0d8;
-            border:1px solid #3c763d;
-            padding:12px 16px;
-            border-radius:6px;
-            font-size:1rem;
-            z-index:9999;                  /* fica acima dos ícones    */
-            position:relative;">
-            ➕ <b>Soma das células numéricas selecionadas:</b>
-            {aplicar_padrao_numerico_brasileiro(soma)}
-        </div>
-        """,
+<div style="width:100%;display:flex;justify-content:flex-end;margin-bottom:8px;">
+  <div style="background:#dff0d8;border:1px solid #3c763d;padding:12px 16px;
+              border-radius:6px;font-size:1rem;white-space:nowrap;
+              margin-right:120px;">
+    {texto_resultado}
+  </div>
+</div>
+""",
         unsafe_allow_html=True
     )
 else:
     soma_placeholder.empty()
-
 
 
 # ─── 16. NAVEGAÇÃO DE PÁGINAS ──────────────────────────────────────
