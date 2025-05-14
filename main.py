@@ -440,13 +440,21 @@ if df_base.empty:
     st.warning(f"Não há dados disponíveis para o nível '{nivel_ui}'.")
     st.stop()
 
-# Mostrar diagnóstico de memória
+# Mostrar RAM e diagnóstico imediatamente após a seleção de nível
 with st.sidebar:
+    # Primeiro exibe o indicador de RAM
+    ram_mb = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+    st.markdown(
+        f'<div class="ram-indicator">💾 RAM usada: <b>{ram_mb:.0f} MB</b></div>',
+        unsafe_allow_html=True
+    )
+
+    # Logo em seguida o expander de diagnóstico (reduzido)
     with st.expander("Diagnóstico de Memória", False):
-        st.markdown(f"**Antes do carregamento**: {ram_antes:.1f} MB")
-        st.markdown(f"**Após carregamento**: {ram_depois:.1f} MB")
+        st.markdown(f"**Antes**: {ram_antes:.1f} MB")
+        st.markdown(f"**Após**: {ram_depois:.1f} MB")
         st.markdown(f"**Diferença**: {ram_depois - ram_antes:.1f} MB")
-        st.markdown(f"**Registros carregados**: {format_number_br(len(df_base))}")
+        st.markdown(f"**Registros**: {format_number_br(len(df_base))}")
 
 # ─── 12. PAINEL DE FILTROS DINÂMICOS ─────────────────────────────
 with st.container():
