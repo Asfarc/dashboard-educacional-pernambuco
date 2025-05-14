@@ -260,6 +260,7 @@ def construir_filtros_ui(df: pd.DataFrame, modalidade_key: str, nivel_ui: str):
 
         # Série (somente Ensino Regular)
         if (modalidade_key == "Ensino Regular" and sub_sel
+                and "Série" in df.columns
                 and not any("Total" in s for s in sub_sel)):
             st.markdown('<div class="filter-title" style="margin-top:-12px;">Série</div>',
                         unsafe_allow_html=True)
@@ -420,7 +421,7 @@ with st.sidebar.expander("Configurações", False):
     page_options = [10, 25, 50, 100, 250, 500, 10000]
     page_size = st.selectbox(
         "Linhas por página", page_options,
-        index=page_options.index(10000),  # aponta p/ “Mostrar todos”
+        index=page_options.index(10000),
         format_func=lambda x: "Mostrar todos" if x == 10000 else str(x)
     )
     st.session_state["page_size"] = page_size
