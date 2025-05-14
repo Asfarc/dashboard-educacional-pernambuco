@@ -450,25 +450,59 @@ vis_cols += ["Rede", "Número de Matrículas"]
 
 df_tabela = df_filtrado[vis_cols].copy()
 
-# --- estilização rápida ---
+# --- estilização rápida -------------------------------------------------
 st.markdown("""<style>
 [data-testid="stDataFrame"] tr:hover{background:rgba(107,129,144,.1)!important}
 [data-testid="stDataFrame"] td:last-child,[data-testid="stDataFrame"] th:last-child{
  text-align:center!important}
+.column-header{background:#daba93;text-align:center;font-weight:bold;
+ height:40px;display:flex;align-items:center;justify-content:center;
+ padding:5px;margin-bottom:4px}
 </style>""", unsafe_allow_html=True)
 
-# cabeçalhos dos filtros
-for col in vis_cols:
-    st.text_input("", key=f"filter_{col}", label_visibility="collapsed")
+# 5. Cabeçalhos e filtros alinhados --------------------------------------
+col_headers = st.columns(len(vis_cols))
+for col, slot in zip(vis_cols, col_headers):
+    with slot:
+        header = beautify_column_header(col)
+        extra = " style='text-align:center'" if col == "Número de Matrículas" else ""
+        st.markdown(f"<div class='column-header'{extra}>{header}</div>", unsafe_allow_html=True)
 
-# filtros de texto
+col_filters = st.columns(len(vis_cols))
+filter_values = {}
+for col, slot in zip(vis_cols, col_filters):
+    with slot:
+        filter_values[col] = st.text_input(
+            "", key=f"filter_{col}",
+            placeholder=f"Filtrar {beautify_column_header(col).lower()}...",
+            label_visibility="collapsed"
+        )
+
+# 6. Aplicação dos filtros ----------------------------------------------
 mask = pd.Series(True, index=df_tabela.index)
-for col in vis_cols:
-    val = (st.session_state.get(f"filter_{col}") or "").strip()
+filtros_ativos = False
+
+for col, val in filter_values.items():
+    val = (val or "").strip()
     if val:
+        filtros_ativos = True
         s = df_tabela[col]
         mask &= s.astype(str).str.contains(val, case=False)
+
 df_texto = df_tabela[mask]
+
+# 7. Feedback visual dos filtros ativos ----------------------------------
+if filtros_ativos:
+    st.markdown(
+        f"<div style='margin-top:-8px;margin-bottom:8px;'>"
+        f"<span style='font-size:0.85rem;color:#555;background:#f5f5f5;"
+        f"padding:2px 8px;border-radius:4px'>"
+        f"Filtro: <b>{format_number_br(len(df_texto))}</b> de "
+        f"<b>{format_number_br(len(df_tabela))}</b> linhas</span></div>",
+        unsafe_allow_html=True
+    )
+    st.session_state["current_page"] = 1  # volta para a 1ª página sempre que digita filtro
+
 
 # Paginação
 pag = Paginator(len(df_texto),
